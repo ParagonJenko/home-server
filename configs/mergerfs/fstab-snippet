@@ -1,0 +1,14 @@
+# mergerfs/fstab-snippet — the media pool. Add to /etc/fstab on NUC-1. [R8 R9]
+#
+# Two branches unioned into /mnt/media. Key options:
+#   minfreespace=250G   reserved headroom — new files refuse once a branch is this full (R8)
+#   category.create=epmff (or mfs)  keep a path's files on ONE branch so hardlinks work (R1/D1)
+#   x-systemd.requires=  the pool REFUSES to mount if a branch is missing, instead of
+#                        silently unioning from the host root device (R9)
+#
+# /mnt/pool/disk1:/mnt/pool/disk2  /mnt/media  fuse.mergerfs  \
+#   defaults,allow_other,use_ino,cache.files=partial,dropcacheonclose=true,\
+#   category.create=epmff,minfreespace=250G,fsname=mergerfs,\
+#   x-systemd.requires=/mnt/pool/disk1,x-systemd.requires=/mnt/pool/disk2  0 0
+#
+# TODO: set the real branch paths and tune minfreespace to storage.md.

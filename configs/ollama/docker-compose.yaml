@@ -1,0 +1,24 @@
+# ollama/docker-compose.yaml — local LLM inference (Stage I, FUTURE/OPTIONAL).
+# Ollama (OpenAI-compatible API) + Open WebUI. Runs on CPU/iGPU now; a GPU node
+# offloads layers later. Model weights are reconstructable (R26) — put them on a
+# dedicated volume and EXCLUDE from PBS.
+services:
+  ollama:
+    image: ollama/ollama:latest          # TODO pin
+    volumes: [ ollama-models:/root/.ollama ]   # weights here — exclude from backups
+    ports: [ "11434:11434" ]
+    # For an NVIDIA GPU node, add the nvidia runtime / device reservations.
+    restart: unless-stopped
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes: [ open-webui:/app/backend/data ]
+    ports: [ "3000:8080" ]
+    depends_on: [ ollama ]
+    restart: unless-stopped
+volumes:
+  ollama-models:
+  open-webui:
+# After up: docker exec -it ollama ollama pull llama3.3:8b
+# Front with Nginx as llm.home; expose only over Tailscale (R23). Wire HA Assist + Frigate genai.

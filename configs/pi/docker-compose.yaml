@@ -1,0 +1,39 @@
+# pi/docker-compose.yaml — AdGuard + Prometheus + Alertmanager + Grafana + exporters.
+# ALL services on host networking (three things break on a bridge — see rules.md F0).
+# Mounts alerts.yml from ../monitoring/ so there is ONE canonical copy of the rules.
+# Secrets: Grafana password in .env; Discord webhook in alertmanager/discord-webhook-url
+# (both gitignored, both chmod 600).
+services:
+  adguardhome:
+    image: adguard/adguardhome:latest    # TODO pin
+    network_mode: host                    # move admin UI to :8081 in the wizard (Grafana owns 3000)
+    volumes: [ ./adguard/work:/opt/adguardhome/work, ./adguard/conf:/opt/adguardhome/conf ]
+    restart: unless-stopped
+  prometheus:
+    image: prom/prometheus:latest
+    network_mode: host
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - ../monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+    restart: unless-stopped
+  alertmanager:
+    image: prom/alertmanager:latest
+    network_mode: host
+    volumes: [ ./alertmanager:/etc/alertmanager ]
+    restart: unless-stopped
+  grafana:
+    image: grafana/grafana:latest
+    network_mode: host
+    env_file: .env
+    volumes: [ ./grafana:/etc/grafana/provisioning, grafana-data:/var/lib/grafana ]
+    restart: unless-stopped
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    network_mode: host
+    restart: unless-stopped
+  node_exporter:
+    image: prom/node-exporter:latest
+    network_mode: host
+    restart: unless-stopped
+volumes:
+  grafana-data:

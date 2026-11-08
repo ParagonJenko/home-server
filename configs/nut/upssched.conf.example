@@ -1,0 +1,8 @@
+# upssched.conf — optional early-shutdown timers. Copy to /etc/nut/.
+CMDSCRIPT /usr/sbin/upssched-cmd
+PIPEFN /run/nut/upssched.pipe
+LOCKFN /run/nut/upssched.lock
+
+# Example: begin ordered shutdown after N seconds on battery, sized to runtime budget.
+# AT ONBATT * START-TIMER earlyshutdown 120
+# AT ONLINE * CANCEL-TIMER earlyshutdown

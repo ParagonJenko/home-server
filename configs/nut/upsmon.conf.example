@@ -1,0 +1,9 @@
+# upsmon.conf — copy to /etc/nut/. MASTER on the USB host, SECONDARY on netclients.
+# MONITOR <ups>@<host> <powervalue> <user> <pass> (master|secondary)
+MONITOR homelab-ups@nuc2 1 upsmon <SET-A-PASSWORD> master
+
+MINSUPPLIES 1
+SHUTDOWNCMD "/sbin/shutdown -h +0"
+POWERDOWNFLAG /etc/killpower
+# On netclients, change the host and the last field to `secondary`.
+# The upsmon password is host-local (not a cloud secret), but still keep it out of git.

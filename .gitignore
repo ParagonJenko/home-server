@@ -1,0 +1,44 @@
+# ─────────────────────────────────────────────────────────────
+# SECRETS — NEVER COMMIT. THIS REPO IS PUBLIC.
+# Real values live only in gitignored files + an off-box vault (rules.md R21).
+# Only *.example templates are tracked. If in doubt, do not commit it.
+# ─────────────────────────────────────────────────────────────
+
+# Env files (keep the .example templates)
+.env
+**/.env
+!**/.env.example
+
+# Recyclarr secrets
+**/secrets.yml
+!**/secrets.yml.example
+
+# Alertmanager Discord webhook
+configs/pi/alertmanager/discord-webhook-url
+!configs/pi/alertmanager/discord-webhook-url.example
+
+# AdGuard config — holds the admin password hash (rules.md F3)
+**/AdGuardHome.yaml
+
+# PBS datastore encryption key / rclone remote config / offsite crypt
+**/rclone.conf
+*.enc
+*.age
+
+# Keys & certs
+*.key
+*.pem
+id_ed25519
+id_ed25519.pub
+id_rsa
+id_rsa.pub
+
+# Broad catch-alls (false-ignores are safer than false-commits on a public repo)
+*secret*
+*credential*
+!*.example
+
+# OS / editor cruft
+.DS_Store
+*.swp
+*~

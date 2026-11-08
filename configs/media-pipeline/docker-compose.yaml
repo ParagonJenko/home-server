@@ -1,0 +1,27 @@
+# media-pipeline/docker-compose.yaml — LXC 210. qBittorrent + the Arr stack.
+# Each service has its own mem_limit (memory cap; disk is bounded by the LXC rootfs
+# cap + mergerfs minfreespace + per-app Min Free Space). Secrets go in .env (gitignored).
+# This is a scaffold — pin image tags and fill volumes/ports per services.md.
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest   # TODO pin a tag
+    environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
+    volumes:
+      - /opt/qbittorrent/config:/config
+      - /data:/data           # torrents + library on ONE mount so imports hardlink
+    mem_limit: 2g
+    restart: unless-stopped
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
+    volumes: [ /opt/sonarr/config:/config, /data:/data ]
+    mem_limit: 1g
+    restart: unless-stopped
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
+    volumes: [ /opt/radarr/config:/config, /data:/data ]
+    mem_limit: 1g
+    restart: unless-stopped
+  # TODO: bazarr, prowlarr, recyclarr, decluttarr, flaresolverr, qbit_manage
+  #       (see rules.md D1). flaresolverr at http://flaresolverr:8191.

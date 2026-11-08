@@ -1,0 +1,5 @@
+# ups.conf — on the NUT master (the host the UPS USB plugs into). Copy to /etc/nut/.
+[homelab-ups]
+    driver = usbhid-ups     # TODO: match your UPS (see `nut-scanner`)
+    port = auto
+    desc = "Homelab UPS"

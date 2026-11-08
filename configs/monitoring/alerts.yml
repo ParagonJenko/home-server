@@ -1,0 +1,37 @@
+# monitoring/alerts.yml — the ONE canonical copy of the alert rules (mounted into
+# Prometheus from here by configs/pi/docker-compose.yaml). Alerts inform, they never
+# protect (R11) — every "must not happen" is a hard mechanism elsewhere. Fire at 80%.
+groups:
+  - name: homelab
+    rules:
+      - alert: DiskUsageHigh
+        expr: 100 - (node_filesystem_avail_bytes / node_filesystem_size_bytes * 100) > 80
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "{{ $labels.instance }} {{ $labels.mountpoint }} over 80%" }
+
+      - alert: ThinPoolMetadataHigh        # the alert closest to unrecoverable (R8)
+        expr: lvm_thinpool_metadata_percent > 80
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "{{ $labels.instance }} thin-pool metadata over 80%" }
+
+      - alert: ServiceDown
+        expr: probe_success == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: "{{ $labels.instance }} probe failing" }
+
+      - alert: ProbeFailed
+        expr: up == 0
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "{{ $labels.job }}/{{ $labels.instance }} scrape target down" }
+
+      - alert: InternalDNSBroken          # AdGuard answering on :53 != resolving *.home
+        expr: probe_success{job="dns"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "Internal DNS not resolving *.home" }
+
+      # TODO (R24): SmartFailurePredicted (critical) + DiskTempHigh, off smartmon.sh metrics.

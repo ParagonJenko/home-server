@@ -1,0 +1,34 @@
+# frigate/config.yaml — holds NO secrets (safe as committed). Cameras by NAME, not IP. [R13]
+# Frigate 0.15+ removed record.retain — retention is split continuous/motion with
+# separate retain blocks under alerts/detections. A config using record.retain.days won't load.
+mqtt:
+  enabled: false
+
+tls:
+  enabled: false          # Nginx fronts it; the login itself stays on
+
+record:
+  enabled: true
+  continuous:
+    days: 0
+  motion:
+    days: 14              # the graceful ceiling — must match storage.md
+  alerts:
+    retain: { days: 14 }
+  detections:
+    retain: { days: 14 }
+
+cameras:
+  cam-living-room:
+    ffmpeg:
+      inputs:
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-living-room.home:554/live0
+          roles: [detect, record]
+  # TODO: cam-kitchen, cam-bedroom, cam-basement (same shape, by name).
+  # NOTE: no HomeBase — confirm each Eufy model exposes standalone RTSP (many need a base).
+
+# Optional (Stage I): genai descriptions via local Ollama instead of OpenAI.
+# genai:
+#   provider: ollama
+#   base_url: http://llm.home:11434
+#   model: llava

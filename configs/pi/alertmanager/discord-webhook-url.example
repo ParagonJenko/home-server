@@ -1,0 +1,5 @@
+COPY this file to `discord-webhook-url` (no extension), chmod 600, and paste the real
+Discord webhook URL as the only line. The real file is gitignored — NEVER commit it.
+Docker creates a DIRECTORY where a bind-mount source doesn't exist, so this file must
+exist before the first `docker compose up -d` or Alertmanager fails on a path that
+looks present. The webhook is a secret → also store it in the vault (R21).
