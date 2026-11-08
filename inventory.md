@@ -6,9 +6,9 @@ Physical hardware. Addresses live in `network.md`, disk identity in `storage.md`
 
 | Role | Box | Notes |
 |---|---|---|
-| NUC-1 | Beelink S13 | Proxmox host — media stack (Stages B–D). DAS attached here. |
-| NUC-2 | Beelink S12 Pro | Proxmox host — Frigate + PBS (Stage E). USB HDD attached here. |
-| Pi | Raspberry Pi 4/5 + microSD | DNS + monitoring/alerting (Stage F). Sole DNS; boots first. |
+| NUC-1 | Beelink S13 | Proxmox host — media stack (Stages B, C, E). DAS attached here. |
+| NUC-2 | Beelink S12 Pro | Proxmox host — Frigate + PBS (Stage G). USB HDD attached here. |
+| Pi | Raspberry Pi 4/5 + microSD | DNS (Stage D) + monitoring/alerting (Stage H). Sole DNS; boots first. |
 
 ## Storage
 
@@ -37,4 +37,4 @@ Physical hardware. Addresses live in `network.md`, disk identity in `storage.md`
 
 | Device | Notes |
 |---|---|
-| GPU node | For local LLM inference (Stage I) — e.g. a used RTX 3090 (24GB) in a Proxmox node, or a unified-memory Mac. Not yet owned. |
+| GPU node | For local LLM inference (Stage K) — e.g. a used RTX 3090 (24GB) in a Proxmox node, or a unified-memory Mac. Not yet owned. |

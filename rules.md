@@ -16,7 +16,7 @@ Status markers: **ON HOLD** (deferred), **PARTIAL** (physically possible now, fu
 
 ### R6 — Every workload has an enforced hard ceiling below the disk's real capacity
 - **Why:** without a per-workload ceiling, one service consumes the whole device.
-- **Verify:** container disks, downloads, Frigate retention and PBS retention each have a numeric limit, and the sum of ceilings on any shared device is under device size minus reserved headroom (checked at B8).
+- **Verify:** container disks, downloads, Frigate retention and PBS retention each have a numeric limit, and the sum of ceilings on any shared device is under device size minus reserved headroom (checked at B5).
 
 ### R7 — Each workload's behaviour at "full" is a chosen, configured degradation
 - **Why:** the default — writes fail, then the filesystem aborts — is the catastrophic path.
@@ -28,7 +28,7 @@ Status markers: **ON HOLD** (deferred), **PARTIAL** (physically possible now, fu
 
 ### R9 — The host OS survives any workload or disk filling up
 - **Why:** a full data disk or container must never make a host unbootable — the original failure.
-- **Verify:** workloads run on capped LVM-thin volumes, never on the host root filesystem; the sum of LV caps on each SSD is under its size minus headroom (B8); anything that can grow without a hard cap (media, recordings, backups) lives off the host SSD on the DAS or USB HDD. A full LV goes read-only without taking the host down (B8).
+- **Verify:** workloads run on capped LVM-thin volumes, never on the host root filesystem; the sum of LV caps on each SSD is under its size minus headroom (B5); anything that can grow without a hard cap (media, recordings, backups) lives off the host SSD on the DAS or USB HDD. A full LV goes read-only without taking the host down (B5).
 
 ### R10 — Storage limits are proven by a deliberate fill test before sign-off
 - **Why:** the old setup's behaviour at 100% was discovered in production, not verified.
@@ -50,7 +50,7 @@ Status markers: **ON HOLD** (deferred), **PARTIAL** (physically possible now, fu
 
 ### R4 — Any service restores to a point in time; the whole site survives a disaster
 - **Why:** routine "I broke X" needs rollback; fire, theft or a surge needs offsite survival.
-- **Verify:** PBS holds scheduled retained backups of every guest; the datastore syncs offsite (E7) and the docs repo is offsite. Both proven by R12.
+- **Verify:** PBS holds scheduled retained backups of every guest; the datastore syncs offsite (G6) and the docs repo is offsite. Both proven by R12.
 
 ### R12 — Recovery is rehearsed, and the runbook is proven
 - **Why:** an untested restore is a hypothesis.

@@ -17,7 +17,7 @@ Two mechanisms, on purpose: every LXC is created `ip=dhcp`, so a reservation pin
 
 ## Address register
 
-MACs are generated at `pct create`, so collect them off the real device after Stage D. `TBD` = not yet collected.
+MACs are generated at `pct create`, so collect them off the real device after Stage E. `TBD` = not yet collected.
 
 | Device | Kind | Reserved IP | MAC | Names | Notes |
 |---|---|---|---|---|---|
@@ -48,5 +48,5 @@ Three groups — nothing resolves without all three. `configs/pi/adguard-rewrite
 ## Resolver policy
 
 - Router DNS = the Pi, and **only** the Pi. Leave the secondary field empty (a public secondary silently breaks `*.home` intermittently).
-- Each NUC and the PBS VM point their own resolver at the Pi (set at F6) — or `pbs.home` stops resolving from the hosts.
+- Each NUC and the PBS VM point their own resolver at the Pi (set at H3) — or `pbs.home` stops resolving from the hosts.
 - AdGuard's *upstream* is where `1.1.1.1` belongs.

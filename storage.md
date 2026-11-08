@@ -14,7 +14,7 @@ Owns which physical disk is which, every workload's disk ceiling, the reserved h
 
 ## Per-workload ceilings (R6)
 
-The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headroom (checked at B8).
+The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headroom (checked at B5).
 
 | Workload | Device | Cap | Degradation at full (R7) |
 |---|---|---|---|
@@ -38,14 +38,14 @@ The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headr
 
 | Filesystem | Date | Result | Notes |
 |---|---|---|---|
-| mergerfs pool (`/mnt/media`) | TBD | TBD | B6 — writes 50G blobs until refusal, graceful stop, zero corruption |
-| local-lvm (throwaway LV) | TBD | TBD | B8 — full LV goes read-only, host stays up |
+| mergerfs pool (`/mnt/media`) | TBD | TBD | B3 — writes 50G blobs until refusal, graceful stop, zero corruption |
+| local-lvm (throwaway LV) | TBD | TBD | B5 — full LV goes read-only, host stays up |
 
 ## Data classification (R26)
 
 | Class | Data | Backup standard |
 |---|---|---|
-| **Irreplaceable** | container configs, Plex metadata, photos, documents | Full offsite 3-2-1 (PBS + E7 cloud sync) |
+| **Irreplaceable** | container configs, Plex metadata, photos, documents | Full offsite 3-2-1 (PBS + G6 cloud sync) |
 | **Reconstructable** | the media library, model weights | Lighter / excluded by choice — the Arrs/Ollama can re-fetch |
 
 **Excluded from PBS:** Frigate's recording volume (260G of 14-day churn would overrun the 2TB datastore — back up Frigate's config, not its clips) and Ollama model weights.
