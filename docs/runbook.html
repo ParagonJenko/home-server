@@ -1,0 +1,1870 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Proxmox Rebuild Runbook</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root {
+  --ground: #EDF0F2;
+  --surface: #FFFFFF;
+  --surface-2: #E4E9ED;
+  --line: #CDD6DC;
+  --line-soft: #DEE5EA;
+  --ink: #16232B;
+  --ink-2: #48606D;
+  --ink-3: #728794;
+  --accent: #1B5E7E;
+  --accent-ink: #FFFFFF;
+  --accent-wash: #E1EBF1;
+  --manual: #7A6A86;
+  --script: #1B5E7E;
+  --run: #8A5A2B;
+  --verify: #2F7D4F;
+  --danger: #A8362B;
+  --danger-wash: #F7E6E3;
+  --warn: #8A5F13;
+  --warn-wash: #F7EEDA;
+  --done-wash: #E4EFE7;
+  --shadow: 0 1px 2px rgba(22,35,43,.06), 0 6px 20px -12px rgba(22,35,43,.22);
+  --radius: 3px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0F161B;
+    --surface: #162026;
+    --surface-2: #1D2A32;
+    --line: #2C3C46;
+    --line-soft: #223038;
+    --ink: #DFE8ED;
+    --ink-2: #A2B5C0;
+    --ink-3: #7B8F9B;
+    --accent: #63A9CD;
+    --accent-ink: #0F161B;
+    --accent-wash: #16303D;
+    --manual: #A991B7;
+    --script: #63A9CD;
+    --run: #C9915A;
+    --verify: #66B489;
+    --danger: #E28577;
+    --danger-wash: #331E1B;
+    --warn: #D9AC5C;
+    --warn-wash: #2E2617;
+    --done-wash: #16281E;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0F161B;
+  --surface: #162026;
+  --surface-2: #1D2A32;
+  --line: #2C3C46;
+  --line-soft: #223038;
+  --ink: #DFE8ED;
+  --ink-2: #A2B5C0;
+  --ink-3: #7B8F9B;
+  --accent: #63A9CD;
+  --accent-ink: #0F161B;
+  --accent-wash: #16303D;
+  --manual: #A991B7;
+  --script: #63A9CD;
+  --run: #C9915A;
+  --verify: #66B489;
+  --danger: #E28577;
+  --danger-wash: #331E1B;
+  --warn: #D9AC5C;
+  --warn-wash: #2E2617;
+  --done-wash: #16281E;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -14px rgba(0,0,0,.7);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+code, kbd, .mono { font-family: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace; }
+a { color: var(--accent); text-underline-offset: 2px; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.masthead-in {
+  max-width: 1180px; margin: 0 auto; padding: 12px 24px;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: baseline; gap: 12px; margin-right: auto; }
+.brand h1 {
+  font-size: 19px; font-weight: 700; letter-spacing: -0.015em; margin: 0;
+}
+.brand .sub {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.overall { display: flex; align-items: center; gap: 10px; }
+.overall .bar {
+  width: 190px; height: 6px; background: var(--surface-2);
+  border: 1px solid var(--line-soft); border-radius: 99px; overflow: hidden;
+}
+.overall .fill { height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
+.overall .num {
+  font-family: "IBM Plex Mono", monospace; font-size: 12px; font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.tools { display: flex; gap: 8px; }
+.tbtn {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 6px 11px; cursor: pointer;
+  font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--ink-2);
+}
+.tbtn:hover { border-color: var(--accent); color: var(--accent); }
+.tbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* ---------- shell ---------- */
+.shell {
+  max-width: 1180px; margin: 0 auto; padding: 28px 24px 96px;
+  display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 40px; align-items: start;
+}
+
+/* ---------- rail ---------- */
+.rail { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 4px; }
+.rail-label {
+  font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-3); padding: 0 0 8px 2px;
+}
+.rail a {
+  display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px;
+  padding: 7px 9px; border-radius: var(--radius); text-decoration: none; color: var(--ink-2);
+  border: 1px solid transparent;
+}
+.rail a:hover { background: var(--surface); border-color: var(--line-soft); }
+.rail a.active { background: var(--surface); border-color: var(--line); color: var(--ink); }
+.rail .letter {
+  font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 12px;
+  text-align: center; color: var(--ink-3);
+}
+.rail a.active .letter, .rail a.complete .letter { color: var(--accent); }
+.rail .name { font-size: 13.5px; }
+.rail .count {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.rail a.complete .count { color: var(--verify); }
+.rail-note {
+  margin-top: 18px; padding: 12px; border: 1px solid var(--line-soft); border-radius: var(--radius);
+  background: var(--surface); font-size: 12.5px; color: var(--ink-2);
+}
+.rail-note strong { color: var(--ink); }
+
+/* ---------- intro ---------- */
+.intro { margin: 0 0 40px; max-width: 68ch; }
+.intro .kicker {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+}
+.intro h2 {
+  font-size: 30px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 14px;
+  text-wrap: balance;
+}
+.intro p { margin: 0 0 12px; color: var(--ink-2); }
+.principle {
+  margin: 20px 0 0; padding: 14px 16px; background: var(--surface);
+  border: 1px solid var(--line-soft); border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+.principle p { margin: 0; color: var(--ink); }
+.principle p + p { margin-top: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+
+/* ---------- stage ---------- */
+.stage { margin-bottom: 52px; scroll-margin-top: 84px; }
+.stage-head {
+  display: flex; align-items: flex-end; gap: 14px;
+  padding-bottom: 10px; border-bottom: 2px solid var(--ink); margin-bottom: 6px;
+}
+.stage-head .letter {
+  font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 34px;
+  line-height: .9; letter-spacing: -0.03em; color: var(--accent);
+}
+.stage-head h3 { margin: 0; font-size: 21px; letter-spacing: -0.015em; flex: 1; }
+.stage-head .where {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-3); padding-bottom: 3px;
+}
+.stage-intro { color: var(--ink-2); font-size: 14px; margin: 12px 0 20px; max-width: 70ch; }
+
+/* ---------- step card ---------- */
+.steps { display: flex; flex-direction: column; gap: 14px; }
+.step {
+  background: var(--surface); border: 1px solid var(--line-soft);
+  border-left: 3px solid var(--type-color, var(--line)); border-radius: var(--radius);
+  box-shadow: var(--shadow); scroll-margin-top: 84px;
+}
+.step.done { background: var(--done-wash); border-color: var(--line-soft); }
+.step.done .step-body { opacity: .62; }
+.step-top {
+  display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: start;
+  padding: 14px 16px;
+}
+.step-ident { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sid {
+  font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600;
+  color: var(--type-color); letter-spacing: .02em;
+}
+.badge {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 2px;
+  border: 1px solid var(--type-color); color: var(--type-color);
+}
+.step h4 {
+  margin: 6px 0 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+  flex-basis: 100%; text-wrap: balance;
+}
+.mark {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer; white-space: nowrap;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 5px 10px 5px 8px;
+  font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.mark:hover { border-color: var(--type-color); color: var(--type-color); }
+.mark .box {
+  width: 13px; height: 13px; border: 1.5px solid currentColor; border-radius: 2px;
+  display: grid; place-items: center; font-size: 10px; line-height: 1;
+}
+.step.done .mark { background: var(--verify); border-color: var(--verify); color: var(--ground); }
+.step-body { padding: 0 16px 16px; }
+.step-body > *:first-child { margin-top: 0; }
+.step-body p { margin: 0 0 10px; color: var(--ink-2); max-width: 72ch; }
+.step-body p strong, .step-body li strong { color: var(--ink); }
+.step-body ul, .step-body ol { margin: 0 0 12px; padding-left: 20px; color: var(--ink-2); }
+.step-body li { margin-bottom: 6px; max-width: 70ch; }
+.step-body ul.tight li { margin-bottom: 3px; }
+
+/* ---------- rule chips ---------- */
+.rule {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+  background: var(--accent-wash); color: var(--accent);
+  border: 1px solid transparent; border-radius: 2px; padding: 1px 5px;
+  cursor: pointer;
+}
+.rule:hover { border-color: var(--accent); }
+.rule.hold { background: var(--warn-wash); color: var(--warn); }
+.rule.hold:hover { border-color: var(--warn); }
+
+/* ---------- callouts ---------- */
+.callout {
+  margin: 0 0 12px; padding: 11px 13px; border-radius: var(--radius);
+  border: 1px solid var(--c-line); background: var(--c-wash); color: var(--ink);
+  font-size: 14px;
+}
+.callout .ctitle {
+  font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--c-line);
+  display: block; margin-bottom: 5px;
+}
+.callout p { margin: 0 0 8px; color: var(--ink); }
+.callout p:last-child { margin-bottom: 0; }
+.callout.danger { --c-line: var(--danger); --c-wash: var(--danger-wash); }
+.callout.gotcha { --c-line: var(--warn); --c-wash: var(--warn-wash); }
+.callout.manual { --c-line: var(--manual); --c-wash: transparent; }
+.callout.note { --c-line: var(--line); --c-wash: var(--surface-2); }
+.callout.note .ctitle { color: var(--ink-3); }
+.callout ul { margin: 0; padding-left: 18px; }
+.callout li { color: var(--ink); }
+details.callout > summary.ctitle {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 7px;
+  margin-bottom: 0; user-select: none;
+}
+details.callout[open] > summary.ctitle { margin-bottom: 7px; }
+details.callout > summary.ctitle::-webkit-details-marker { display: none; }
+details.callout > summary.ctitle::before {
+  content: "\25B8"; font-size: 10px; line-height: 1; transition: transform .15s ease;
+}
+details.callout[open] > summary.ctitle::before { transform: rotate(90deg); }
+details.callout > summary.ctitle::after {
+  content: "expand"; margin-left: auto; font-size: 9px; letter-spacing: .08em;
+  opacity: .65; font-weight: 600;
+}
+details.callout[open] > summary.ctitle::after { content: "collapse"; }
+details.callout > summary.ctitle:hover::after { opacity: 1; }
+
+/* ---------- code ---------- */
+.cmd {
+  position: relative; margin: 0 0 12px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.cmd pre {
+  margin: 0; padding: 11px 44px 11px 13px; overflow-x: auto;
+  font-family: "IBM Plex Mono", monospace; font-size: 12.5px; line-height: 1.7;
+  color: var(--ink);
+}
+.cmd .copy {
+  position: absolute; top: 6px; right: 6px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 2px;
+  padding: 3px 7px;
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.cmd .copy:hover { color: var(--accent); border-color: var(--accent); }
+.cmd .copy.ok { color: var(--verify); border-color: var(--verify); }
+code.inline {
+  background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 2px;
+  padding: 0 4px; font-size: 12.5px;
+}
+.ph {
+  font-family: "IBM Plex Mono", monospace; border-radius: 2px; padding: 0 3px;
+  cursor: pointer; border-bottom: 1px dashed currentColor;
+}
+.ph.empty { background: var(--warn-wash); color: var(--warn); }
+.ph.set { background: var(--accent-wash); color: var(--accent); }
+
+/* ---------- verify ---------- */
+.verify {
+  margin: 12px 0 0; padding: 10px 12px; border-radius: var(--radius);
+  border: 1px dashed var(--verify); background: transparent;
+  font-size: 13.5px; color: var(--ink);
+}
+.verify .vlabel {
+  font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--verify);
+  display: block; margin-bottom: 4px;
+}
+.verify code.inline { background: var(--surface-2); }
+
+/* ---------- substeps ---------- */
+.substeps { border-top: 1px solid var(--line-soft); margin-top: 4px; }
+.substep {
+  display: grid; grid-template-columns: auto 1fr; gap: 10px;
+  padding: 10px 0; border-bottom: 1px dotted var(--line-soft);
+}
+.substep:last-child { border-bottom: 0; }
+.substep .sbox {
+  width: 15px; height: 15px; margin-top: 3px; cursor: pointer;
+  border: 1.5px solid var(--ink-3); border-radius: 2px; background: transparent;
+  display: grid; place-items: center; font-size: 11px; line-height: 1; color: transparent;
+  padding: 0;
+}
+.substep.done .sbox { background: var(--verify); border-color: var(--verify); color: var(--ground); }
+.substep.done .sbody { opacity: .55; text-decoration-color: var(--ink-3); }
+.sbody { font-size: 13.5px; color: var(--ink-2); }
+.sbody .sname {
+  font-family: "IBM Plex Mono", monospace; font-weight: 600; color: var(--ink); font-size: 13px;
+}
+.substeps-label {
+  font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3); margin: 14px 0 2px;
+}
+
+/* ---------- reference block (non-checkable) ---------- */
+.refcard {
+  background: transparent; border: 1px solid var(--line); border-left: 3px solid var(--ink-3);
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.refcard .rlabel {
+  font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
+}
+.refcard h4 { margin: 6px 0 10px; font-size: 16px; }
+
+/* ---------- values panel ---------- */
+.drawer {
+  position: fixed; inset: 0; z-index: 60; display: none;
+  background: rgba(15,22,27,.45); backdrop-filter: blur(2px);
+}
+.drawer[open] { display: block; }
+.drawer-panel {
+  position: absolute; top: 0; right: 0; height: 100%; width: min(440px, 100%);
+  background: var(--surface); border-left: 1px solid var(--line);
+  padding: 22px; overflow-y: auto;
+}
+.drawer-panel h3 { margin: 0 0 6px; font-size: 18px; letter-spacing: -0.015em; }
+.drawer-panel .dsub { color: var(--ink-2); font-size: 13.5px; margin: 0 0 18px; }
+.field { margin-bottom: 16px; }
+.field label {
+  display: block; font-family: "IBM Plex Mono", monospace; font-size: 11.5px;
+  font-weight: 600; color: var(--ink); margin-bottom: 3px;
+}
+.field .hint { display: block; font-size: 12.5px; color: var(--ink-3); margin-bottom: 6px; }
+.field input {
+  width: 100%; padding: 8px 10px; background: var(--ground); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  font-family: "IBM Plex Mono", monospace; font-size: 13px;
+}
+.field input:focus { border-color: var(--accent); outline: none; }
+.close {
+  position: absolute; top: 16px; right: 18px; cursor: pointer; background: none;
+  border: 0; font-size: 22px; line-height: 1; color: var(--ink-3);
+}
+.close:hover { color: var(--ink); }
+
+/* ---------- rule popover ---------- */
+.rulebox {
+  position: fixed; z-index: 70; width: min(400px, calc(100vw - 32px));
+  background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius);
+  box-shadow: 0 12px 40px -12px rgba(0,0,0,.45); padding: 14px 16px; display: none;
+}
+.rulebox[open] { display: block; }
+.rulebox .rid {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; color: var(--accent);
+}
+.rulebox h5 { margin: 4px 0 10px; font-size: 15px; letter-spacing: -0.01em; }
+.rulebox dl { margin: 0; font-size: 13px; }
+.rulebox dt {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-top: 8px;
+}
+.rulebox dd { margin: 2px 0 0; color: var(--ink-2); }
+
+/* ---------- footer ---------- */
+.foot {
+  max-width: 1180px; margin: 0 auto; padding: 0 24px 60px;
+  color: var(--ink-3); font-size: 12.5px;
+}
+.foot .rule { cursor: default; }
+
+
+/* ---------- inventory ---------- */
+.invsec { margin-bottom: 52px; scroll-margin-top: 84px; }
+.invwrap {
+  overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); box-shadow: var(--shadow);
+}
+table.inv { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+table.inv th {
+  text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  font-family: "IBM Plex Mono", monospace; font-size: 10.5px; font-weight: 600;
+  letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
+}
+table.inv td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+table.inv tr:last-child td { border-bottom: 0; }
+table.inv tr.group td {
+  background: var(--surface-2); font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--ink-3); padding: 6px 10px;
+}
+table.inv tr.filled td:first-child { box-shadow: inset 3px 0 0 var(--verify); }
+.dev { font-weight: 600; color: var(--ink); }
+.devmeta {
+  display: block; font-family: "IBM Plex Mono", monospace; font-size: 11px;
+  color: var(--ink-3); margin-top: 2px; line-height: 1.5;
+}
+.devmeta .nm { color: var(--accent); }
+table.inv input {
+  width: 100%; min-width: 130px; padding: 5px 7px; background: var(--ground); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 2px;
+  font-family: "IBM Plex Mono", monospace; font-size: 12px;
+}
+table.inv input:focus { border-color: var(--accent); outline: none; }
+table.inv td.narrow { width: 1%; text-align: center; }
+.invchk {
+  width: 17px; height: 17px; cursor: pointer; padding: 0;
+  border: 1.5px solid var(--ink-3); border-radius: 2px; background: transparent;
+  display: grid; place-items: center; font-size: 11px; line-height: 1; color: transparent;
+}
+.invchk[aria-pressed="true"] { background: var(--verify); border-color: var(--verify); color: var(--ground); }
+.exports { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+.exports .note { font-size: 12.5px; color: var(--ink-3); }
+.invsub {
+  font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3); margin: 30px 0 8px;
+}
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: 18px; }
+  .rail {
+    position: static; flex-direction: row; overflow-x: auto; gap: 6px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--line);
+  }
+  .rail-label, .rail-note { display: none; }
+  .rail a { grid-template-columns: auto auto; white-space: nowrap; }
+  .rail .name { display: none; }
+  .overall .bar { width: 120px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="brand">
+      <h1>Proxmox Rebuild Runbook</h1>
+      <span class="sub">Stages A–I</span>
+    </div>
+    <div class="overall">
+      <span class="bar"><span class="fill" id="overallFill"></span></span>
+      <span class="num" id="overallNum">0 / 0</span>
+    </div>
+    <div class="tools">
+      <button class="tbtn" id="valuesBtn">Your values</button>
+      <button class="tbtn" id="hideDoneBtn" aria-pressed="false">Hide done</button>
+      <button class="tbtn" id="resetBtn">Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Stages"></nav>
+  <main>
+    <section class="intro">
+      <div class="kicker">Clean build · Proxmox VE 9.2 · verified Aug 2026</div>
+      <h2>Build the homelab in order, and prove each guardrail before the next one leans on it.</h2>
+      <p><strong>Kit:</strong> two Beelink NUCs, a Raspberry Pi, a 2×4TB DAS, and a 2TB USB HDD (PBS backup datastore, Stage E).</p>
+      <p>Work top to bottom. Every step is <strong>yours by hand</strong>, a <strong>script</strong> from <code class="inline">configs/</code>, or a <strong>check</strong> — don't retype script commands, run the file. Start at <a href="#stage-A">A0</a>.</p>
+      <details class="callout note"><summary class="ctitle">What each stage does</summary><ul><li><strong>A</strong> — harden both hosts.</li><li><strong>B</strong> — build the media pool, then break it on purpose (fill test).</li><li><strong>C–D</strong> — bring up the media stack.</li><li><strong>E</strong> — Frigate and backups (PBS).</li><li><strong>F</strong> — rebuild the Pi from nothing: DNS plus monitoring and alerting.</li><li><strong>G</strong> — make the whole thing portable.</li><li><strong>H</strong> — resilience &amp; lifecycle: power, secrets, failing disks, patching, exposure.</li><li><strong>I</strong> — local inference (future, optional): run LLMs on your own hardware.</li></ul></details>
+      <details class="callout note"><summary class="ctitle">How this page works</summary><ul><li>Fill your values once in <em>Your values</em> — they appear in every command on the page.</li><li>Record every MAC and IP in the address register below as you go — it exports straight into <code class="inline">network.md</code>.</li><li>A script's real commands live in <code class="inline">configs/</code>; this page says which file and what it does.</li></ul></details>
+      <div class="principle">
+        <p><strong>A single workload filling up is normal, and must be handled gracefully.</strong></p>
+        <p>The shared system filling up is catastrophic, and must be impossible. An alert saying “Frigate is pruning old video” is a success. A filesystem aborting at 100% is the only real failure, and it is designed out.</p>
+      </div>
+      <div class="principle">
+        <p><strong>Power loss pauses the system; it never corrupts it.</strong></p>
+        <p>A UPS and an ordered shutdown make a yanked mains cable a clean stop, not an aborted write — the fill rule's failure, designed out from the other direction. <span class="rule" data-rule="R22">R22</span></p>
+      </div>
+      <div class="principle">
+        <p><strong>The whole system rebuilds from off-box state alone — secrets included.</strong></p>
+        <p>Docs, backups and every secret live somewhere no single dead box takes with it, so the stack comes back on hardware that has never seen it. <span class="rule" data-rule="R21">R21</span> <span class="rule" data-rule="R17">R17</span></p>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <div id="inventory"></div>
+    <div id="stages"></div>
+  </main>
+</div>
+
+<footer class="foot">
+  <p>Progress is stored in this browser only — it isn't shared with anyone else opening this page. Source of truth stays in the repo (<a href="https://github.com/ParagonJenko/home-server">github.com/ParagonJenko/home-server</a>): <code class="inline">rules.md</code> owns the rule text, <code class="inline">configs/</code> owns the runnable commands, <code class="inline">network.md</code>'s address register owns every MAC and IP, <code class="inline">storage.md</code>'s disk register owns which physical disk is which, and <code class="inline">inventory.md</code> / <code class="inline">services.md</code> / <code class="inline">storage.md</code> / <code class="inline">network.md</code> get updated in the same change as the thing they describe.</p>
+</footer>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-panel" role="dialog" aria-modal="true" aria-label="Your values">
+    <button class="close" id="drawerClose" aria-label="Close">×</button>
+    <h3>Your values</h3>
+    <p class="dsub">The only things this build can't know in advance. Type them once — every command on this page picks them up. Nothing leaves your browser.</p>
+    <div id="fields"></div>
+    <div class="callout danger" style="margin-top:4px">
+      <span class="ctitle">Two values are missing on purpose</span>
+      <p>The Discord webhook URL and the Grafana admin password are credentials. They live only in files on the Pi — <code class="inline">alertmanager/discord-webhook-url</code> and <code class="inline">.env</code>, both gitignored, both <code class="inline">chmod 600</code>. Don't type them here: this is a published page, and a secret pasted into it is a secret you now have to rotate.</p>
+    </div>
+  </div>
+</div>
+
+<div class="rulebox" id="rulebox" role="dialog" aria-label="Rule detail"></div>
+
+<script>
+"use strict";
+
+/* ---------------- storage (sandbox-safe) ---------------- */
+var mem = {};
+var store = {
+  get: function (k) { try { return localStorage.getItem(k); } catch (e) { return mem[k] || null; } },
+  set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { mem[k] = v; } }
+};
+var PKEY = "proxmox-runbook-progress-v1";
+var VKEY = "proxmox-runbook-values-v1";
+var progress = JSON.parse(store.get(PKEY) || "{}");
+var values = JSON.parse(store.get(VKEY) || "{}");
+
+/* ---------------- values ---------------- */
+var FIELDS = [
+  { key: "PI_IP", label: "PI_IP", hint: "The Pi's IP — the DNS server. Needed in every configs/lxc/*.sh and in homelab.conf's resolver line. The one literal IP the rules allow. Pre-filled from network.md's addressing plan.", ph: "192.168.1.4", seed: "192.168.1.4" },
+  { key: "DAS_1", label: "first-DAS-disk", hint: "First DAS disk device, from lsblk. Edited into stage-b-storage.sh.", ph: "/dev/sda" },
+  { key: "DAS_2", label: "second-DAS-disk", hint: "Second DAS disk device. Check both against the internal SSD before running anything.", ph: "/dev/sdb" },
+  { key: "ISO", label: "ISO_FILENAME", hint: "PBS ISO name as it appears in local:iso on NUC-2.", ph: "proxmox-backup-server_4.0-1.iso" },
+  { key: "USB_ID", label: "usb-hdd-by-id", hint: "Stable by-id path for the 2TB USB HDD: ls -l /dev/disk/by-id/ | grep <usb-model>", ph: "/dev/disk/by-id/usb-..." },
+  { key: "DATASTORE_PATH", label: "DATASTORE_PATH", hint: "Where the USB HDD mounts inside the PBS VM. Edited into configs/pbs/datastore-setup.sh.", ph: "/mnt/datastore/backups" },
+  { key: "PBS_FP", label: "PBS_FINGERPRINT", hint: "PBS web UI → Certificates. The server itself is pbs.home, never an IP.", ph: "AA:BB:CC:..." }
+];
+
+/* Seed the values network.md already answers, once — the Pi's address comes
+   from the addressing plan, not from guesswork. */
+if (!store.get(VKEY)) {
+  FIELDS.forEach(function (f) { if (f.seed) values[f.key] = f.seed; });
+  store.set(VKEY, JSON.stringify(values));
+}
+
+/* ---------------- rules ---------------- */
+var RULES = {
+  R1: ["Storage expands by adding a disk, never by rebuilding.", "Ad-hoc capacity growth — bolting extra mounts onto a shared pool — is how the original corruption-prone layout accreted.", "Adding capacity = attach disk + append one branch to the mergerfs config. No data moves, no service reconfigures, Plex's library path is unchanged."],
+  R2: ["One always-current source of truth documents the whole system.", "Diagnosing blind, as in the recent outage, wastes hours.", "The off-box docs repo holds current inventory, service map, storage map with every limit, network/DNS/DHCP and runbooks — updated in the same change as whatever it describes."],
+  R3: ["Backups are reachable within minutes, without first fixing what broke.", "A backup you can't get to during the outage isn't a backup.", "PBS web UI lists all restore points; the PBS VM config itself is backed up to the DAS so PBS can be rebuilt on NUC-1; an offsite copy is the second access path."],
+  R4: ["Any service restores to a point in time; the whole site survives a disaster.", "Routine “I broke X” needs rollback; fire, theft or a surge needs offsite survival.", "PBS holds scheduled retained backups of every guest; the datastore syncs offsite and the docs repo is offsite. Both proven by R12."],
+  R5: ["A workload filling is graceful; the system filling is impossible.", "All three past failures came from a shared pool hitting 100% and aborting the ext4 journals inside container images.", "The fill test (R10) passes on every data filesystem, and R6–R11 all hold."],
+  R6: ["Every workload has an enforced hard ceiling below the disk's real capacity.", "Without a per-workload ceiling, one service consumes the whole device.", "Container disks, downloads, Frigate retention and PBS retention each have a numeric limit set — and the sum of ceilings on any shared device is under device size minus reserved headroom."],
+  R7: ["Each workload's behaviour at “full” is a chosen, configured degradation.", "The default — writes fail, then the filesystem aborts — is the catastrophic path.", "Frigate prunes oldest; Arrs and qBittorrent pause and alert; Plex stops importing but keeps serving. No service's answer is “write until the disk errors.”"],
+  R8: ["Every filesystem keeps reserved headroom no workload can allocate.", "Corruption happens at metadata exhaustion near 100%; a floor of free space prevents ever reaching it.", "ext4 reserved-blocks ≥5% on root and container storage; mergerfs minfreespace on the media pool; the LVM-thin pool's own metadata volume has autoextend on and is monitored. Read the live settings, don't assume."],
+  R9: ["The host OS survives any workload or disk filling up.", "A full data disk or container must never make a host unbootable — the original failure.", "Workloads run on capped LVM-thin volumes, never on the host root filesystem; the sum of LV caps on each SSD is under its size minus headroom (checked at B8); anything that can grow without a hard cap — media, recordings, backups — lives off the host SSD on the DAS or USB HDD. A full LV goes read-only without taking the host down, proven by B8's local-lvm fill test."],
+  R10: ["Storage limits are proven by a deliberate fill test before sign-off.", "The old setup's behaviour at 100% was discovered in production, not verified.", "A throwaway volume was filled to its limit; the observed result was a graceful stop with zero corruption, and it's recorded in the docs repo."],
+  R11: ["Alerts inform; they never protect.", "Any safety that depends on a human seeing an alert will eventually fail when the alert is missed.", "Every “must not happen” is guaranteed by a hard mechanism (R6/R8/R9). Disabling all alerting would not enable any corruption path. Alerts fire at 80% as a heads-up only."],
+  R12: ["Recovery is rehearsed, and the runbook is proven.", "An untested restore is a hypothesis.", "A real restore of at least one container from PBS has succeeded, and the “service is dead → restore it” runbook was followed to do it."],
+  R13: ["No internal service depends on a fixed IP address.", "Hardcoded IPs — 192.168.1.105 in Frigate, old VLAN IPs in configs — broke everything when the network changed. That was half of the recent pain.", "Grep all service configs for literal IPs. Only the uplink/gateway and the DNS server itself may appear. Interim: addresses still come from the ISP router's DHCP, so pin them with reservations there."],
+  R14: ["The homelab carries its own authoritative internal DNS.", "Naming must travel with the kit, not depend on the venue's router.", "The Pi resolves internal names; every service and AP uses it as primary DNS; internal resolution works with the WAN unplugged."],
+  R15: ["The homelab serves its own DHCP; the venue router is uplink only. — ON HOLD", "Owning addressing means an identical internal network on any site.", "Deferred until a dedicated router (Ubiquiti planned) can replace the ISP router's DHCP. Do not enable Pi DHCP while the ISP router still serves it — address conflicts. Interim: DHCP reservations on the ISP router."],
+  R16: ["Exactly one uplink point connects the stack to any external network. — PARTIAL until R15", "Relocation means moving the island and plugging one cable into any internet source.", "All servers, cameras, APs and clients sit on the internal switch; a single WAN link touches the venue network. Physical topology can be built now; addressing portability waits on R15."],
+  R17: ["The system rebuilds from the docs repo + backups on any hardware.", "A box may die mid-move; rebuild must not need tribal knowledge.", "Docs repo (off-box) plus PBS (with offsite copy) together contain everything. No required step exists only in someone's memory."],
+  R18: ["After power loss, everything returns in the correct order, unattended.", "Relocation means power-cycling; nothing may need manual start-in-sequence.", "Boot order is DNS → storage mounts → dependent services, enforced by onboot ordering, startup delays and mount dependencies. A cold power-cycle brings the full stack up with no human action."],
+  R19: ["Configuration is defined as files, not manual clicks.", "“Take it anywhere” must mean “re-apply definitions”, not “remember what I clicked”.", "Each service is defined by a compose file, container definition or documented build in the repo; an agent can recreate any service from its definition alone."],
+  R20: ["Remote access follows the kit, independent of the venue's network.", "Plex-outside-home and custom apps currently rely on the home IP and port forwards, which break on relocation.", "Tailscale provides remote access by stable name regardless of the underlying network; no port forwarding on the venue router is required."],
+  R21: ["Every secret survives a bare-metal rebuild.", "R17's “rebuild from docs + PBS” is false if the Grafana password, Discord webhook and Eufy credentials exist only as gitignored files on a box that just died.", "Each secret — Grafana admin, Discord webhook, Eufy RTSP, root/PBS logins, Tailscale auth — has an off-box copy in a password manager or encrypted secrets backup, and a rebuild restores them from there, not from a surviving box."],
+  R22: ["Power loss pauses the system; it never corrupts it.", "R18 brings the stack back in order, but a mid-write power cut aborts an ext4 journal the same way a full disk does — the exact failure this build exists to prevent.", "A UPS powers both NUCs and the DAS; NUT runs an ordered graceful shutdown before the battery dies; pulling mains leaves zero corruption and the stack returns unattended via R18."],
+  R23: ["Nothing is reachable from the internet except through the private overlay.", "A port forward on the venue router is standing attack surface that moves with the kit and outlives the reason it was added.", "No inbound port forward or UPnP rule exists anywhere; Tailscale is the only ingress; a scan of the WAN IP shows no open ports."],
+  R24: ["Failing hardware warns before it fails.", "A dead DAS disk turns R1's “add a disk” into “restore from backup”.", "SMART health and temperature are scraped for every disk; a predicted failure or over-temp fires a critical alert; a scheduled SMART self-test runs and its result is recorded in storage.md."],
+  R25: ["Software stays patched, and a bad update rolls back.", "A clean install has no story for month six; unpatched services are the slow attack surface, and an update with no rollback is a gamble.", "Unattended security updates are on across hosts and containers; every manual upgrade is preceded by a PBS restore point; the rollback is the proven R12 path."],
+  R26: ["Data is classed by whether it can be re-downloaded.", "Media is reconstructable; configs, photos and documents are not, and treating them alike either wastes offsite space or under-protects the irreplaceable.", "Irreplaceable data is tagged and gets full offsite 3-2-1; reconstructable media is backed up to a lighter standard by deliberate, recorded choice in storage.md."],
+  R27: ["Cameras and IoT are isolated from trusted devices. — ON HOLD until R15", "The Eufy cameras phone home and are the least-trusted things on the network; a flat network lets them reach everything.", "Once the dedicated router (R15) lands, cameras and IoT sit on their own VLAN that can reach the internet and Frigate but not trusted clients. Deferred until that router replaces the ISP box."]
+};
+var HOLD = { R15: 1, R16: 1, R27: 1 };
+
+/* ---------------- content ---------------- */
+var TYPES = {
+  manual: { label: "Manual", desc: "GUI, physical or secret — do it by hand" },
+  script: { label: "Script", desc: "The real commands live in configs/ — run the file" },
+  run: { label: "Run", desc: "Short command, typed straight into a shell" },
+  verify: { label: "Verify", desc: "Prove the step worked before moving on" }
+};
+
+var STAGES = [
+  {
+    id: "A", name: "Host base", where: "Both NUCs",
+    title: "Proxmox host base",
+    intro: "Do all of Stage A on NUC-1 (S13) first, then repeat it on NUC-2 (S12 Pro) at Stage E1. Only the hostname and IP differ.",
+    steps: [
+      {
+        id: "A0", type: "ref", title: "Before you touch anything",
+        body: [
+          { p: "<strong>Hardware:</strong> Beelink S13 (NUC-1), Beelink S12 Pro (NUC-2), Raspberry Pi 4/5 + microSD, 2×4TB DAS, a 2TB USB HDD, a managed switch, and 4 Eufy cameras (no HomeBase — see the Frigate note in Stage E). Plus a USB stick for the Proxmox installer and Raspberry Pi Imager on your laptop." },
+          { p: "<strong>Access you'll need:</strong> admin login for the ISP router (DHCP reservations and its DNS setting both change), the Eufy account for the cameras' RTSP credentials, a Discord server you can make a webhook in (F7 proves alerts arrive), and a Tailscale account for G1 — free tier is enough." },
+          { p: "<strong>Time:</strong> A–D is an evening. B6's fill test writes until a 7.2TB pool refuses to take more, so start it and leave it." },
+          { callout: "note", title: "Get the repo onto each box — it's public, so just clone it", html: "<p>Every 📄 SCRIPT step runs a file from the repo, so it has to be on that machine, <strong>after</strong> that box has an OS: the NUCs after A1, the Pi after F1. The repo is public (<a href=\"https://github.com/ParagonJenko/home-server\">github.com/ParagonJenko/home-server</a>), so a fresh box clones it directly — no credentials, no SSH key, no scp dance. Each box gets its own copy:</p>" },
+          { cmd: "git clone https://github.com/ParagonJenko/home-server   # on each NUC and the Pi\ncd home-server" },
+          { callout: "danger", title: "Public repo — the discipline is mandatory", html: "<p>The repo is public by choice, so <strong>no secret ever goes in it</strong>. Every credential lives in a gitignored <code class=\"inline\">.env</code> or single-purpose file (only <code class=\"inline\">.example</code> templates are committed) and in the off-box vault (H2). The <code class=\"inline\">.gitignore</code> enforces it, but one accidental real value is scraped within minutes — treat a commit as publishing.</p><p><strong>Rotate the Eufy credentials that leaked into the old history</strong> — a public repo makes that non-negotiable. This is a fresh repo with no such history; keep it that way.</p>" },
+          { callout: "gotcha", title: "Keep the directory structure, and check the exec bit", html: "<p>Scripts source their siblings by relative path — <code class=\"inline\">_require_filled.sh</code>, <code class=\"inline\">_idmap.sh</code>, <code class=\"inline\">_template.sh</code> — so a script lifted out on its own fails immediately. Run them from the repo root as root: <code class=\"inline\">./configs/lxc/stage-b-storage.sh</code>.</p><p>They're committed executable, but a Windows checkout drops the bit. If one won't run: <code class=\"inline\">chmod +x configs/**/*.sh</code>, or just <code class=\"inline\">bash configs/lxc/stage-b-storage.sh</code>.</p><p>The single exception is <code class=\"inline\">configs/pbs/datastore-setup.sh</code> — deliberately self-contained so you can copy that one file to the PBS VM, which has none of the rest.</p>" },
+          { p: "<strong>Build order — do the boxes in this order.</strong> The A–I lettering is a reading order, not a build order; this is the order you actually touch hardware:" },
+          { list: [
+            "<strong>1 · NUC-1 (Beelink S13)</strong>, DAS attached — Stage <strong>A</strong>, then <strong>B</strong>, <strong>C</strong>, <strong>D</strong>. This is the box you start with.",
+            "<strong>2 · The Pi</strong> — <strong>F1–F3</strong> (DNS + AdGuard), right after NUC-1's Stage A. Bring it up now: three later steps (D3, E2, E5) break without DNS.",
+            "<strong>3 · NUC-2 (Beelink S12 Pro)</strong>, USB HDD attached — Stage <strong>A</strong> (it's step E1), then <strong>C</strong>, then <strong>E</strong> (Frigate + PBS).",
+            "<strong>4 · Back to the Pi</strong> — <strong>F4–F7</strong> (monitoring, alerting, node_exporter on both NUCs), once the containers exist and you've collected their MACs.",
+            "<strong>5 · Everywhere</strong> — <strong>G</strong> (remote access + proof), then <strong>H</strong> (resilience). <strong>I</strong> is future/optional."
+          ] },
+          { callout: "danger", title: "Build the Pi early — three earlier steps need DNS", html: "<p>The Pi is Stage F by lettering, but it is what every other box resolves names through, and three steps before it genuinely need it working:</p><ul><li><strong>D3</strong> — Nginx's backend names. <code class=\"inline\">nginx -t</code> passes without DNS, then every proxied site 502s.</li><li><strong>E2</strong> — <code class=\"inline\">cam-*.home</code>. Frigate starts happily and records nothing.</li><li><strong>E5</strong> — <code class=\"inline\">pbs.home</code>. <code class=\"inline\">pvesm add pbs</code> fails outright.</li></ul><p><strong>So run F1–F3 straight after Stage A.</strong> The lettering is a reading order, not a dependency order, and F1–F3 takes under an hour. Push on instead and each of those three steps has an <code class=\"inline\">/etc/hosts</code> workaround noted in place — which you then have to remember to remove, and a stale hosts entry contradicting DNS is a horrible thing to debug six months later.</p><p>Either way <code class=\"inline\">PI_IP</code> is pre-filled as <code class=\"inline\">192.168.1.4</code>, so every command here is correct in advance.</p>" },
+          { callout: "note", title: "What Claude runs here, and what needs your yes", html: "<p>Two channels. <strong>Anything over an API, Claude runs itself</strong>, unprompted: the Proxmox API (create, configure, power and read guests), and AdGuard's and the Arrs' APIs via <code class=\"inline\">adguard-rewrites.py</code> and <code class=\"inline\">arr-setup.py</code>. These are bounded by the token's role and the scripts' dry-run defaults, so they don't need per-command sign-off.</p><p><strong>Anything in a terminal — a host shell, <code class=\"inline\">pct exec</code> into a container, <code class=\"inline\">docker compose</code>, any script that runs commands on a box — Claude may drive, but every command is shown to you and runs only after you confirm that exact command.</strong> Nothing shell-level executes unconfirmed. That is the policy for the whole build: APIs auto, terminals gated.</p><p>The confirmation gate is the hard mechanism here, the same way R6 and R8 are — it is the one thing between “Claude builds the stack” and “Claude has root on every box”, so it is never skipped for convenience or because a step is tedious.</p>" },
+          { callout: "gotcha", title: "Set up the gated shell channel", html: "<p>The Proxmox token stays API-only. Claude's terminal access is a separate path: its SSH public key on <code class=\"inline\">root@nuc1</code>, <code class=\"inline\">root@nuc2</code> and the Pi — SSH to a host plus <code class=\"inline\">pct exec</code> reaches every container and its Docker stack, so that one key covers host and guest commands both.</p><p>The 100%-confirmation rule is enforced in <strong>Claude's own permission settings</strong> (terminal tools set to always ask), not inside Proxmox — so it protects you only where Claude is driving. That SSH key is therefore a root credential: guard it like any secret, because anything else holding it runs terminal commands without ever meeting the gate.</p>" },
+          { callout: "danger", title: "No secrets, anywhere", html: "No password, token, webhook or camera credential belongs in the repo or on this page. Each one lives in a <code class=\"inline\">.env</code> or single-purpose file that <code class=\"inline\">.gitignore</code> already covers. If you deviate from a step, write down what you actually did in the doc that owns that fact — the test for this build is whether it rebuilds from the repo plus PBS on hardware that has never seen it, and a step that exists only in your memory fails that test." }
+        ]
+      },
+      {
+        id: "A1", type: "manual", title: "Install Proxmox VE 9.2",
+        rules: ["R8", "R9", "R13", "R14"],
+        body: [
+          { p: "Flash the <a href=\"https://www.proxmox.com/en/downloads\">Proxmox VE 9.2 ISO</a> to USB, boot the NUC, and set at the installer:" },
+          { list: [
+            "<strong>Disk:</strong> internal 500GB SSD, <strong>ext4</strong>. Never the DAS.",
+            "<strong>Hostname:</strong> <code class=\"inline\">nuc1.home</code> (NUC-1) / <code class=\"inline\">nuc2.home</code> (NUC-2).",
+            "<strong>IP (static):</strong> <code class=\"inline\">192.168.1.2</code> (NUC-1) / <code class=\"inline\">192.168.1.3</code> (NUC-2) · gw <code class=\"inline\">192.168.1.1</code> · mask <code class=\"inline\">255.255.255.0</code>.",
+            "<strong>DNS:</strong> <code class=\"inline\">1.1.1.1</code> for now; switch to the Pi after Stage F."
+          ] },
+          { callout: "note", title: "Why these choices", html: "<ul><li>ext4 keeps the reserved-blocks behaviour R8 relies on.</li><li>The IP is set, not reserved — Proxmox writes it into <code class=\"inline\">/etc/network/interfaces</code> and <code class=\"inline\">/etc/hosts</code> at install, so it never takes a lease.</li><li>DNS moves to the Pi once Stage F is up because the host must resolve <code class=\"inline\">pbs.home</code> for E5, and the Pi doesn't exist yet at install.</li></ul>" }
+        ],
+        verify: "You can log into <code class=\"inline\">https://&lt;ip&gt;:8006</code> and open a shell at Datacenter → node → Shell."
+      },
+      {
+        id: "A2–A4", type: "script", title: "configs/lxc/stage-a-host-setup.sh",
+        rules: ["R19"],
+        body: [
+          { p: "Run as root on the Proxmox host." },
+          { callout: "note", title: "What it does", html: "Switches to the no-subscription repo, installs base tools, and creates the scoped MCP token — the <code class=\"inline\">ClaudeAutomation</code> role plus the <code class=\"inline\">claude@pve</code> token." },
+          { callout: "manual", title: "Manual", html: "Copy the token secret when it prints — it's shown once — and add this node's endpoint and token to the Proxmox MCP server config. Vet the community MCP server before trusting it with the token." },
+          { callout: "danger", title: "Know what the token can do", html: "<p>Proxmox has no create-without-delete privilege. <code class=\"inline\">VM.Allocate</code> is defined as “create/remove new VM to server inventory”, so allowing container creation necessarily allows guest removal, and <code class=\"inline\">VM.Config.Disk</code> allows removing a guest's disks. <strong>This role can destroy guests and their data.</strong> That's the accepted tradeoff for letting Claude build containers at all; PBS in Stage E is the mitigation.</p><p>What it genuinely cannot do: touch storage or host config, or grant itself more. <code class=\"inline\">Sys.Console</code> stays off the <em>token</em> — a token carrying it is a standing root shell anyone holding the token can use, with no confirmation gate in front of it. Root shell access is fine under this build, but it belongs on the human-gated SSH channel (see “Set up the gated shell channel” in A0), where every command needs your yes — not bolted onto an API credential that answers to no one. Never add it to the token.</p>" },
+          { callout: "gotcha", title: "Gotcha", html: "The script deletes the enterprise repo files rather than rewriting their <code class=\"inline\">Components:</code> — a rewritten entry still points at <code class=\"inline\">enterprise.proxmox.com</code> and 401s on every <code class=\"inline\">apt update</code> whatever component you ask for. If apt still complains that a repo is “configured multiple times”, run <code class=\"inline\">grep -r Suites /etc/apt/sources.list.d/</code>: fresh PVE 9.2 ISOs sometimes ship a unified <code class=\"inline\">proxmox.sources</code> instead of a separate <code class=\"inline\">pve-enterprise.sources</code>, so remove whichever file still references an enterprise component." }
+        ],
+        verify: "<code class=\"inline\">pveversion</code> shows pve-manager/9.2+; <code class=\"inline\">pveum user token list claude@pve</code> shows the automation token; <code class=\"inline\">pveum role list | grep ClaudeAutomation</code> shows no Sys.Console; <code class=\"inline\">apt update</code> shows no duplicate or enterprise warnings."
+      },
+      {
+        id: "A5", type: "run", title: "Confirm LVM-thin autoextend is on",
+        rules: ["R8"],
+        body: [
+          { p: "Confirm autoextend is on — Proxmox sets it by default, but check:" },
+          { cmd: "grep -E 'thin_pool_autoextend' /etc/lvm/lvm.conf" },
+          { callout: "note", title: "Why it matters", html: "A full thin-pool <em>metadata</em> volume (separate from the data volume that R6's per-container caps govern) takes the whole pool read-only and isn't simply resizable." }
+        ],
+        verify: "<code class=\"inline\">thin_pool_autoextend_threshold</code> and <code class=\"inline\">thin_pool_autoextend_percent</code> are set, not commented out. If they're missing, fix that before building anything on local-lvm — see storage.md's reserved-headroom section."
+      }
+    ]
+  },
+  {
+    id: "B", name: "Storage", where: "NUC-1",
+    title: "Storage foundation",
+    intro: "NUC-1 is the media host. Finish B before creating any media container — the pool has to exist, and has to have failed loudly in a test, before anything writes to it.",
+    steps: [
+      {
+        id: "B1", type: "manual", title: "Physically attach the DAS",
+        body: [
+          { p: "Plug the 2×4TB DAS into NUC-1, confirm both disks appear, and note the <code class=\"inline\">/dev/sdX</code> letters:" },
+          { cmd: "lsblk -o NAME,SIZE,TYPE,FSTYPE,MODEL" }
+        ],
+        verify: "Two ~4TB disks are listed. Put them into <em>Your values</em> now, and check them against the internal SSD. Record each disk's model, serial and <code class=\"inline\">by-id</code> path in the disk register at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">/dev/sdX</code> letters reorder across reboots, so that is the only durable way to know which physical disk is disk1."
+      },
+      {
+        id: "B2–B5", type: "script", title: "configs/lxc/stage-b-storage.sh",
+        rules: ["R1", "R8", "R9"],
+        body: [
+          { callout: "danger", title: "Destructive", html: "<p>Wipes the two disks named in the script's <code class=\"inline\">SDX</code> / <code class=\"inline\">SDY</code> variables. That's intended for a clean build — but edit those variables to your actual DAS disks first, and double-check them against the internal SSD.</p><p>Both ship as <code class=\"inline\">&lt;first-DAS-disk&gt;</code> / <code class=\"inline\">&lt;second-DAS-disk&gt;</code> on purpose: a realistic-looking default like <code class=\"inline\">/dev/sdX</code> slips past the placeholder guard. <code class=\"inline\">require_block_device</code> also proves the device exists before anything destructive runs.</p>" },
+          { p: "Set your disks in the script, then run it as root:" },
+          { cmd: "SDX=\"{{DAS_1}}\"\nSDY=\"{{DAS_2}}\"" },
+          { callout: "note", title: "What it does", html: "Formats both DAS disks, mounts them at <code class=\"inline\">/mnt/pool/diskN</code>, builds the mergerfs pool at <code class=\"inline\">/mnt/media</code>, and creates the shared <code class=\"inline\">media</code> user plus the <code class=\"inline\">torrents/</code> and <code class=\"inline\">library/</code> tree. Mount options are in <code class=\"inline\">configs/mergerfs/fstab-snippet</code>." },
+          { callout: "note", title: "Why siblings", html: "<code class=\"inline\">torrents/</code> and <code class=\"inline\">library/</code> sit side by side on one filesystem so Arr imports are hardlinks, not copies. Both owned by <code class=\"inline\">1000:1000</code>, the shared media user, across every container." }
+        ],
+        verify: "<code class=\"inline\">df -h /mnt/media</code> shows ~7.2TB total; <code class=\"inline\">ls -la /mnt/media</code> shows torrents and library owned by 1000:1000."
+      },
+      {
+        id: "B6", type: "script", title: "configs/mergerfs/filltest.sh — fill test before trusting the pool",
+        rules: ["R10", "R7"],
+        body: [
+          { p: "Run on the empty pool (it refuses if there's already data). It writes 50G blobs until the pool refuses — no fixed count." },
+          { callout: "note", title: "Why no fixed count", html: "A fixed count sized by guesswork can finish without reaching the limit — 100×50G is 5TB into a 7.2TB pool, so the loop completes, nothing is proven, and R10 gets signed off on a test that never ran." }
+        ],
+        verify: "The script reports <code class=\"inline\">STOPPED at blob_N</code>, the pool stayed mounted and readable, and cleanup restored free space. If it writes 1000 blobs without stopping, <code class=\"inline\">minfreespace</code> isn't taking effect — fix that before continuing. Record the result in storage.md."
+      },
+      {
+        id: "B7", type: "verify", title: "Pull a disk and confirm the failure is loud",
+        rules: ["R9"],
+        body: [
+          { p: "With the pool built and before any container exists, pull a branch and confirm the pool refuses to mount:" },
+          { cmd: "umount /mnt/media && umount /mnt/pool/disk1\nsystemctl start mnt-media.mount ; echo \"exit=$?\"   # must FAIL\nfindmnt /mnt/media || echo \"OK: pool refused to mount without its branch\"\nmount -a && mount /mnt/media                        # put it back" },
+          { callout: "note", title: "Why", html: "The pool must never silently fall back to writing on the host SSD when a branch is missing." }
+        ],
+        verify: "The pool refuses to mount with a branch missing. If it mounts anyway, the <code class=\"inline\">x-systemd.requires=</code> entries are missing from /etc/fstab — see configs/mergerfs/fstab-snippet."
+      },
+      {
+        id: "B8", type: "verify", title: "Fill-test local-lvm and sum the caps",
+        rules: ["R9", "R10", "R6"],
+        body: [
+          { p: "The media pool is proven (B6), but Frigate, Plex and every container rootfs live on the host SSD's <code class=\"inline\">local-lvm</code>. Prove a full capped LV goes read-only without taking the host down, and that the caps can't oversubscribe the SSD. Run on each NUC." },
+          { cmd: "# throwaway capped LV, fill it, confirm the host stays up\nlvcreate -V 5G --thinpool pve/data -n filltest pve\nmkfs.ext4 /dev/pve/filltest && mount /dev/pve/filltest /mnt/ft\ncat /dev/zero > /mnt/ft/blob 2>/dev/null ; echo \"LV full, host still up: $?\"\numount /mnt/ft && lvremove -y pve/filltest" },
+          { cmd: "# ceiling sum: total of every LV cap must be under SSD size minus headroom\nlvs --units g -o lv_name,lv_size pve" },
+          { callout: "note", title: "Why", html: "R9 is only true if a full container can't take the host root with it, and R6 only holds if the caps can't add up past the disk. B6 proved the pool; this proves the SSD the OS boots from." }
+        ],
+        verify: "Filling the throwaway LV leaves the host responsive and the LV read-only, never the host root. The sum of all local-lvm LV caps (Frigate 260G, Plex 32G, each rootfs, PBS 16G on NUC-2) is under SSD size minus ~10% headroom — record the sum in storage.md."
+      }
+    ]
+  },
+  {
+    id: "C", name: "Template", where: "NUC-1",
+    title: "Container template",
+    intro: "One download, then the pattern every app script follows. Read the pattern before Stage D — it's what you'll be looking at in each script.",
+    steps: [
+      {
+        id: "C1", type: "script", title: "configs/lxc/stage-c-template.sh",
+        body: [
+          { p: "Run as root — downloads the current Debian 13 LXC template." },
+          { callout: "note", title: "What it does", html: "Discovers the template live via <code class=\"inline\">pveam available</code> rather than a hardcoded filename — the exact version (13.0-1, 13.1-2, …) drifts with point releases. Every <code class=\"inline\">pct create</code> script resolves the local copy the same way, via <code class=\"inline\">configs/lxc/_template.sh</code>." },
+          { callout: "note", title: "Also on NUC-2", html: "Run this on NUC-2 as well before Stage E's <code class=\"inline\">frigate.sh</code> — the template has to exist locally on whichever host creates the container." }
+        ],
+        verify: "<code class=\"inline\">pveam list local</code> shows it."
+      },
+      {
+        id: "C2/C3", type: "ref", title: "The pattern every app script follows",
+        rules: ["R6", "R9", "R13", "R18"],
+        body: [
+          { p: "Nothing to run here. Every script under <code class=\"inline\">configs/lxc/</code> creates containers this shape:" },
+          { list: [
+            "<code class=\"inline\">--rootfs local-lvm:N</code> — root disk on the internal SSD, capped. Per-container sizes and the reasoning are in storage.md's container root volume caps.",
+            "<code class=\"inline\">--mp0 /mnt/media,mp=/data</code> — media pool bind-mounted at <code class=\"inline\">/data</code>, only for apps that need it.",
+            "<code class=\"inline\">--unprivileged 1 --features nesting=1,keyctl=1</code> — Docker needs both. <code class=\"inline\">nesting</code> alone starts the daemon, but without <code class=\"inline\">keyctl</code> it fails with permission errors on startup. Easy to miss; confirmed against the Proxmox forums, not assumed.",
+            "<code class=\"inline\">_idmap.sh</code>'s <code class=\"inline\">apply_idmap</code> — container UID 1000 maps to host UID 1000, so the shared media user can read and write the pool.",
+            "<code class=\"inline\">_requires_mount.sh</code>'s <code class=\"inline\">apply_requires_mount</code> — <strong>only on containers with a media bind mount (210, 220)</strong>. Proxmox does not make a container wait for its bind-mount source: without this, an unmounted pool means the container starts against an empty directory on the host root device and downloads into the Proxmox SSD until it fills. This is the drop-in that makes it refuse to start instead.",
+            "<code class=\"inline\">--onboot 1</code> + <code class=\"inline\">--startup</code> — ordered unattended boot.",
+            "<code class=\"inline\">--nameserver &lt;PI_IP&gt;</code> — resolve by name via the Pi."
+          ] },
+          { callout: "note", title: "Two scripts deviate, on purpose", html: "<ul><li><code class=\"inline\">frigate.sh</code> is <strong>privileged</strong> (<code class=\"inline\">--unprivileged 0 --features nesting=1</code>) for direct iGPU access — the render-node GID mapping in an unprivileged container is a recurring source of silent decode failures. A deliberate security tradeoff on a container running nothing but Frigate. <code class=\"inline\">keyctl</code> is omitted because privileged containers don't need it for Docker.</li><li><code class=\"inline\">amp-nginx.sh</code> sets <strong>no <code class=\"inline\">--features</code> at all</strong> — AMP and Nginx are native installs, no Docker, so neither flag applies.</li></ul>" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "D", name: "Media stack", where: "NUC-1",
+    title: "Media containers",
+    intro: "For each script: fill in PI_IP, run it (it creates the container, applies the idmap and starts it), then pct enter the container and run configs/lxc/_install-docker.sh, then push that app's docker-compose.yaml in and docker compose up -d. Each script prints its exact push/start sequence when it finishes — read it, they differ per app.",
+    steps: [
+      {
+        id: "D0", type: "ref", title: "Two things that bite in this stage",
+        body: [
+          { list: [
+            "<code class=\"inline\">pct push</code> does <strong>not</strong> create parent directories. Make every target directory inside the container <em>before</em> pushing into it — each script's output lists them.",
+            "Everything lives under <code class=\"inline\">/opt/&lt;app&gt;/</code>, not <code class=\"inline\">/root</code>. Compose resolves relative volume paths against the directory holding <code class=\"inline\">docker-compose.yaml</code>, and Recyclarr runs as uid 1000, which can't traverse <code class=\"inline\">/root</code> (mode 700)."
+          ] },
+          { callout: "note", title: "VMID scheme", html: "<code class=\"inline\">210</code> media-pipeline · <code class=\"inline\">220</code> Plex · <code class=\"inline\">230</code> AMP · <code class=\"inline\">240</code> Nginx · <code class=\"inline\">250+</code> custom apps." },
+          { callout: "note", title: "Collect the MACs before you leave this stage", html: "A container's MAC is generated at <code class=\"inline\">pct create</code> — it can't be pre-assigned. Once 210–240 exist, run the collector in the <a href=\"#stage-INV\">address register</a> and fill a row per container. Stage F6's reservations have nothing to key on until you do." }
+        ]
+      },
+      {
+        id: "D1", type: "script", title: "configs/lxc/media-pipeline.sh (VMID 210) — qBittorrent + the whole Arr stack, one LXC",
+        rules: ["R6", "R13"],
+        body: [
+          { p: "Run <code class=\"inline\">media-pipeline.sh</code>, then inside the container bring up <code class=\"inline\">configs/media-pipeline/docker-compose.yaml</code> — one LXC runs qBittorrent, Sonarr, Radarr, Bazarr, Prowlarr, Recyclarr, Decluttarr, FlareSolverr and qbit_manage." },
+          { callout: "note", title: "Why one compose file", html: "<p>They resolve each other by Docker service name on Compose's own network, not via Pi DNS.</p><p>Each service's <code class=\"inline\">mem_limit</code> caps its <em>memory</em> — not disk. Disk is bounded separately: the LXC has a rootfs cap on local-lvm, and downloads land on the media pool under mergerfs <code class=\"inline\">minfreespace</code>, with the per-app degradation below.</p>" },
+          { callout: "note", title: "Most of the list below is scriptable", html: "<p><code class=\"inline\">configs/media-pipeline/arr-setup.py</code> sets the root folders, the qBittorrent client and category on Sonarr and Radarr, links both into Prowlarr and adds the FlareSolverr proxy — over the APIs. Dry run by default, idempotent, and it asks each app for its own schema rather than hardcoding field names, so it survives Arr releases.</p><p>Indexers stay manual: they need your accounts. Quality profiles are Recyclarr's job.</p>" },
+          { cmd: "cp .env.example .env      # add PROWLARR_API_KEY alongside the others\npython3 arr-setup.py      # shows the plan; --apply writes it" }
+        ],
+        subs: [
+          { name: "qBittorrent", html: "Download path <code class=\"inline\">/data/torrents</code>. Follow <a href=\"https://trash-guides.info/Downloaders/qBittorrent/Basic-Setup/\">TRaSH's basic setup</a>: Automatic Torrent Management on, save-to-category-subdirectory on, one category per app (<code class=\"inline\">sonarr</code>, <code class=\"inline\">radarr</code>). <strong>Leave its own seeding ratio and time limits disabled</strong> — TRaSH routes that through qbit_manage or per-indexer settings instead. Stalled downloading torrents are Decluttarr's job. Set a disk-space threshold so qBittorrent <strong>pauses</strong> rather than errors when the pool nears full — that is its R7 degradation." },
+          { name: "Sonarr / Radarr / Bazarr", html: "Root folders <code class=\"inline\">/data/library/tv</code> (Sonarr) and <code class=\"inline\">/data/library/movies</code> (Radarr); download client <code class=\"inline\">qbittorrent</code> — the Docker service name; category set so imports hardlink from <code class=\"inline\">/data/torrents/*</code> to <code class=\"inline\">/data/library/*</code>. Leave Search on Missing and RSS Sync on — the auto-retry loop needs them. Set each app's <strong>Minimum Free Space</strong> so grabs stop cleanly before the disk is full (R7)." },
+          { name: "Prowlarr", html: "Add indexers and sync to Sonarr/Radarr by service name. For Cloudflare-protected indexers, add the FlareSolverr tag <code class=\"inline\">http://flaresolverr:8191</code>." },
+          { name: "Recyclarr", html: "<code class=\"inline\">recyclarr-config/recyclarr.yml</code> already carries the TRaSH profiles, picked to penalize low-seeder and known-bad groups. Copy <code class=\"inline\">recyclarr-config/secrets.yml.example</code> → <code class=\"inline\">secrets.yml</code> and fill in the API keys." },
+          { name: "Decluttarr", html: "Needs Sonarr, Radarr and qBittorrent credentials in <code class=\"inline\">.env</code> (see <code class=\"inline\">configs/media-pipeline/.env.example</code>). Ships with <code class=\"inline\">TEST_RUN: \"True\"</code> — run once, read the logs, then flip to <code class=\"inline\">\"False\"</code>. Each removal blocklists the release so the next RSS sync grabs something different; that loop is what gives “no stuck downloads”." },
+          { name: "qbit_manage", html: "Fill in <code class=\"inline\">.env</code> (shared with Decluttarr) and copy <code class=\"inline\">qbit-manage-config/config.yml.example</code> → <code class=\"inline\">config.yml</code>. This is what actually enforces seeding goals, since qBittorrent's own limits are deliberately off. Skippable only if you set seeding goals per-indexer instead — pick one path, don't leave both undone." }
+        ],
+        after: [
+          { callout: "note", title: "Verify hardlinks actually work", html: "mergerfs unions two filesystems — if its create policy lands <code class=\"inline\">torrents/</code> on disk1 and <code class=\"inline\">library/</code> on disk2, every import silently becomes a copy (double space, breaks R6). Test once: <code class=\"inline\">touch /mnt/media/torrents/.hl && ln /mnt/media/torrents/.hl /mnt/media/library/.hl</code> must succeed. “Invalid cross-device link” means the mergerfs policy in fstab-snippet needs fixing before you import anything." },
+          { callout: "gotcha", title: "Gotchas worth knowing before you hit them", html: "<ul><li>Hardlinks need Sonarr, Radarr and qBittorrent all pointed at the <em>same</em> <code class=\"inline\">/data</code> root — never separate <code class=\"inline\">/downloads</code> + <code class=\"inline\">/movies</code> mounts, or every import silently becomes a copy. Already the case here.</li><li>If qBittorrent ever goes behind Nginx, its Host Header Validation will 401 the proxied requests unless you enable “reverse proxy support” in its WebUI settings and Nginx forwards <code class=\"inline\">Host</code>. Don't just disable host header validation — that's a security downgrade for no reason.</li><li>Don't add Sonarr/Radarr's Remote Path Mapping. It's for seedboxes where the download client is a different machine; here everything shares one <code class=\"inline\">/data</code> mount identically, so adding it breaks the hardlink path instead of fixing anything.</li></ul>" }
+        ]
+      },
+      {
+        id: "D2", type: "script", title: "configs/lxc/plex.sh (VMID 220) — read-only library mount",
+        rules: ["R6"],
+        body: [
+          { p: "Run <code class=\"inline\">plex.sh</code>, bring up <code class=\"inline\">configs/plex/docker-compose.yaml</code> inside the container, then:" },
+          { list: [
+            "Sign in to Plex.",
+            "Add libraries at <code class=\"inline\">/library/movies</code> and <code class=\"inline\">/library/tv</code> — these exact paths.",
+            "Hardware transcode: keep the <code class=\"inline\">/dev/dri</code> passthrough; delete the compose <code class=\"inline\">devices:</code> line if there's no iGPU."
+          ] },
+          { callout: "note", title: "Why 32G root, and why the path never changes", html: "<p>Root disk is 32G not 12G — Plex's metadata, thumbnail DB and transcode scratch all live in <code class=\"inline\">/config</code> and grow with the library.</p><p>The library path is identical on host, in the LXC and inside the container, matching storage.md and what you type into Plex. Don't remap to <code class=\"inline\">/movies</code>/<code class=\"inline\">/tv</code> — three names for one directory is how the old paths drifted.</p>" }
+        ]
+      },
+      {
+        id: "D3", type: "script", title: "configs/lxc/amp-nginx.sh — AMP (230) and Nginx (240)",
+        rules: ["R13", "R19", "R20"],
+        body: [
+          { p: "Run <code class=\"inline\">amp-nginx.sh</code> (AMP 230, Nginx 240 — neither needs the media mount), then:" },
+          { list: [
+            "Install AMP via <a href=\"https://cubecoders.com/AMP\">CubeCoders' installer</a> inside the container.",
+            "Nginx: set the resolver line in <code class=\"inline\">configs/nginx/homelab.conf</code> before <code class=\"inline\">nginx -t</code>."
+          ] },
+          { cmd: "resolver {{PI_IP}} valid=10s;" },
+          { callout: "note", title: "Why nginx -t passing isn't enough", html: "AMP isn't pinned because the vendor changes its installer over time. And a passing <code class=\"inline\">nginx -t</code> does not mean routing works — the resolver is only consulted at request time, so without the Pi every proxied hostname 502s while the config tests clean." },
+          { callout: "danger", title: "The proxy is HTTP-only, on port 80", html: "<p><code class=\"inline\">.home</code> is not a public TLD, so no public CA can ever issue a certificate for it — <code class=\"inline\">certbot --dns-cloudflare -d \"*.home\"</code> cannot work, whatever the DNS provider. An internal CA would mean installing a root cert on every phone, laptop and TV, including clients that can't be made to trust one.</p><p>Accepted tradeoff: <strong>LAN logins to these UIs travel in the clear</strong>, and Tailscale is the encrypted path from outside. Port 80 must never be forwarded through the venue router.</p>" },
+          { callout: "note", title: "Every proxied service needs two DNS names", html: "<p><code class=\"inline\">plex.home</code> resolves to Nginx — that's how Host-header routing works — so Nginx cannot proxy to <code class=\"inline\">plex.home</code> without looping back to itself. The container gets a second name, <code class=\"inline\">plex-lxc.home</code>, pointing at its own IP, and that's what <code class=\"inline\">proxy_pass</code> targets. Add both rewrites in AdGuard at F1 when adding a service. Containers that are never proxied — <code class=\"inline\">media-pipeline</code> — need only one name.</p>" },
+          { callout: "gotcha", title: "Don't simplify the proxy_pass pattern", html: "<code class=\"inline\">set $backend; proxy_pass http://$backend:port;</code> looks redundant next to a bare <code class=\"inline\">proxy_pass http://media-pipeline.home:8989;</code>, but nginx caches a bare hostname's IP forever once resolved and ignores DNS TTL entirely. A DHCP lease renewal on a backend LXC would silently strand nginx on the old IP until someone noticed and reloaded it. The variable form is what forces nginx to honor the resolver's TTL." },
+          { callout: "note", title: "Custom apps", html: "Custom apps deploy from their own repo, VMID 250+." }
+        ]
+      }
+    ]
+  },
+  {
+    id: "E", name: "Frigate + PBS", where: "NUC-2",
+    title: "Frigate and backups",
+    intro: "NUC-2 (S12 Pro) carries the cameras and the backup server. Nothing here depends on NUC-1 — but do E6's test restore before you consider the build finished.",
+    steps: [
+      {
+        id: "E1", type: "manual", title: "Repeat Stage A on NUC-2",
+        body: [
+          { p: "Repeat A1–A5 on the S12 Pro, hostname <code class=\"inline\">nuc2.home</code>:" },
+          { list: [
+            "Install Proxmox 9.2, switch repos, install tools, create the MCP token.",
+            "Clone the repo here too (<code class=\"inline\">git clone https://github.com/ParagonJenko/home-server</code>) — each box gets its own copy.",
+            "Run <code class=\"inline\">configs/lxc/stage-c-template.sh</code> here — <code class=\"inline\">frigate.sh</code> needs the template local on NUC-2."
+          ] }
+        ]
+      },
+      {
+        id: "E2", type: "script", title: "configs/lxc/frigate.sh (VMID 111) — recordings on the internal SSD, capped",
+        rules: ["R6", "R7", "R9", "R13"],
+        body: [
+          { p: "Run <code class=\"inline\">frigate.sh</code> (VMID 111); config lives in <code class=\"inline\">configs/frigate/</code>." },
+          { callout: "note", title: "Why 260G root and 14-day motion retention", html: "<p><code class=\"inline\">record.motion.days: 14</code> with <code class=\"inline\">record.continuous.days: 0</code> is the graceful ceiling — it matches storage.md, so keep both in sync if it changes.</p><p><code class=\"inline\">--rootfs local-lvm:260</code>, not 60: four cameras at motion-only for 14 days is ~230GB by the plan's sizing table. At 60G the disk fills in about four days.</p>" },
+          { callout: "gotcha", title: "Frigate 0.15+ removed record.retain", html: "Retention is now split into <code class=\"inline\">continuous</code> / <code class=\"inline\">motion</code> with separate <code class=\"inline\">retain</code> blocks under <code class=\"inline\">alerts</code> and <code class=\"inline\">detections</code>. A config still using <code class=\"inline\">record.retain.days</code> will not load." },
+          { callout: "danger", title: "Ports", html: "Frigate's UI is on <strong>8971</strong> (authenticated). <strong>Port 5000 also answers and is unauthenticated</strong> — never proxy or expose it. <code class=\"inline\">config.yaml</code> sets <code class=\"inline\">tls.enabled: false</code> because Nginx fronts it; the login itself stays on." },
+          { callout: "danger", title: "No HomeBase — check the cameras can do RTSP on their own", html: "<p>This build has no Eufy HomeBase, by choice. Many Eufy models only expose RTSP when paired to a HomeBase; standalone, they talk only to the Eufy app. Before wiring a camera into Frigate, confirm that exact model can enable a direct RTSP stream — wired Eufy cameras and some newer firmware can, most battery models cannot. A camera that can't do standalone RTSP cannot feed Frigate at all, and its register row and reservation are moot until it can.</p>" },
+          { callout: "manual", title: "Manual — camera names, not IPs", html: "<p>Fill in <code class=\"inline\">configs/frigate/.env.example</code> → <code class=\"inline\">.env</code> with the real Eufy RTSP credentials. <code class=\"inline\">config.yaml</code> itself holds no secrets and is safe as committed.</p><p><strong>The cameras are addressed by hostname</strong> (<code class=\"inline\">cam-living-room.home</code>, …), not IP — literal camera IPs are exactly what broke the old setup, and R13's rationale names this file. Add a DHCP reservation per camera on the router and a matching rewrite in AdGuard (F3) <em>before</em> starting Frigate; they're in network.md's tables. <strong>This is one of the three steps that needs the Pi already built</strong> — without it Frigate starts and records nothing. Pressing on anyway: add the four cameras to <code class=\"inline\">/etc/hosts</code> inside LXC 111, and delete those lines the moment AdGuard has the rewrites.</p>" }
+        ],
+        verify: "Before running: <code class=\"inline\">lvs</code> on NUC-2 shows local-lvm has room for 260G plus the PBS VM's 16G, with headroom left."
+      },
+      {
+        id: "E3", type: "manual", title: "Attach the USB HDD for PBS",
+        body: [
+          { p: "Plug the 2TB USB HDD into NUC-2 and find it. Note the <code class=\"inline\">/dev/sdX</code>, then get the stable by-id path for the next step." },
+          { cmd: "lsblk -o NAME,SIZE,TYPE,MODEL\nls -l /dev/disk/by-id/ | grep -i <usb-model>" }
+        ],
+        verify: "You have a <code class=\"inline\">/dev/disk/by-id/…</code> path for the HDD. Put it in <em>Your values</em> and in the disk register at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">by-id</code> is stable across reboots, <code class=\"inline\">/dev/sdX</code> is not."
+      },
+      {
+        id: "E4", type: "script", title: "configs/lxc/pbs-vm.sh (VMID 900) — USB HDD passed through as a block device",
+        rules: ["R3", "R6"],
+        body: [
+          { p: "Download the PBS ISO to <code class=\"inline\">local:iso</code>, set both placeholders, then run <code class=\"inline\">pbs-vm.sh</code>:" },
+          { cmd: "ISO_FILENAME=\"{{ISO}}\"\nUSB_BY_ID=\"{{USB_ID}}\"" },
+          { callout: "note", title: "Why pass the whole disk", html: "Passing the whole disk as a block device, rather than an fstab mount, avoids the mount fragility that caused the original incident. The datastore disk is attached with <code class=\"inline\">backup=0</code> so vzdump never backs up a 2TB disk into the datastore living on it." },
+          { callout: "manual", title: "Manual", html: "Install PBS via the VM console. Give it the static address from the plan — <code class=\"inline\">192.168.1.5/24</code>, gateway <code class=\"inline\">192.168.1.1</code>, DNS <code class=\"inline\">1.1.1.1</code> for now — same reason as the Proxmox hosts: the installer writes it into config rather than taking a lease." },
+          { callout: "danger", title: "Switch the boot order off the ISO before rebooting", html: "<p>The script sets <code class=\"inline\">--boot order=ide2</code> so the VM boots the installer the first time. Leave it, and every subsequent reboot lands back in the installer instead of PBS.</p>" },
+          { cmd: "qm set 900 --boot order=scsi0\nqm set 900 --ide2 none" },
+          { callout: "manual", title: "Manual — the datastore", html: "Copy <code class=\"inline\">configs/pbs/datastore-setup.sh</code> to the PBS VM and run it there — it creates the datastore and sets retention (<code class=\"inline\">keep-daily=7, keep-weekly=4, keep-monthly=6</code> — never <code class=\"inline\">keep-all</code>). Copy just that one file; it's deliberately self-contained, since the rest of the repo isn't on the PBS VM. Its <code class=\"inline\">DATASTORE_PATH</code> is <code class=\"inline\">{{DATASTORE_PATH}}</code>." }
+        ]
+      },
+      {
+        id: "E5", type: "run", title: "Point both NUCs' backups at PBS",
+        rules: ["R4", "R13"],
+        body: [
+          { p: "On <strong>each</strong> NUC host — use the hostname <code class=\"inline\">pbs.home</code>, not an IP. Fingerprint from PBS web UI → Certificates:" },
+          { callout: "gotcha", title: "This fails unless pbs.home resolves", html: "Needs Stage F done, or a temporary <code class=\"inline\">/etc/hosts</code> line on each NUC (<code class=\"inline\">192.168.1.5 pbs.home</code>) removed once AdGuard has the rewrite. Adding the storage by IP is <em>not</em> the workaround — it breaks R13 and quietly fails the next time PBS moves." },
+          { cmd: "pvesm add pbs pbs-backup --server pbs.home --datastore backups \\\n  --username root@pam --password --fingerprint {{PBS_FP}}" },
+          { callout: "manual", title: "Manual", html: "Datacenter → Backup → add a daily scheduled job targeting <code class=\"inline\">pbs-backup</code> — <strong>all guests except Frigate's recording volume</strong> (260G of 14-day churn would overrun the 2TB datastore; back up Frigate's config, not its clips). Then back up the PBS VM's own config and keep a copy with the offsite sync (E7), not only on the DAS, so PBS is rebuildable even if NUC-1 is gone." }
+        ]
+      },
+      {
+        id: "E6", type: "verify", title: "Test restore",
+        rules: ["R4", "R12"],
+        body: [
+          { p: "Restore into a spare VMID so the running container is untouched (let <code class=\"inline\">pvesm list</code> give you the volid):" },
+          { callout: "gotcha", title: "The scheduled job is daily, so it hasn't run yet", html: "Take one backup by hand first, or <code class=\"inline\">pvesm list</code> comes back empty and the restore has no source." },
+          { cmd: "vzdump 210 --storage pbs-backup --mode snapshot" },
+          { cmd: "pvesm list pbs-backup                       # copy the volid of a ct/210 backup\npct restore 8210 <volid-from-above> --storage local-lvm\npct start 8210 && pct status 8210\npct stop 8210 && pct destroy 8210           # remove the test once it's proven" },
+          { callout: "note", title: "This is the minimum, not all of R12", html: "A same-box restore from the local PBS, seconds after the backup, is the easy case. The real bar is a restore from the <em>offsite</em> copy (E7) and, at least once, onto different hardware — fold that into the G3 relocation test." }
+        ],
+        verify: "The restored 8210 starts and runs. Then write the “service is dead → restore it” runbook from what you just did — an untested restore is a hypothesis, and an unwritten one is tribal knowledge."
+      },
+      {
+        id: "E7", type: "script", title: "configs/pbs/offsite-sync.sh — PBS datastore synced offsite to cloud",
+        rules: ["R4", "R17", "R3"],
+        body: [
+          { p: "Push the datastore to encrypted cloud object storage (Backblaze B2 or S3 via rclone, or a remote PBS), scheduled daily after the backup window:" },
+          { cmd: "# in the PBS VM\nrclone config            # add the cloud remote, with a crypt layer over it\n# schedule: datastore -> crypt:remote, daily after the backup window\nsystemctl list-timers | grep offsite   # or the sync-job in configs/pbs/" },
+          { callout: "danger", title: "Encrypt before it leaves the building", html: "The datastore holds everything. Use client-side encryption (PBS datastore encryption or rclone crypt) so the provider never sees plaintext. That key is a secret — it goes in the vault (H2); lose it and the offsite copy is unrecoverable." },
+          { callout: "note", title: "Why this isn't optional", html: "Without it the only backup is the single USB HDD in the same room as everything it protects — fire or theft loses the lot, and R4 and R17 are unmet. The cloud copy is the disaster copy and the second access path at once." }
+        ],
+        verify: "A sync completes to the cloud remote, and a test restore pulls one container <em>from the cloud copy</em> (not the local USB HDD) and starts. Record it — this is the offsite half of R12."
+      }
+    ]
+  },
+  {
+    id: "F", name: "The Pi", where: "Raspberry Pi",
+    title: "DNS, AdGuard, monitoring",
+    intro: "The cheapest box here and the one everything depends on: it resolves every name the stack uses, and it runs the alerting. Built from nothing with configs/pi/ — one compose file for AdGuard, Prometheus, Alertmanager, Grafana, blackbox and node_exporter.",
+    steps: [
+      {
+        id: "F0", type: "ref", title: "Ports on the Pi, and the one collision to avoid",
+        body: [
+          { list: [
+            "<code class=\"inline\">53</code> AdGuard DNS · <code class=\"inline\">8081</code> AdGuard admin UI",
+            "<code class=\"inline\">3000</code> Grafana · <code class=\"inline\">9090</code> Prometheus · <code class=\"inline\">9093</code> Alertmanager",
+            "<code class=\"inline\">9115</code> blackbox_exporter · <code class=\"inline\">9100</code> node_exporter"
+          ] },
+          { callout: "gotcha", title: "AdGuard's wizard defaults to 3000, which Grafana owns", html: "Move AdGuard's admin interface to <strong>8081</strong> during the wizard at F3. Leave both on 3000 and one of the two loses the port on the next reboot — AdGuard is host-networked, Grafana publishes a port, and which one wins depends on start order." },
+          { callout: "note", title: "Why blackbox_exporter is in the stack", html: "<p><code class=\"inline\">up</code> only says whether Prometheus managed to scrape a target. Plex, the Arrs, Frigate and the Nginx front names export no metrics at all, so they have no <code class=\"inline\">up</code> series and the service-up checks storage.md promises would be covering nothing. blackbox opens the port and asks.</p><p>It also probes DNS properly: AdGuard answering on <code class=\"inline\">:53</code> is not the same as AdGuard still resolving <code class=\"inline\">*.home</code>. That second failure mode breaks every service at once — everything addresses everything else by name — while every process-level check stays green, which is why it gets its own critical alert.</p>" },
+          { callout: "note", title: "Every service here runs on host networking", html: "<p>Not laziness — three things break on a bridge network. The Pi's resolver is AdGuard on <code class=\"inline\">127.0.0.1</code>, and Docker refuses to hand a loopback resolver to a bridged container: it silently substitutes public DNS, so <code class=\"inline\">*.home</code> stops resolving and Prometheus can't find <code class=\"inline\">nuc1.home</code> at all. <code class=\"inline\">localhost:9100</code> from a bridged Prometheus would mean the Prometheus container, not the Pi. And the DNS probe has to ask <code class=\"inline\">127.0.0.1:53</code> and mean the Pi's resolver.</p><p>The cost: services address each other as <code class=\"inline\">localhost:&lt;port&gt;</code> rather than by compose service name, and there's no isolation between them. On a single-purpose box that's the better trade — and blackbox then resolves names through AdGuard exactly like every other client, so its probes test the real path.</p><p>blackbox is also <em>scraped</em>, not just used: if it dies, every <code class=\"inline\">probe_success</code> series simply disappears, and absence isn't a failure in PromQL — ProbeFailed couldn't fire and the dashboard's down-count would go <em>down</em>. Its own <code class=\"inline\">up</code> series is what notices.</p>" },
+          { callout: "note", title: "One copy of the alert rules", html: "The compose file mounts <code class=\"inline\">alerts.yml</code> from <code class=\"inline\">../monitoring/</code> rather than keeping a copy under <code class=\"inline\">configs/pi/</code> — same file the NUCs' storage caps were written against. Two copies would drift, and the one that drifts is the one that stops firing." }
+        ]
+      },
+      {
+        id: "F1", type: "manual", title: "Image the Pi",
+        rules: ["R6", "R8"],
+        body: [
+          { p: "Imager → <strong>Pi OS Lite (64-bit)</strong>. In the settings panel set hostname, SSH public key, and locale. No desktop." },
+          { p: "Set the static address <code class=\"inline\">192.168.1.4</code> (outside the DHCP pool), via NetworkManager on Bookworm+:" },
+          { cmd: "CON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.method manual \\\n  ipv4.addresses 192.168.1.4/24 ipv4.gateway 192.168.1.1 ipv4.dns 1.1.1.1\nnmcli con up \"$CON\"" },
+          { callout: "note", title: "Why 1.1.1.1 here is temporary", html: "AdGuard isn't running yet. F3 switches the Pi to its own resolver — Prometheus and blackbox share the Pi's network namespace, so they use the Pi's resolver to scrape <code class=\"inline\">nuc1.home</code> and the rest by name." },
+          { callout: "note", title: "microSD shapes what comes next", html: "Cards die from write volume, not age. That is why Prometheus retention is capped small, scrapes are 30s rather than 15s, journald is volatile and swap is off. All of it is in <code class=\"inline\">configs/pi/</code>; the reasoning and the USB-SSD upgrade path are in storage.md's Metrics domain." }
+        ],
+        verify: "You can SSH in on <code class=\"inline\">192.168.1.4</code>, and <code class=\"inline\">uname -m</code> reports <code class=\"inline\">aarch64</code> — the arm64 container images need 64-bit."
+      },
+      {
+        id: "F2", type: "script", title: "configs/pi/setup-pi.sh",
+        body: [
+          { p: "Clone the public repo on the Pi, then run as root:" },
+          { callout: "note", title: "What it does", html: "Installs base packages, timezone, Docker, the SD-card write reductions and stack directories. It stops short of bringing the stack up — that needs secrets — and prints the remaining steps when it finishes." },
+          { cmd: "git clone https://github.com/ParagonJenko/home-server\ncd home-server && sudo ./configs/pi/setup-pi.sh" },
+          { callout: "gotcha", title: "Two changes worth knowing before you run it", html: "journald is set to <code class=\"inline\">Storage=volatile</code>, so <strong>logs do not survive a reboot</strong> — set it back to <code class=\"inline\">persistent</code> temporarily if you are chasing a crash. And swap is disabled. Both are one command to undo, both are in the script's comments." }
+        ],
+        verify: "<code class=\"inline\">docker run --rm hello-world</code> succeeds and <code class=\"inline\">swapon --show</code> prints nothing."
+      },
+      {
+        id: "F3", type: "run", title: "AdGuard first, on its own",
+        rules: ["R13", "R14", "R19"],
+        body: [
+          { p: "Copy <code class=\"inline\">configs/pi/</code> → <code class=\"inline\">/opt/pi-stack/</code> and <code class=\"inline\">configs/monitoring/</code> → <code class=\"inline\">/opt/monitoring/</code>, then bring up AdGuard alone:" },
+          { cmd: "cd /opt/pi-stack\ncp .env.example .env                                                          # Grafana admin password\ncp alertmanager/discord-webhook-url.example alertmanager/discord-webhook-url   # paste the real webhook\nchmod 600 .env alertmanager/discord-webhook-url\ndocker compose up -d adguardhome" },
+          { callout: "gotcha", title: "Copy the webhook file before the first up -d", html: "Docker creates a <em>directory</em> where a bind-mount source doesn't exist. Miss the <code class=\"inline\">cp</code> above and Alertmanager fails with a read error on a path that looks perfectly present — ten minutes you don't get back." },
+          { callout: "manual", title: "Finish the wizard, then add the rewrites", html: "<p>Wizard is at <code class=\"inline\">http://&lt;pi&gt;:3000</code>. Set the admin interface to <strong>8081</strong>. Then add three groups of rewrites — nothing resolves without all three:</p><ul><li><strong>Front names</strong> → Nginx's IP: plex, frigate, sonarr, radarr, bazarr, prowlarr.</li><li><strong>Backend names</strong> → the container's own IP: <code class=\"inline\">plex-lxc.home</code>, <code class=\"inline\">frigate-lxc.home</code>, <code class=\"inline\">media-pipeline.home</code>.</li><li><strong>Hosts and cameras</strong> → their own IPs: four <code class=\"inline\">cam-*.home</code>, plus nuc1, nuc2, pbs, and <code class=\"inline\">pi.home</code> — Grafana, Prometheus, Alertmanager and AdGuard's own UI all live behind that name.</li></ul>" },
+          { callout: "note", title: "Better: don't type them at all", html: "<p><code class=\"inline\">configs/pi/adguard-rewrites.py</code> reads the address register out of <code class=\"inline\">network.md</code> and pushes every rewrite over AdGuard's API. Eighteen entries typed into a web form is how one ends up wrong in a way you find out about weeks later.</p><p><code class=\"inline\">--check</code> fails if a name documented in network.md isn't being pushed — run it on a schedule and the resolver can't quietly drift from the doc.</p>" },
+          { cmd: "cd /opt/pi-stack\npython3 adguard-rewrites.py            # dry run, from network.md\npython3 adguard-rewrites.py --apply\npython3 adguard-rewrites.py --check    # fails if a documented name isn't pushed" },
+          { callout: "note", title: "Doing it by hand instead", html: "The <a href=\"#stage-INV\">address register</a> on this page builds all three groups too — fill nginx first, then <strong>Copy AdGuard rewrites</strong>, and tick each device's <em>Rewrite</em> box as you add it." },
+          { p: "Now point the Pi at its own resolver, so the host-networked containers can resolve <code class=\"inline\">*.home</code>:" },
+          { cmd: "CON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.dns 127.0.0.1 && nmcli con up \"$CON\"" },
+          { callout: "gotcha", title: "Only 127.0.0.1 — not 127.0.0.1 plus 1.1.1.1", html: "The same split-horizon trap as the router's secondary DNS, and here it would leave Prometheus intermittently unable to find its own scrape targets. AdGuard's upstream setting is where <code class=\"inline\">1.1.1.1</code> belongs." },
+          { callout: "note", title: "AdGuard's own config is not in the repo, on purpose", html: "Its <code class=\"inline\">AdGuardHome.yaml</code> holds the admin password hash and migrates schema between versions, so it is gitignored rather than committed. The part that matters — the rewrite list — lives in network.md, which is what a rebuild reads." }
+        ],
+        verify: "On the Pi, <code class=\"inline\">getent hosts nuc1.home</code> resolves. From the Nginx LXC, <code class=\"inline\">getent hosts plex-lxc.home</code> returns the <em>container's</em> IP, not Nginx's — if it returns Nginx's, the proxy loop is still there."
+      },
+      {
+        id: "F4", type: "run", title: "Bring up the rest of the stack",
+        rules: ["R19"],
+        body: [
+          { cmd: "cd /opt/pi-stack && docker compose up -d" },
+          { p: "Grafana <code class=\"inline\">pi.home:3000</code>, Prometheus <code class=\"inline\">:9090</code>, Alertmanager <code class=\"inline\">:9093</code>." },
+          { callout: "note", title: "The dashboard is a file, not a click", html: "The Prometheus datasource and the <strong>Homelab overview</strong> dashboard are provisioned from <code class=\"inline\">configs/pi/grafana/</code>, so a rebuilt Pi comes back with both. Editing that dashboard in the UI does nothing permanent — Grafana overwrites it from the file. To keep a change, export the JSON and commit it back." },
+          { callout: "note", title: "What the dashboard can't see", html: "Per-LXC disk usage. node_exporter runs on the hosts, and a container's root disk is an LVM volume the host never mounts — so the thin-pool panels are the proxy for Frigate's 260G and everything else on local-lvm." }
+        ],
+        verify: "Prometheus → Status → Targets shows prometheus, alertmanager, grafana and the pi node target UP. <strong>nuc1 and nuc2 stay DOWN until F5</strong> installs node_exporter on them — expected here, not a fault. Probes for services you haven't built yet will also be DOWN; comment those targets out of prometheus.yml rather than leaving alerts firing about a container that doesn't exist."
+      },
+      {
+        id: "F5", type: "run", title: "node_exporter on both NUCs",
+        rules: ["R8", "R11"],
+        body: [
+          { p: "On each NUC (native on the host, not a container) install node_exporter + the thin-pool check:" },
+          { cmd: "apt -y install prometheus-node-exporter\nmkdir -p /var/lib/node_exporter/textfile_collector\n\n# Debian's package takes its flags from /etc/default/ and ships with none.\n# This is the line that turns the textfile collector on:\necho 'ARGS=\"--collector.textfile.directory=/var/lib/node_exporter/textfile_collector\"' \\\n  > /etc/default/prometheus-node-exporter\nsystemctl restart prometheus-node-exporter\n\n# LVM thin-pool metadata, every 15 min\ncp configs/monitoring/check-thinpool.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/check-thinpool.sh\" ) | crontab -" },
+          { callout: "gotcha", title: "The two textfile paths must match", html: "The path in the script and node_exporter's <code class=\"inline\">--collector.textfile.directory</code> have to be the same. If they differ, <code class=\"inline\">lvm_thinpool_metadata_percent</code> never appears, <code class=\"inline\">ThinPoolMetadataHigh</code> has no series to evaluate, and the alert closest to unrecoverable is the one silently doing nothing. node_exporter's filesystem collector cannot see LVM-internal metadata at all." }
+        ],
+        verify: "<code class=\"inline\">curl -s localhost:9100/metrics | grep lvm_thinpool</code> returns both metrics on each NUC."
+      },
+      {
+        id: "F6", type: "manual", title: "Router DHCP → Pi as DNS",
+        rules: ["R14", "R15"],
+        body: [
+          { p: "On the ISP router: <strong>DNS = the Pi, and only the Pi</strong> (<code class=\"inline\">{{PI_IP}}</code>). Add the reservations for every container MAC from the <a href=\"#stage-INV\">address register</a> while you are in there — the plan allocates <code class=\"inline\">.20</code>–<code class=\"inline\">.39</code> for them." },
+          { p: "Then switch the infrastructure boxes off <code class=\"inline\">1.1.1.1</code> onto the Pi — the step A1 and E4 deferred. On <strong>each NUC and the PBS VM</strong>, set the resolver to the Pi, or <code class=\"inline\">pbs.home</code> stops resolving from the hosts (E5):" },
+          { cmd: "# Proxmox hosts + PBS VM: GUI DNS field, or /etc/resolv.conf\nnameserver {{PI_IP}}\ngetent hosts pbs.home        # must resolve from each NUC now" },
+          { callout: "danger", title: "Leave the secondary DNS field empty", html: "<p>A secondary of <code class=\"inline\">1.1.1.1</code> looks like sensible redundancy and is the nastiest failure mode in this build. Clients fall back to it on timeout, and some ask both and take whichever answers first. <code class=\"inline\">1.1.1.1</code> has never heard of <code class=\"inline\">plex.home</code>, so it returns NXDOMAIN — and internal names start failing <em>intermittently</em>, on some devices, some of the time, with nothing in any log saying why.</p><p><code class=\"inline\">1.1.1.1</code> belongs in AdGuard's <em>upstream</em> setting, which is a different field entirely. The accepted trade: the Pi going down then takes all name resolution with it — loud, obvious, fixed in minutes, and far better than weeks of misdiagnosis.</p>" },
+          { callout: "note", title: "Why the Pi/NUCs/PBS are static, not reserved", html: "They sit at <code class=\"inline\">.2</code>–<code class=\"inline\">.5</code> outside the DHCP pool, set on the device. Proxmox and PBS write their address into config at install, and a resolver whose address depends on a lease from a router you don't own is a circular dependency." },
+          { callout: "note", title: "Work from the register", html: "Every MAC and reserved IP is in the <a href=\"#stage-INV\">address register</a>. Tick <em>Res.</em> per device as each reservation goes in. A camera whose reservation was missed keeps working until its lease changes, then Frigate stops recording it." },
+          { callout: "danger", title: "Do not enable AdGuard's DHCP", html: "R15 is on hold. Running it alongside the ISP router's DHCP causes address conflicts. It stays off until a dedicated router replaces the ISP box, or that box's DHCP is disabled." }
+        ],
+        verify: "A phone on the Wi-Fi resolves <code class=\"inline\">plex.home</code>. If it doesn't, the AP is handing out its own DNS rather than the router's."
+      },
+      {
+        id: "F7", type: "verify", title: "Prove an alert actually arrives",
+        rules: ["R11"],
+        body: [
+          { p: "Fire a test alert and confirm it reaches Discord:" },
+          { callout: "note", title: "Why test it", html: "Alerts inform, they never protect — an untested notification channel is the same class of claim as an untested restore." },
+          { cmd: "docker compose exec alertmanager amtool alert add \\\n  alertname=TestAlert severity=warning instance=pi \\\n  --alertmanager.url=http://localhost:9093" },
+          { callout: "gotcha", title: "A bad webhook looks healthy", html: "Alertmanager validates the URL per-notification, not at startup, so the container comes up fine either way. If nothing arrives, read <code class=\"inline\">docker compose logs alertmanager</code> — the failure is in there, not in the container's state." }
+        ],
+        verify: "The message reaches Discord within ~30s, and a resolved notice follows when it expires. Then check Prometheus → Alerts lists DiskUsageHigh, ThinPoolMetadataHigh, ServiceDown, ProbeFailed and InternalDNSBroken."
+      }
+    ]
+  },
+  {
+    id: "G", name: "Remote + proof", where: "Everything",
+    title: "Remote access and final checks",
+    intro: "The last stage is the one that decides whether the build is real: guardrails verified by command, portability verified by actually moving the kit.",
+    steps: [
+      {
+        id: "G1", type: "run", title: "Tailscale for portable remote access",
+        rules: ["R20"],
+        body: [
+          { p: "Install on the hosts or containers you want reachable remotely (Plex, custom apps):" },
+          { cmd: "curl -fsSL https://tailscale.com/install.sh | sh\ntailscale up" },
+          { callout: "manual", title: "Manual", html: "Authenticate via the printed URL. Plex and custom apps are then reachable by Tailscale name from anywhere, with no port forwarding." },
+          { callout: "note", title: "For any future custom-app LXC", html: "If it's unprivileged and runs Tailscale directly (as <code class=\"inline\">plex.sh</code> already does), it needs <code class=\"inline\">configs/lxc/_tailscale-tun.sh</code>'s <code class=\"inline\">apply_tailscale_tun</code> too. Unprivileged containers have no <code class=\"inline\">/dev/net/tun</code> by default, and Tailscale without it either fails outright or falls back to a mode only the <code class=\"inline\">tailscale</code> CLI itself can reach." }
+        ]
+      },
+      {
+        id: "G2", type: "verify", title: "Verify the guardrails hold",
+        rules: ["R6", "R8", "R9", "R13"],
+        body: [
+          { cmd: "# No container rootfs on the DAS/media pool [R9]\ngrep -r \"rootfs\" /etc/pve/lxc/*.conf | grep -i media && echo \"!! rootfs on media — FIX\" || echo \"OK: no rootfs on media\"\n\n# Every container has a rootfs size cap [R6]\ngrep -H \"rootfs\" /etc/pve/lxc/*.conf\n\n# mergerfs headroom present [R8]\ngrep mergerfs /etc/fstab | grep minfreespace && echo \"OK: minfreespace set\"\n\n# A missing branch must stop the pool, not be unioned from the root device [R9]\ngrep mergerfs /etc/fstab | grep -q \"x-systemd.requires\" \\\n  && echo \"OK: pool requires its branches\" \\\n  || echo \"!! only ordering, not a dependency — FIX (see configs/mergerfs/fstab-snippet)\"\n\n# Media containers must refuse to start without the pool [R9]\nfor id in 210 220; do\n  systemctl cat \"pve-container@${id}\" 2>/dev/null | grep -q RequiresMountsFor \\\n    && echo \"OK: ${id} requires its mount\" \\\n    || echo \"!! ${id} would start against an empty directory — run apply_requires_mount\"\ndone" },
+          { p: "Then the no-literal-IPs check, from the repo root:" },
+          { callout: "note", title: "What may appear", html: "In <code class=\"inline\">configs/</code> (service configs): only the Pi (nginx resolver, <code class=\"inline\">--nameserver</code>) and the gateway; <code class=\"inline\">127.0.0.1</code> is fine (go2rtc's local restream). The static infra IPs — NUC <code class=\"inline\">.2</code>/<code class=\"inline\">.3</code>, PBS <code class=\"inline\">.5</code> — are device/install config, not service config: expected in <code class=\"inline\">/etc/network/interfaces</code> or the installer, but a literal to remove if the grep finds one inside <code class=\"inline\">configs/</code>." },
+          { cmd: "grep -rnE '\\b([0-9]{1,3}\\.){3}[0-9]{1,3}\\b' configs/ | grep -v '127\\.0\\.0\\.1'" },
+          { cmd: "# R8: reserved-blocks actually set (don't assume) — root + container storage + DAS + USB HDD\ntune2fs -l $(findmnt -no SOURCE /) | grep -i 'reserved block count'\nlsblk -f    # then tune2fs -l each data filesystem to confirm its -m" }
+        ],
+        verify: "Every line prints OK, and the IP grep returns only the Pi and the gateway."
+      },
+      {
+        id: "G3", type: "manual", title: "Relocation test",
+        rules: ["R16", "R17", "R18", "R20"],
+        body: [
+          { p: "Once stable, power-cycle the whole stack — better, move it to another room or upstream — and run the relocation steps:" },
+          { callout: "note", title: "Known external dependency", html: "Eufy cameras phone home and need internet to fully function — they are not purely local. With no HomeBase, each camera must get an address, reach the internet, and have RTSP enabled on the camera itself before Frigate can pull its stream. Expect it; it isn't a fault." }
+        ],
+        subs: [
+          { name: "1 · Power down", html: "NUT does this automatically on battery (H1), in the same order written here as the manual fallback: services → storage → DNS last." },
+          { name: "2 · Move", html: "The island: NUCs, Pi, switch, DAS, USB HDD, APs, Eufy cameras." },
+          { name: "3 · Cable up", html: "Switch ← NUCs / Pi / APs; a single WAN link ← venue internet." },
+          { name: "4 · Power on", html: "And do nothing else. Ordered unattended boot brings up DNS → mounts → services by itself." },
+          { name: "5 · Verify by name", html: "Internal DNS resolves (<code class=\"inline\">ping plex.home</code>); devices get addresses; Plex, Frigate and AdGuard are reachable on the LAN; Tailscale works from off-site; the cameras are online and Frigate has their streams. <strong>Re-run H5</strong> — a different venue router means the exposure check must be redone." },
+          { name: "6 · If anything's off", html: "The docs repo has the service map and per-service runbooks. Nothing should require memory — if it did, that's the gap to write up." }
+        ]
+      }
+    ]
+  },
+  {
+    id: "H", name: "Resilience", where: "Everywhere",
+    title: "Resilience & lifecycle",
+    intro: "The failure modes the step-by-step build doesn't cover on its own: power, secrets, failing disks, patching and exposure. Do these before you call the stack done.",
+    steps: [
+      {
+        id: "H1", type: "run", title: "UPS + NUT — graceful shutdown on power loss",
+        rules: ["R22", "R18"],
+        body: [
+          { p: "Put <strong>everything that writes</strong> on the UPS: both NUCs, the DAS, the Pi, and the USB HDD (PBS writes to it mid-backup). Install NUT — the host the UPS USB plugs into is master; the other NUC, the Pi and the PBS VM are netclients, so each shuts down gracefully:" },
+          { cmd: "apt -y install nut\n# configure /etc/nut/ups.conf, upsmon.conf, upssched.conf — see configs/nut/\nupsc <ups-name>        # confirm the UPS is readable" },
+          { callout: "note", title: "Why", html: "R18 brings the stack back after power loss, but a mid-write cut aborts a journal the same way a full disk does. The Pi (sole DNS, on an SD card) and the USB HDD (datastore being written) are the most corruption-prone of all — leaving them off the UPS is the hole." },
+          { callout: "note", title: "Boot order across boxes (R18)", html: "The Pi is a separate box and the DNS everything resolves through, so power it up first — or Frigate, PBS and Nginx may start before names resolve. Give PBS (900) and Frigate (111) <code class=\"inline\">--onboot 1</code> with a <code class=\"inline\">--startup</code> delay, set Frigate's compose to <code class=\"inline\">restart: unless-stopped</code>, and keep NUT's shutdown order the same as G3's manual reverse order: services, then storage, then DNS last." }
+        ],
+        verify: "Pull mains: every box — the Pi included — shuts down cleanly before the UPS dies; a full cold power-on brings the stack back unattended with no fsck repairs and no AdGuard/DNS loss on the Pi."
+      },
+      {
+        id: "H2", type: "manual", title: "Off-box secrets backup",
+        rules: ["R21", "R17"],
+        body: [
+          { p: "Put every secret somewhere no single box holds alone — a password manager, or an age/gpg-encrypted bundle stored with the offsite backups:" },
+          { list: [
+            "Grafana admin password (<code class=\"inline\">.env</code>) and the AdGuard admin login.",
+            "Discord webhook URL (<code class=\"inline\">alertmanager/discord-webhook-url</code>).",
+            "Eufy RTSP credentials; AMP and Plex logins; Recyclarr <code class=\"inline\">secrets.yml</code>; Arr/Prowlarr API keys.",
+            "root / PBS logins, the <strong>PBS datastore encryption key</strong> and the PBS fingerprint (<code class=\"inline\">PBS_FP</code>).",
+            "The Proxmox API token (A2–A4 shows it once) and every SSH key — including Claude's gated-shell key (A0 calls it a root credential).",
+            "Tailscale auth (or a reusable auth key), and the offsite/cloud sync credentials + crypt key (E7).",
+            "The private repo's off-box remote URL and its read-only deploy key — the repo must live somewhere other than one laptop (see A0)."
+          ] },
+          { callout: "danger", title: "Rotate what leaked, and don't wait for Stage H", html: "<p>A0 notes the git history still holds the old Eufy credentials — rotate them in the Eufy app; the committed ones are compromised.</p><p>This reads as the last step, but every secret goes to the vault <em>as it's created</em>. The “no secrets” rebuild test is repo + PBS + <strong>vault</strong>, not repo + PBS alone.</p>" },
+          { callout: "note", title: "Why", html: "R17's “rebuild from docs + PBS” is false if these live only as gitignored files on a box that just died. They are gitignored on purpose — so the recovery copy goes to the vault, never the repo." }
+        ],
+        verify: "From the vault alone (no surviving box) you can produce every secret a clean rebuild needs. Record in the docs repo <em>where</em> the vault is — never what's in it."
+      },
+      {
+        id: "H3", type: "run", title: "SMART + temperature alerts on every disk",
+        rules: ["R24", "R11"],
+        body: [
+          { p: "On both NUCs: enable smartd self-tests and export SMART to Prometheus via the textfile collector from F5:" },
+          { cmd: "apt -y install smartmontools\n# smartd.conf: schedule short + long self-tests on every disk\n# cron: write smartmon metrics into the collector dir from F5\ncp configs/monitoring/smartmon.sh /usr/local/bin/" },
+          { callout: "note", title: "Why", html: "A dead DAS disk turns R1's “add a disk” into “restore from backup”. Early warning means a scheduled swap instead of an outage." },
+          { callout: "gotcha", title: "USB and DAS disks need -d sat; the Pi SD has no SMART", html: "smartctl usually can't read a disk behind a USB bridge or the DAS enclosure without <code class=\"inline\">-d sat</code> (sometimes <code class=\"inline\">-d scsi</code>) — test each with <code class=\"inline\">smartctl -a -d sat /dev/...</code> and put the working flag in smartd.conf, or the USB HDD and DAS disks are silently unmonitored. The Pi's microSD exposes no SMART at all; watch wear via <code class=\"inline\">/sys/block/mmcblk0/device/life_time</code> if supported, otherwise treat the card as disposable and lean on the rebuild." },
+          { callout: "note", title: "Add the alert rules", html: "<code class=\"inline\">configs/monitoring/alerts.yml</code> gets <code class=\"inline\">SmartFailurePredicted</code> (critical) and <code class=\"inline\">DiskTempHigh</code> — the same file F5's thin-pool alert lives in, so there is one copy. Fire it once end-to-end like F7, so you know the critical path works." }
+        ],
+        verify: "<code class=\"inline\">curl -s localhost:9100/metrics | grep smartmon</code> returns per-disk health on each NUC, and Prometheus → Alerts lists SmartFailurePredicted."
+      },
+      {
+        id: "H4", type: "run", title: "Unattended security updates + rollback",
+        rules: ["R25", "R12"],
+        body: [
+          { p: "Enable automatic security updates on the hosts and inside each container:" },
+          { cmd: "apt -y install unattended-upgrades\ndpkg-reconfigure -plow unattended-upgrades   # security origins only" },
+          { callout: "note", title: "Why security-only, not everything", html: "Full auto-upgrade can pull a breaking major version unattended. Security origins keep the attack surface patched without surprise behaviour changes; feature upgrades stay a deliberate act with a PBS restore point in front of them." },
+          { callout: "note", title: "The rollback is R12", html: "Before any manual upgrade, take a PBS backup of the guest. If it breaks, the restore you proved in E6 is the undo." }
+        ],
+        verify: "<code class=\"inline\">unattended-upgrade --dry-run</code> on each host and container shows security updates in scope, and <code class=\"inline\">systemctl is-active unattended-upgrades</code> returns active."
+      },
+      {
+        id: "H5", type: "verify", title: "Confirm nothing is exposed to the internet",
+        rules: ["R23", "R20"],
+        body: [
+          { p: "Prove Tailscale is the only way in:" },
+          { list: [
+            "On the ISP/venue router: no port-forward or UPnP rule points at any box.",
+            "Port 80 (the Nginx proxy) is LAN-only — never forwarded.",
+            "From off the network, services answer only over Tailscale, not the WAN IP."
+          ] },
+          { callout: "note", title: "Why", html: "A port forward is standing attack surface that moves with the kit and outlives the reason it was added. Plex-outside-home and custom apps go through Tailscale (R20), so nothing needs a forward." }
+        ],
+        verify: "An external scan of the WAN IP (e.g. from a phone on mobile data) shows no open ports, and Plex is still reachable over Tailscale."
+      },
+      {
+        id: "H6", type: "manual", title: "Class data by whether it's re-downloadable",
+        rules: ["R26", "R4"],
+        body: [
+          { p: "Split what PBS and the offsite sync protect by how replaceable it is:" },
+          { list: [
+            "<strong>Irreplaceable</strong> — container configs, Plex metadata, photos, documents: full offsite 3-2-1.",
+            "<strong>Reconstructable</strong> — the media library itself: a lighter standard by choice, since the Arrs can re-fetch it."
+          ] },
+          { callout: "note", title: "Why", html: "Treating a 7TB re-downloadable library like irreplaceable data either wastes offsite capacity or starves the files that actually can't be recovered. Record the split in storage.md so it's a decision, not an accident." },
+          { callout: "note", title: "Camera/IoT isolation is R27 — on hold", html: "When the dedicated router (R15) lands, put the cameras on their own VLAN that can reach the internet and Frigate but not trusted clients." }
+        ],
+        verify: "storage.md names which datasets are irreplaceable vs reconstructable, and the PBS and offsite jobs match that split."
+      }
+    ]
+  },
+  {
+    id: "I", name: "Local inference", where: "Future · optional",
+    title: "Local inference (future)",
+    intro: "Not part of the core build, and it needs hardware you don't have yet. The Beelinks can prototype small models now; serious use waits on a GPU node. Here so the plan has a place for it.",
+    steps: [
+      {
+        id: "I0", type: "ref", title: "The decision — VRAM sets the ceiling",
+        body: [
+          { p: "Inference speed is bound by how much of the model fits in fast memory, so pick the model to the hardware. Current (late 2026) picture:" },
+          { list: [
+            "<strong>CPU/iGPU only (the Beelinks):</strong> 3–8B quantised — Llama 3.3 8B (general), Qwen3 7B (coding), Phi-4-mini 3.8B. A few tokens/sec: fine for background jobs and HA intents, slow for chat.",
+            "<strong>16GB GPU</strong> (used RTX 4060 Ti, or new 5060 Ti ~$430): 14B — Phi-4, Qwen3 14B. The cheapest real-GPU entry.",
+            "<strong>24GB GPU</strong> (used RTX 3090 — the value pick): up to 32B at Q4. The sweet spot for one box.",
+            "<strong>32GB+</strong> (RTX 5090), or <strong>dual 24GB / unified-memory Mac / DGX Spark 128GB</strong>: 70B territory."
+          ] },
+          { callout: "note", title: "Rough VRAM math", html: "About 0.6GB per billion params at Q4: 8B ≈ 6GB, 14B ≈ 10GB, 32B ≈ 20GB, 70B ≈ 44GB. Context and KV cache add more on top." }
+        ]
+      },
+      {
+        id: "I1", type: "script", title: "Prototype now, free — Ollama + Open WebUI on NUC-2",
+        rules: ["R19", "R26"],
+        body: [
+          { p: "Stand up an LXC (pattern from C2/C3), install Docker, run Ollama + Open WebUI, pull an 8B model. No GPU needed — CPU/iGPU inference:" },
+          { cmd: "# in the LXC\ndocker compose up -d        # ollama + open-webui, see configs/ollama/\ndocker exec -it ollama ollama pull llama3.3:8b" },
+          { callout: "note", title: "Why start here", html: "Proves the stack and the use cases before you spend on a GPU. Ollama is the right pick for a single box — simple, OpenAI-compatible API, runs on CPU/iGPU. (vLLM is for multi-user data-centre-GPU serving; not this.)" },
+          { callout: "note", title: "Weights are reconstructable (R26)", html: "Model files are large and re-downloadable. Put them on the media pool or a dedicated dataset and <strong>exclude them from PBS</strong> — never version GBs of weights." }
+        ],
+        verify: "Open WebUI answers at <code class=\"inline\">llm.home</code> and <code class=\"inline\">ollama ls</code> shows the model. Expect slow generation on CPU — that's the point at which you decide on a GPU."
+      },
+      {
+        id: "I2", type: "manual", title: "When serious — add a GPU node",
+        rules: ["R22", "R19"],
+        body: [
+          { p: "You can't put a real GPU in a Beelink. Add a dedicated node and pass the GPU through:" },
+          { list: [
+            "<strong>Value pick:</strong> a used RTX 3090 (24GB) in a tower running Proxmox — PCIe passthrough to a VM, or cgroup passthrough to a privileged LXC (same idea as Frigate's iGPU).",
+            "<strong>Low-power alt:</strong> a unified-memory Mac (MLX) — superb perf/watt, but macOS, so it sits outside the Proxmox/config-as-code world."
+          ] },
+          { callout: "danger", title: "A GPU breaks the power and portability story", html: "A 3090 draws ~350W under load — it blows the UPS budget (R22), so it is “shut down first”, not rideout-protected, and it makes the “portable island” heavier. Size the UPS and the relocation plan for it, or keep it as a stay-at-home node." }
+        ],
+        verify: "<code class=\"inline\">nvidia-smi</code> inside the guest sees the card, and Ollama reports GPU layers offloaded."
+      },
+      {
+        id: "I3", type: "manual", title: "Wire it into the stack",
+        rules: ["R13", "R23", "R24"],
+        body: [
+          { p: "Treat it like any other service:" },
+          { list: [
+            "DNS: an <code class=\"inline\">llm.home</code> rewrite in AdGuard; front it with Nginx like Plex (two names).",
+            "Monitoring: GPU temp/util into Prometheus (nvidia exporter) — same shape as R24's disk alerts.",
+            "Expose it only over Tailscale (R23), never a port forward."
+          ] },
+          { callout: "note", title: "The synergy — two services you already run get better", html: "<p><strong>Home Assistant Assist</strong> can use the Ollama endpoint for fully-local voice and intent handling, no cloud — probably the best reason to do this given you already run HA.</p><p><strong>Frigate</strong> (0.15+) can point its GenAI event-description feature at the local Ollama endpoint instead of OpenAI.</p>" }
+        ],
+        verify: "HA Assist answers via the local model, and Frigate writes event descriptions from it."
+      }
+    ]
+  }
+];
+
+/* ---------------- render helpers ---------------- */
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
+
+function ruleChips(ids) {
+  if (!ids || !ids.length) return "";
+  return ids.map(function (r) {
+    return '<button class="rule' + (HOLD[r] ? " hold" : "") + '" data-rule="' + r + '">' + r + '</button>';
+  }).join(" ");
+}
+
+/* placeholders: {{KEY}} -> interactive span */
+function subst(text) {
+  return esc(text).replace(/\{\{(\w+)\}\}/g, function (_, key) {
+    var f = fieldByKey(key);
+    var v = values[key];
+    if (v) return '<span class="ph set" data-key="' + key + '" title="Click to edit">' + esc(v) + "</span>";
+    return '<span class="ph empty" data-key="' + key + '" title="Click to fill in">&lt;' + esc(f ? f.label : key) + "&gt;</span>";
+  });
+}
+function substHtml(html) {
+  return html.replace(/\{\{(\w+)\}\}/g, function (_, key) {
+    var f = fieldByKey(key);
+    var v = values[key];
+    if (v) return '<span class="ph set" data-key="' + key + '">' + esc(v) + "</span>";
+    return '<span class="ph empty" data-key="' + key + '">&lt;' + esc(f ? f.label : key) + "&gt;</span>";
+  });
+}
+function fieldByKey(k) {
+  for (var i = 0; i < FIELDS.length; i++) if (FIELDS[i].key === k) return FIELDS[i];
+  return null;
+}
+
+function blocks(list) {
+  if (!list) return "";
+  return list.map(function (b) {
+    if (b.p) return "<p>" + substHtml(b.p) + "</p>";
+    if (b.list) return '<ul>' + b.list.map(function (li) { return "<li>" + substHtml(li) + "</li>"; }).join("") + "</ul>";
+    if (b.cmd) return cmdBlock(b.cmd);
+    if (b.callout) {
+      var inner = (/^\s*<(p|ul)/.test(b.html) ? substHtml(b.html) : "<p>" + substHtml(b.html) + "</p>");
+      var plain = String(b.html).replace(/<[^>]+>/g, "");
+      var explanatory = /^(why|what|how|background|rationale|detail)\b/i.test(b.title || "");
+      var open = (!explanatory && plain.length <= 230) ? " open" : "";
+      return '<details class="callout ' + b.callout + '"' + open + '><summary class="ctitle">' +
+        esc(b.title) + "</summary>" + inner + "</details>";
+    }
+    return "";
+  }).join("");
+}
+
+function cmdBlock(text) {
+  return '<div class="cmd"><button class="copy" type="button">Copy</button><pre>' + subst(text) + "</pre></div>";
+}
+
+function stepKey(stageId, stepId, subIdx) {
+  return stageId + "|" + stepId + (subIdx === undefined ? "" : "|s" + subIdx);
+}
+
+function renderStep(stage, step) {
+  if (step.type === "ref") {
+    return '<div class="refcard" id="' + stepKey(stage.id, step.id).replace(/\|/g, "-") + '">' +
+      '<span class="rlabel">Reference · ' + esc(step.id) + " " + ruleChips(step.rules) + "</span>" +
+      "<h4>" + esc(step.title) + "</h4>" + blocks(step.body) + "</div>";
+  }
+  var t = TYPES[step.type];
+  var k = stepKey(stage.id, step.id);
+  var done = !!progress[k];
+  var subs = step.subs || [];
+  var subsHtml = "";
+  if (subs.length) {
+    subsHtml = '<div class="substeps-label">Configure by hand · ' + subs.length + " items</div>" +
+      '<div class="substeps">' + subs.map(function (s, i) {
+        var sk = stepKey(stage.id, step.id, i);
+        return '<div class="substep' + (progress[sk] ? " done" : "") + '" data-key="' + sk + '">' +
+          '<button class="sbox" type="button" aria-label="Toggle">✓</button>' +
+          '<div class="sbody"><span class="sname">' + esc(s.name) + "</span> — " + substHtml(s.html) + "</div></div>";
+      }).join("") + "</div>";
+  }
+  return '<article class="step' + (done ? " done" : "") + '" data-key="' + k + '" data-type="' + step.type +
+    '" style="--type-color: var(--' + step.type + ')" id="' + k.replace(/\|/g, "-") + '">' +
+    '<div class="step-top"><div class="step-ident">' +
+      '<span class="sid">' + esc(step.id) + "</span>" +
+      '<span class="badge">' + t.label + "</span>" +
+      ruleChips(step.rules) +
+      "<h4>" + esc(step.title) + "</h4>" +
+    "</div>" +
+    '<button class="mark" type="button"><span class="box">' + (done ? "✓" : "") + "</span>" +
+      (step.type === "verify" ? (done ? "Verified" : "Mark verified") : (done ? "Done" : "Mark done")) +
+    "</button></div>" +
+    '<div class="step-body">' + blocks(step.body) + subsHtml + blocks(step.after) +
+      (step.verify ? '<div class="verify"><span class="vlabel">Verify</span>' + substHtml(step.verify) + "</div>" : "") +
+    "</div></article>";
+}
+
+function render() {
+  document.getElementById("legend").innerHTML = Object.keys(TYPES).map(function (k) {
+    return '<span class="badge" style="--type-color: var(--' + k + ')" title="' + esc(TYPES[k].desc) + '">' +
+      TYPES[k].label + "</span>";
+  }).join("") + '<span class="badge" style="--type-color: var(--ink-3)">Reference</span>';
+
+  document.getElementById("stages").innerHTML = STAGES.map(function (st) {
+    return '<section class="stage" id="stage-' + st.id + '">' +
+      '<div class="stage-head"><span class="letter">' + st.id + "</span><h3>" + esc(st.title) +
+      '</h3><span class="where">' + esc(st.where) + "</span></div>" +
+      '<p class="stage-intro">' + esc(st.intro) + "</p>" +
+      '<div class="steps">' + st.steps.map(function (s) { return renderStep(st, s); }).join("") + "</div></section>";
+  }).join("");
+
+  document.getElementById("fields").innerHTML = FIELDS.map(function (f) {
+    return '<div class="field"><label for="f-' + f.key + '">&lt;' + esc(f.label) + '&gt;</label>' +
+      '<span class="hint">' + esc(f.hint) + "</span>" +
+      '<input id="f-' + f.key + '" data-key="' + f.key + '" placeholder="' + esc(f.ph) +
+      '" value="' + esc(values[f.key] || "") + '"></div>';
+  }).join("");
+
+  renderRail();
+  updateCounts();
+  renderInventory();
+}
+
+function allKeys() {
+  var keys = [];
+  STAGES.forEach(function (st) {
+    st.steps.forEach(function (s) {
+      if (s.type === "ref") return;
+      keys.push({ stage: st.id, key: stepKey(st.id, s.id) });
+      (s.subs || []).forEach(function (_, i) { keys.push({ stage: st.id, key: stepKey(st.id, s.id, i) }); });
+    });
+  });
+  return keys;
+}
+
+function renderRail() {
+  var html = '<div class="rail-label">Stages</div>' +
+    '<a href="#stage-INV" data-stage="INV"><span class="letter">0</span>' +
+    '<span class="name">Address register</span><span class="count">0/0</span></a>' +
+    STAGES.map(function (st) {
+    return '<a href="#stage-' + st.id + '" data-stage="' + st.id + '">' +
+      '<span class="letter">' + st.id + '</span><span class="name">' + esc(st.name) +
+      '</span><span class="count" data-count="' + st.id + '">0/0</span></a>';
+  }).join("") +
+  '<div class="rail-note"><strong>Don\'t copy commands out of the docs.</strong> The runnable versions live in <code class="inline">configs/</code> — this page tells you which file and what it does.</div>';
+  document.getElementById("rail").innerHTML = html;
+}
+
+function updateCounts() {
+  var keys = allKeys();
+  var doneTotal = 0;
+  STAGES.forEach(function (st) {
+    var mine = keys.filter(function (k) { return k.stage === st.id; });
+    var d = mine.filter(function (k) { return progress[k.key]; }).length;
+    doneTotal += d;
+    var el = document.querySelector('[data-count="' + st.id + '"]');
+    if (el) el.textContent = d + "/" + mine.length;
+    var link = document.querySelector('.rail a[data-stage="' + st.id + '"]');
+    if (link) link.classList.toggle("complete", mine.length > 0 && d === mine.length);
+  });
+  var pct = keys.length ? Math.round((doneTotal / keys.length) * 100) : 0;
+  document.getElementById("overallFill").style.width = pct + "%";
+  document.getElementById("overallNum").textContent = doneTotal + " / " + keys.length + " · " + pct + "%";
+}
+
+function save() { store.set(PKEY, JSON.stringify(progress)); }
+function saveValues() { store.set(VKEY, JSON.stringify(values)); }
+
+function toggle(key, on) {
+  if (on) progress[key] = 1; else delete progress[key];
+  save();
+  updateCounts();
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener("click", function (e) {
+  var mark = e.target.closest(".mark");
+  if (mark) {
+    var step = mark.closest(".step");
+    var on = !step.classList.contains("done");
+    step.classList.toggle("done", on);
+    step.querySelector(".mark .box").textContent = on ? "✓" : "";
+    mark.lastChild.textContent = step.dataset.type === "verify" ? (on ? "Verified" : "Mark verified") : (on ? "Done" : "Mark done");
+    toggle(step.dataset.key, on);
+    applyHideDone();
+    return;
+  }
+  var sbox = e.target.closest(".sbox");
+  if (sbox) {
+    var sub = sbox.closest(".substep");
+    var son = !sub.classList.contains("done");
+    sub.classList.toggle("done", son);
+    toggle(sub.dataset.key, son);
+    return;
+  }
+  var copy = e.target.closest(".copy");
+  if (copy) {
+    var pre = copy.parentNode.querySelector("pre");
+    copyText(pre.innerText);
+    copy.textContent = "Copied";
+    copy.classList.add("ok");
+    setTimeout(function () { copy.textContent = "Copy"; copy.classList.remove("ok"); }, 1400);
+    return;
+  }
+  var ph = e.target.closest(".ph");
+  if (ph) { openDrawer(ph.dataset.key); return; }
+  var chip = e.target.closest(".rule");
+  if (chip && chip.dataset.rule) { showRule(chip); return; }
+  if (!e.target.closest("#rulebox")) hideRule();
+});
+
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(function () { legacyCopy(text); });
+  } else { legacyCopy(text); }
+}
+function legacyCopy(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch (err) {}
+  document.body.removeChild(ta);
+}
+
+/* rule popover */
+var rulebox = document.getElementById("rulebox");
+function showRule(chip) {
+  var id = chip.dataset.rule;
+  var r = RULES[id];
+  if (!r) return;
+  rulebox.innerHTML = '<span class="rid">' + id + (HOLD[id] ? " · status caveat" : "") + "</span><h5>" + esc(r[0]) +
+    "</h5><dl><dt>Why</dt><dd>" + esc(r[1]) + "</dd><dt>Verify</dt><dd>" + esc(r[2]) + "</dd></dl>";
+  rulebox.setAttribute("open", "");
+  var rect = chip.getBoundingClientRect();
+  var w = rulebox.offsetWidth;
+  var left = Math.min(Math.max(12, rect.left), window.innerWidth - w - 12);
+  var top = rect.bottom + 8;
+  if (top + rulebox.offsetHeight > window.innerHeight - 12) top = Math.max(12, rect.top - rulebox.offsetHeight - 8);
+  rulebox.style.left = left + "px";
+  rulebox.style.top = top + "px";
+}
+function hideRule() { rulebox.removeAttribute("open"); }
+window.addEventListener("scroll", hideRule, { passive: true });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") { hideRule(); closeDrawer(); } });
+
+/* values drawer */
+var drawer = document.getElementById("drawer");
+function openDrawer(focusKey) {
+  drawer.setAttribute("open", "");
+  var input = focusKey ? document.getElementById("f-" + focusKey) : document.querySelector("#fields input");
+  if (input) input.focus();
+}
+function closeDrawer() { drawer.removeAttribute("open"); }
+document.getElementById("valuesBtn").addEventListener("click", function () { openDrawer(); });
+document.getElementById("drawerClose").addEventListener("click", closeDrawer);
+drawer.addEventListener("click", function (e) { if (e.target === drawer) closeDrawer(); });
+
+document.addEventListener("input", function (e) {
+  var key = e.target.dataset && e.target.dataset.key;
+  if (!key || e.target.tagName !== "INPUT") return;
+  var v = e.target.value.trim();
+  if (v) values[key] = v; else delete values[key];
+  saveValues();
+  refreshPlaceholders(key);
+});
+
+function refreshPlaceholders(key) {
+  var f = fieldByKey(key);
+  var label = f ? f.label : key;
+  var v = values[key];
+  Array.prototype.forEach.call(document.querySelectorAll('.ph[data-key="' + key + '"]'), function (el) {
+    if (v) { el.textContent = v; el.className = "ph set"; }
+    else { el.textContent = "<" + label + ">"; el.className = "ph empty"; }
+  });
+}
+
+/* hide done */
+var hideDone = false;
+document.getElementById("hideDoneBtn").addEventListener("click", function () {
+  hideDone = !hideDone;
+  this.setAttribute("aria-pressed", hideDone ? "true" : "false");
+  applyHideDone();
+});
+function applyHideDone() {
+  Array.prototype.forEach.call(document.querySelectorAll(".step"), function (s) {
+    s.style.display = hideDone && s.classList.contains("done") ? "none" : "";
+  });
+}
+
+/* reset */
+document.getElementById("resetBtn").addEventListener("click", function () {
+  if (!confirm("Clear all step progress? Your values and the address register are kept.")) return;
+  progress = {};
+  save();
+  render();
+  applyHideDone();
+});
+
+/* active stage in rail */
+function trackStages() {
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      var id = en.target.id.replace("stage-", "");
+      Array.prototype.forEach.call(document.querySelectorAll(".rail a"), function (a) {
+        a.classList.toggle("active", a.dataset.stage === id);
+      });
+    });
+  }, { rootMargin: "-80px 0px -70% 0px" });
+  Array.prototype.forEach.call(document.querySelectorAll(".stage, .invsec"), function (s) { obs.observe(s); });
+}
+
+/* ---------------- address register ---------------- */
+var IKEY = "proxmox-runbook-inventory-v1";
+var inv = JSON.parse(store.get(IKEY) || "{}");
+function invRow(id) { if (!inv[id]) inv[id] = {}; return inv[id]; }
+
+/* Pre-fill each row with network.md's addressing plan the first time this
+   page is opened. Only the IP — the MAC has to come off the real device, so
+   a row still doesn't count as filled until you collect it. Typing over one
+   of these is fine; it persists and is never re-seeded. */
+function seedPlan() {
+  if (store.get(IKEY)) return;                 // already has saved state
+  ADDR.forEach(function (r) { if (r.plannedIp) invRow(r.id).ip = r.plannedIp; });
+  saveInv();
+}
+function saveInv() { store.set(IKEY, JSON.stringify(inv)); }
+
+var ADDR = [
+  { g: "Hosts" },
+  { id: "nuc1", plannedIp: "192.168.1.2", kind: "static", dev: "nuc1", meta: "Beelink S13 · Proxmox host · :8006", own: ["nuc1.home"],
+    md: "`nuc1` — Beelink S13, Proxmox host",
+    note: "Dual NIC — record the MAC of the port actually patched",
+    hint: "Dual NIC — record the MAC of the port you actually patch." },
+  { id: "nuc2", plannedIp: "192.168.1.3", kind: "static", dev: "nuc2", meta: "Beelink S12 Pro · Proxmox host · :8006", own: ["nuc2.home"],
+    md: "`nuc2` — Beelink S12 Pro, Proxmox host", note: "" },
+  { id: "pi", plannedIp: "192.168.1.4", kind: "static", dev: "Pi", meta: "AdGuard :53/:8081 · Grafana :3000 · Prometheus :9090 · Alertmanager :9093",
+    own: ["pi.home"],
+    md: "Pi — AdGuard, Prometheus, Alertmanager, Grafana",
+    note: "The resolver itself. Its IP is the one literal IP configs may contain ([R13](rules.md)) — it goes in every `configs/lxc/*.sh` and `homelab.conf`'s `resolver` line",
+    hint: "This one is PI_IP — the only literal IP the rules allow. Put it in Your values too." },
+  { g: "Guests — NUC-1" },
+  { id: "lxc210", plannedIp: "192.168.1.21", kind: "reserved", dev: "media-pipeline", meta: "LXC 210 · :8080 :8989 :7878 :6767 :9696 :8191",
+    own: ["media-pipeline.home"], front: ["sonarr.home", "radarr.home", "bazarr.home", "prowlarr.home"],
+    md: "`media-pipeline` — LXC 210, nuc1",
+    note: "Never proxied under this name, so it doubles as Nginx's backend target for the Arrs" },
+  { id: "lxc220", plannedIp: "192.168.1.22", kind: "reserved", dev: "plex", meta: "LXC 220 · :32400", own: ["plex-lxc.home"], front: ["plex.home"],
+    md: "`plex` — LXC 220, nuc1",
+    note: "Backend `plex-lxc.home` points here; front `plex.home` points at Nginx" },
+  { id: "lxc230", plannedIp: "192.168.1.23", kind: "reserved", dev: "amp", meta: "LXC 230 · port TBD", own: [], md: "`amp` — LXC 230, nuc1",
+    note: "Add its rewrite to the DNS table when AMP is installed",
+    hint: "No rewrite in network.md's DNS table yet — add amp.home there when AMP goes in." },
+  { id: "lxc240", plannedIp: "192.168.1.20", kind: "reserved", dev: "nginx", meta: "LXC 240 · :80 · reverse proxy", own: [], isProxy: true,
+    md: "`nginx` — LXC 240, nuc1",
+    note: "**Every front name resolves to this IP.** Fill this row first",
+    hint: "Fill this row first — every front-name rewrite points at it." },
+  { g: "Guests — NUC-2" },
+  { id: "lxc111", plannedIp: "192.168.1.24", kind: "reserved", dev: "frigate", meta: "LXC 111 · privileged · :8971", own: ["frigate-lxc.home"],
+    front: ["frigate.home"], md: "`frigate` — LXC 111, nuc2 (privileged)",
+    note: "Backend `frigate-lxc.home` points here",
+    hint: "Port 5000 also answers and is unauthenticated — never proxy or expose it." },
+  { id: "vm900", plannedIp: "192.168.1.5", kind: "static", dev: "pbs", meta: "VM 900 · :8007", own: ["pbs.home"], md: "`pbs` — VM 900, nuc2",
+    note: "`pvesm add pbs --server pbs.home` uses the name, never this IP" },
+  { g: "Cameras — addressed by name, never IP" },
+  { id: "cam1", plannedIp: "192.168.1.30", kind: "reserved", dev: "cam-living-room", meta: "Eufy · RTSP", own: ["cam-living-room.home"],
+    md: "`cam-living-room`", note: "Frigate opens RTSP by name — a lost reservation breaks recording" },
+  { id: "cam2", plannedIp: "192.168.1.31", kind: "reserved", dev: "cam-kitchen", meta: "Eufy · RTSP", own: ["cam-kitchen.home"],
+    md: "`cam-kitchen`", note: "as above" },
+  { id: "cam3", plannedIp: "192.168.1.32", kind: "reserved", dev: "cam-bedroom", meta: "Eufy · RTSP", own: ["cam-bedroom.home"],
+    md: "`cam-bedroom`", note: "as above" },
+  { id: "cam4", plannedIp: "192.168.1.33", kind: "reserved", dev: "cam-basement", meta: "Eufy · RTSP", own: ["cam-basement.home"],
+    md: "`cam-basement`", note: "as above" },
+  { g: "Network kit" },
+  { id: "switch", plannedIp: "192.168.1.6", kind: "static", dev: "Managed switch", meta: "management address", own: [], md: "Managed switch",
+    note: "Management address only if managed" },
+  { id: "ap", plannedIp: "192.168.1.7", kind: "static", dev: "Access point(s)", meta: "Wi-Fi", own: [], md: "Access point(s)",
+    note: "Its DHCP-issued DNS must also be the Pi ([R14](rules.md))",
+    hint: "Its DHCP-issued DNS must point at the Pi too, or clients on Wi-Fi can't resolve *.home." }
+];
+
+var DISKS = [
+  { id: "ssd1", dev: "Internal SSD", host: "nuc1", label: "—", role: "Proxmox root + `local-lvm`" },
+  { id: "ssd2", dev: "Internal SSD", host: "nuc2", label: "—", role: "Proxmox root + `local-lvm` (Frigate's 260G lives here)" },
+  { id: "das1", dev: "DAS disk 1", host: "nuc1", label: "`media-disk1`", role: "mergerfs branch → `/mnt/pool/disk1`",
+    hint: "stage-b-storage.sh's SDX." },
+  { id: "das2", dev: "DAS disk 2", host: "nuc1", label: "`media-disk2`", role: "mergerfs branch → `/mnt/pool/disk2`",
+    hint: "stage-b-storage.sh's SDY." },
+  { id: "usbhdd", dev: "2TB USB HDD", host: "nuc2", label: "—", role: "PBS datastore, passed to VM 900 as a block device",
+    hint: "Its by-id path is pbs-vm.sh's USB_BY_ID." }
+];
+
+var MAC_CMDS = [
+  "# Host NIC MACs — run on each NUC and on the Pi",
+  "ip -br link | awk '$1 !~ /^(lo|veth|fwbr|fwln|fwpr|tap|vmbr)/ {print $1, $3}'",
+  "",
+  "# Every LXC's MAC on this host (generated at pct create)",
+  "grep -H -o 'hwaddr=[^,]*' /etc/pve/lxc/*.conf",
+  "",
+  "# Every VM's MAC on this host",
+  "for id in $(qm list | awk 'NR>1 {print $1}'); do",
+  "  echo \"vm/$id $(qm config \"$id\" | grep -oE '([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}')\"",
+  "done",
+  "",
+  "# Cameras and anything else that has talked to this host",
+  "ip neigh | awk '$4==\"lladdr\" {print $1, $5}'"
+].join("\n");
+
+var DISK_CMDS = [
+  "lsblk -o NAME,SIZE,MODEL,SERIAL,LABEL   # model, serial, label",
+  "ls -l /dev/disk/by-id/                  # stable paths"
+].join("\n");
+
+function invInput(id, field, ph) {
+  var v = (inv[id] && inv[id][field]) || "";
+  return '<input data-inv="' + id + '" data-field="' + field + '" placeholder="' + esc(ph) +
+    '" value="' + esc(v) + '" spellcheck="false">';
+}
+function invCheck(id, field, label) {
+  var on = !!(inv[id] && inv[id][field]);
+  return '<button class="invchk" type="button" data-inv="' + id + '" data-field="' + field +
+    '" aria-pressed="' + (on ? "true" : "false") + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">✓</button>';
+}
+function addrFilled(r) { var d = inv[r.id] || {}; return !!(d.mac && d.ip); }
+
+function renderInventory() {
+  var host = document.getElementById("inventory");
+  if (!host) return;
+
+  var addrRows = ADDR.map(function (r) {
+    if (r.g) return '<tr class="group"><td colspan="6">' + esc(r.g) + "</td></tr>";
+    var names = (r.own || []).concat(r.front || []);
+    var meta = esc(r.meta) + (names.length ? ' · <span class="nm">' + esc(names.join(" ")) + "</span>" : "") +
+      (r.isProxy ? ' · <span class="nm">target of every front name</span>' : "") +
+      (r.kind === "static" ? " · set statically on the device" :
+       r.kind === "reserved" ? " · DHCP reservation on the router" : "");
+    return '<tr class="' + (addrFilled(r) ? "filled" : "") + '" data-addr="' + r.id + '">' +
+      '<td><span class="dev">' + esc(r.dev) + '</span><span class="devmeta">' + meta + "</span>" +
+        (r.hint ? '<span class="devmeta">' + esc(r.hint) + "</span>" : "") + "</td>" +
+      "<td>" + invInput(r.id, "mac", "aa:bb:cc:dd:ee:ff") + "</td>" +
+      "<td>" + invInput(r.id, "ip", "192.168.1.x") + "</td>" +
+      '<td class="narrow">' + invCheck(r.id, "res", "Reservation added on the router") + "</td>" +
+      '<td class="narrow">' + invCheck(r.id, "rw", "AdGuard rewrite added") + "</td>" +
+      "<td>" + invInput(r.id, "note", "Tailscale name, firmware, anything") + "</td></tr>";
+  }).join("");
+
+  var diskRows = DISKS.map(function (r) {
+    return "<tr>" +
+      '<td><span class="dev">' + esc(r.dev) + '</span><span class="devmeta">' + esc(r.host) + " · " +
+        esc(r.role.replace(/`/g, "")) + "</span>" +
+        (r.hint ? '<span class="devmeta">' + esc(r.hint) + "</span>" : "") + "</td>" +
+      "<td>" + invInput(r.id, "serial", "model / serial") + "</td>" +
+      "<td>" + invInput(r.id, "byid", "/dev/disk/by-id/...") + "</td>" +
+      "<td>" + invInput(r.id, "note", "notes") + "</td></tr>";
+  }).join("");
+
+  host.innerHTML =
+    '<section class="invsec" id="stage-INV">' +
+      '<div class="stage-head"><span class="letter">0</span><h3>Address register</h3>' +
+      '<span class="where">Fill in as you go</span></div>' +
+      '<div class="callout note" style="margin:0 0 16px"><span class="ctitle">The plan these come from</span>' +
+        '<p>Router <code class="inline">192.168.1.1</code>, /24, DHCP pool <code class="inline">.20</code>–<code class="inline">.253</code>. ' +
+        'That leaves <code class="inline">.2</code>–<code class="inline">.19</code> outside the pool for the static block: ' +
+        'nuc1 <code class="inline">.2</code>, nuc2 <code class="inline">.3</code>, Pi <code class="inline">.4</code>, ' +
+        'PBS <code class="inline">.5</code>, switch <code class="inline">.6</code>, APs <code class="inline">.7</code>+. ' +
+        'Containers and cameras take DHCP reservations at <code class="inline">.20</code>–<code class="inline">.39</code>; ' +
+        'everything from <code class="inline">.40</code> up stays dynamic for phones and TVs.</p>' +
+        '<p>Two mechanisms because every LXC is created <code class="inline">ip=dhcp</code>, so a reservation pins it and it stays ' +
+        'portable — while Proxmox, PBS and the Pi write their address into config at install, or in the Pi\'s case <em>are</em> the ' +
+        'resolver, which must not depend on a lease from a router you don\'t own. The IPs below are pre-filled from that plan; ' +
+        'change any of them and it sticks.</p></div>' +
+      '<p class="stage-intro">Every MAC and address in one place, so the router reservations and the AdGuard ' +
+        'rewrites both come from the same list. A guest\'s MAC is generated at pct create, so it can\'t be ' +
+        'pre-assigned — collect it after Stage D and before the reservations at F2. Fill nginx first: every ' +
+        'front name resolves to its IP. The two ticks record what you have actually applied.</p>' +
+      '<div class="invwrap"><table class="inv"><thead><tr>' +
+        "<th>Device</th><th>MAC</th><th>Reserved IP</th><th>Res.</th><th>Rewrite</th><th>Your notes</th>" +
+      "</tr></thead><tbody>" + addrRows + "</tbody></table></div>" +
+      '<div class="exports">' +
+        '<button class="tbtn" data-export="addr">Copy for network.md</button>' +
+        '<button class="tbtn" data-export="adguard">Copy AdGuard rewrites</button>' +
+        '<span class="note" id="addrCount"></span>' +
+      "</div>" +
+      '<div class="invsub">Where the MACs come from</div>' + cmdBlock(MAC_CMDS) +
+      '<div class="invsub">Physical disks — identity for a rebuild on new hardware</div>' +
+      '<div class="invwrap"><table class="inv"><thead><tr>' +
+        "<th>Disk</th><th>Model / serial</th><th>by-id path</th><th>Your notes</th>" +
+      "</tr></thead><tbody>" + diskRows + "</tbody></table></div>" +
+      '<div class="exports">' +
+        '<button class="tbtn" data-export="disks">Copy for storage.md</button>' +
+        '<span class="note">Never <code class="inline">/dev/sdX</code> in a config — it reorders across reboots.</span>' +
+      "</div>" +
+      cmdBlock(DISK_CMDS) +
+      '<div class="callout note" style="margin-top:18px"><span class="ctitle">Paste it back</span>' +
+        "<p>This page is a clipboard, not the record. The repo is the record — <code class=\"inline\">network.md</code>'s " +
+        "address register and <code class=\"inline\">storage.md</code>'s disk register. Export into them in the same " +
+        "change as the device going in. MACs and IPs belong there; credentials never do.</p></div>" +
+    "</section>";
+
+  updateAddrCount();
+}
+
+function updateAddrCount() {
+  var rows = ADDR.filter(function (r) { return !r.g; });
+  var done = rows.filter(addrFilled).length;
+  var el = document.getElementById("addrCount");
+  if (el) el.textContent = done + " of " + rows.length + " devices have both a MAC and an IP";
+  var link = document.querySelector('.rail a[data-stage="INV"]');
+  if (link) {
+    link.querySelector(".count").textContent = done + "/" + rows.length;
+    link.classList.toggle("complete", done === rows.length);
+  }
+}
+
+/* ---- exports ---- */
+function mdAddrTable() {
+  var out = ["| Device | MAC | Reserved IP | Notes |", "|---|---|---|---|"];
+  ADDR.forEach(function (r) {
+    if (r.g) return;
+    var d = inv[r.id] || {};
+    var note = r.note || "";
+    if (d.note) note = note ? note + ". " + d.note : d.note;
+    out.push("| " + r.md + " | " + (d.mac ? "`" + d.mac + "`" : "TBD") + " | " +
+      (d.ip ? "`" + d.ip + "`" : "TBD") + " | " + note + " |");
+  });
+  return out.join("\n");
+}
+
+function mdDiskTable() {
+  var out = ["| Disk | Host | Model / serial | `by-id` path | Label | Role |", "|---|---|---|---|---|---|"];
+  DISKS.forEach(function (r) {
+    var d = inv[r.id] || {};
+    out.push("| " + r.dev + " | " + r.host + " | " + (d.serial ? "`" + d.serial + "`" : "TBD") + " | " +
+      (d.byid ? "`" + d.byid + "`" : "TBD") + " | " + r.label + " | " + r.role +
+      (d.note ? " — " + d.note : "") + " |");
+  });
+  return out.join("\n");
+}
+
+function adguardList() {
+  var proxy = null;
+  ADDR.forEach(function (r) { if (r.isProxy) proxy = inv[r.id] || {}; });
+  var lines = [], missing = 0;
+  var pad = function (n) { while (n.length < 26) n += " "; return n; };
+  var isHostOrCam = function (n) { return /^(nuc|pbs\.|cam-|pi\.)/.test(n); };
+
+  lines.push("# 1. Front names -> Nginx (LXC 240), which then routes by Host: header.");
+  ADDR.forEach(function (r) {
+    (r.front || []).forEach(function (n) {
+      var ip = proxy && proxy.ip;
+      if (!ip) missing++;
+      lines.push(pad(n) + (ip || "TBD — fill the nginx row first"));
+    });
+  });
+
+  lines.push("");
+  lines.push("# 2. Backend names -> the container itself. These are what Nginx proxies to.");
+  ADDR.forEach(function (r) {
+    if (r.g || !r.own || !r.own.length || isHostOrCam(r.own[0])) return;
+    var d = inv[r.id] || {};
+    if (!d.ip) missing++;
+    r.own.forEach(function (n) { lines.push(pad(n) + (d.ip || "TBD")); });
+  });
+
+  lines.push("");
+  lines.push("# 3. Hosts and cameras -> their own IP.");
+  ADDR.forEach(function (r) {
+    if (r.g || !r.own || !r.own.length || !isHostOrCam(r.own[0])) return;
+    var d = inv[r.id] || {};
+    if (!d.ip) missing++;
+    r.own.forEach(function (n) { lines.push(pad(n) + (d.ip || "TBD")); });
+  });
+
+  if (missing) lines.unshift("# " + missing + " rewrite(s) have no IP yet — they show as TBD.\n");
+  return lines.join("\n");
+}
+
+document.addEventListener("click", function (e) {
+  var chk = e.target.closest(".invchk");
+  if (chk) {
+    var on = chk.getAttribute("aria-pressed") !== "true";
+    chk.setAttribute("aria-pressed", on ? "true" : "false");
+    var row = invRow(chk.dataset.inv);
+    if (on) row[chk.dataset.field] = 1; else delete row[chk.dataset.field];
+    saveInv();
+    return;
+  }
+  var ex = e.target.closest("[data-export]");
+  if (ex) {
+    var kind = ex.dataset.export;
+    copyText(kind === "addr" ? mdAddrTable() : kind === "disks" ? mdDiskTable() : adguardList());
+    var label = ex.textContent;
+    ex.textContent = "Copied";
+    setTimeout(function () { ex.textContent = label; }, 1500);
+  }
+});
+
+document.addEventListener("input", function (e) {
+  var id = e.target.dataset && e.target.dataset.inv;
+  if (!id) return;
+  var row = invRow(id);
+  var v = e.target.value.trim();
+  if (v) row[e.target.dataset.field] = v; else delete row[e.target.dataset.field];
+  saveInv();
+  var tr = e.target.closest("tr[data-addr]");
+  if (tr) {
+    var rec = null;
+    ADDR.forEach(function (r) { if (r.id === id) rec = r; });
+    if (rec) tr.classList.toggle("filled", addrFilled(rec));
+  }
+  updateAddrCount();
+});
+
+seedPlan();
+render();
+trackStages();
+</script>
+
+</body></html>

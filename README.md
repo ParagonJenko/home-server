@@ -2,7 +2,7 @@
 
 Off-box source of truth for a portable, self-healing Proxmox homelab: two Beelink NUCs, a Raspberry Pi, a 2×4TB DAS and a 2TB USB HDD running media, cameras, backups, monitoring and DNS.
 
-This repo is the thing the rebuild reads. The step-by-step runbook that drives it is a separate interactive page; this repo holds the **rules**, the **runnable configs**, and the **living docs** (network, storage, services, inventory) that those steps reference.
+This repo is the thing the rebuild reads. The step-by-step runbook that drives it is the interactive page at [`docs/runbook.html`](docs/runbook.html) (open it in a browser, or serve `docs/` via GitHub Pages); this repo holds the **rules**, the **runnable configs**, and the **living docs** (network, storage, services, inventory) that those steps reference.
 
 > **This repo is public.** No password, token, webhook or credential belongs in it — ever. Secrets live only in gitignored files on each box and in an off-box vault (see [`rules.md`](rules.md) R21). Only `*.example` templates are committed. `.gitignore` enforces this, but the discipline is yours: one accidental real value is scraped within minutes.
 
@@ -19,6 +19,7 @@ The full rule set (R1–R27) is in [`rules.md`](rules.md).
 ## Layout
 
 ```
+docs/runbook.html The interactive step-by-step runbook (snapshot of the published page)
 rules.md          The guardrails — statement / why / how-to-verify, R1–R27
 network.md        Addressing plan, address register (MAC/IP), DNS rewrite groups
 storage.md        Disk register, per-workload caps, reserved headroom, data classification
