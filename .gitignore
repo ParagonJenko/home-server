@@ -9,6 +9,9 @@
 **/.env
 !**/.env.example
 
+# Remembered per-box values written by configs/lib/common.sh
+.homelab.env
+
 # Recyclarr secrets
 **/secrets.yml
 !**/secrets.yml.example

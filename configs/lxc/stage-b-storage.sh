@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# stage-b-storage.sh — media pool on the 2×4TB DAS (B2–B5). Run as root on NUC-1.
-# DESTRUCTIVE: wipes the two disks named below. Edit SDX/SDY to your real DAS disks
-# and double-check them against the internal SSD FIRST. [R1 R8 R9]
+# stage-b-storage.sh — media pool on the 2×4TB DAS (Stage B). Run as root on NUC-1.
+# Interactive: it shows your disks, you pick the two DAS disks, it confirms before
+# wiping, and remembers them in ~/.homelab.env. DESTRUCTIVE. [R1 R8 R9]
 set -euo pipefail
-source "$(dirname "$0")/_require_filled.sh"
+source "$(dirname "$0")/../lib/common.sh"
+need_root
 
-# Ship as placeholders on purpose — a realistic default like /dev/sdX slips past the guard.
-SDX="<first-DAS-disk>"
-SDY="<second-DAS-disk>"
+echo "Pick the TWO DAS disks. Check their size/model against the internal SSD first."
+pick_disk DAS_1 "First DAS disk"
+pick_disk DAS_2 "Second DAS disk"
+[ "$DAS_1" = "$DAS_2" ] && { echo "!! same disk twice — aborting."; exit 1; }
+confirm "WIPE $DAS_1 and $DAS_2 and build the media pool?" || { echo "aborted."; exit 1; }
 
-require_block_device "$SDX"
-require_block_device "$SDY"
-
-# TODO: wipe + format both disks ext4 (keep reserved-blocks ≥5%, R8),
-#       mount at /mnt/pool/disk1 and /mnt/pool/disk2,
-#       build the mergerfs pool at /mnt/media (see ../mergerfs/fstab-snippet),
-#       create the shared `media` user (1000:1000) + torrents/ and library/ siblings.
-# torrents/ and library/ MUST land on the same branch so Arr imports hardlink, not copy.
-echo "stage-b: fill in per rules.md B2–B5, then run the hardlink test (D1) and fill test (B6)."
+# TODO: wipe + format both ext4 (reserved-blocks >=5%, R8); mount /mnt/pool/disk{1,2};
+#       build mergerfs at /mnt/media (see ../mergerfs/fstab-snippet, keep torrents/ and
+#       library/ on the SAME branch so Arr imports hardlink); create the shared media
+#       user 1000:1000 and the torrents/ + library/ tree.
+echo "Chosen: $DAS_1  $DAS_2 — implement the format/mount/mergerfs logic per rules.md B2."
+echo "Record each disk's model/serial/by-id in storage.md's disk register."

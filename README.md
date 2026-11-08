@@ -16,6 +16,22 @@ Three invariants the whole build is designed around:
 
 The full rule set (R1–R27) is in [`rules.md`](rules.md).
 
+## Quick start — one command per box
+
+Each box has a bootstrap script that runs its stages in order, **prompts for what it needs** (disks, the Pi's IP, secrets), remembers your answers in a gitignored `~/.homelab.env`, and pauses at the few genuinely manual steps. Every terminal command is shown and confirmed before it runs.
+
+```sh
+git clone https://github.com/ParagonJenko/home-server && cd home-server
+sudo ./bootstrap-nuc1.sh     # NUC-1: host base, storage, media stack
+sudo ./bootstrap-pi.sh       # Pi: DNS now, monitoring later
+sudo ./bootstrap-nuc2.sh     # NUC-2: host base, Frigate, PBS
+./secrets-init.sh            # create every gitignored secret file interactively
+```
+
+Order: **NUC-1 → Pi (DNS) → NUC-2 → Pi (monitoring)**. The scripts tell you when to switch boxes.
+
+**What stays manual** (can't be scripted): installing Proxmox/PBS from media, imaging the Pi SD card, the Plex/AMP sign-ins, the AdGuard first-run wizard, the long fill test, and physical cabling/UPS. The bootstrap scripts pause with instructions at each.
+
 ## Layout
 
 ```
