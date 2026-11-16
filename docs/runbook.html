@@ -1417,21 +1417,13 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Most of the list below is scriptable",
-            "html": "<p><code class=\"inline\">configs/media-pipeline/arr-setup.py</code> does most of the wiring over the APIs: root folders, the qBittorrent download client + category on Sonarr and Radarr, both apps linked into Prowlarr with the FlareSolverr proxy, <em>and</em> qBittorrent itself (ATM on, save path <code class=\"inline\">/data/torrents</code>, the two categories). Dry run by default, idempotent, and it asks each app for its own schema rather than hardcoding field names, so it survives Arr releases.</p><p>Quality profiles (Recyclarr) and qBittorrent housekeeping (qbit_manage) ship as configs in the repo and deploy with the stack — no file to copy, keys come from <code class=\"inline\">.env</code>; run <code class=\"inline\">docker compose run --rm recyclarr sync</code> to apply the profiles. What's genuinely left to do by hand is the short list below — mostly things that need <em>your</em> accounts.</p>"
+            "html": "<p><code class=\"inline\">configs/media-pipeline/arr-setup.py</code> does the wiring over the APIs: root folders, <strong>Minimum Free Space</strong> (R7), the qBittorrent download client + category on Sonarr and Radarr, both apps linked into Prowlarr with the FlareSolverr proxy, <em>and</em> qBittorrent itself (ATM on, save path <code class=\"inline\">/data/torrents</code>, the two categories). Dry run by default, idempotent, and it asks each app for its own schema rather than hardcoding field names, so it survives Arr releases.</p><p>Quality profiles (Recyclarr) and qBittorrent housekeeping (qbit_manage) ship as configs in the repo and deploy with the stack — no file to copy, keys come from <code class=\"inline\">.env</code>; run <code class=\"inline\">docker compose run --rm recyclarr sync</code> to apply the profiles.</p><p>Disk-full protection is already covered and needs nothing in qBittorrent (it has no such setting): mergerfs <code class=\"inline\">minfreespace</code> refuses writes near full, and the Arr Minimum Free Space above stops imports first. What's left below genuinely needs <em>your</em> accounts.</p>"
           },
           {
             "cmd": "# @where: Inside LXC 210\ncp .env.example .env      # add PROWLARR_API_KEY alongside the others\npython3 arr-setup.py      # shows the plan; --apply writes it"
           }
         ],
         "subs": [
-          {
-            "name": "qBittorrent — disk-space pause",
-            "html": "arr-setup.py already turned on Automatic Torrent Management, set the save path to <code class=\"inline\">/data/torrents</code> and created the <code class=\"inline\">tv-sonarr</code> / <code class=\"inline\">movies-radarr</code> categories. The one knob it can't set over the API: a disk-space threshold so qBittorrent <strong>pauses</strong> rather than errors when the pool nears full. Set that in Options → Downloads — it's qBittorrent's R7 degradation. Leave its own seeding ratio and time limits <strong>off</strong>; qbit_manage owns those, and stalled downloads are Decluttarr's job."
-          },
-          {
-            "name": "Sonarr / Radarr — Minimum Free Space",
-            "html": "arr-setup.py set the root folders (<code class=\"inline\">/data/library/tv</code>, <code class=\"inline\">/data/library/movies</code>) and the qBittorrent client + category — imports hardlink from <code class=\"inline\">/data/torrents</code> to <code class=\"inline\">/data/library/*</code>. By hand: set each app's <strong>Minimum Free Space</strong> (Settings → Media Management) so grabs stop cleanly before the disk fills (R7). Search-on-Missing and RSS Sync are on by default — leave them, the auto-retry loop needs them."
-          },
           {
             "name": "Bazarr — subtitle providers",
             "html": "Point Bazarr at the same <code class=\"inline\">/data/library/tv</code> and <code class=\"inline\">/data/library/movies</code> paths, then add your subtitle-provider accounts (OpenSubtitles etc.). Those logins are yours, so this one stays manual."

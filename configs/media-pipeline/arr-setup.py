@@ -65,6 +65,22 @@ def ensure_root_folder(base, key, path, apply):
     print(f"    root folder {path}: added")
 
 
+def ensure_min_free_space(base, key, mb, apply):
+    """Set Sonarr/Radarr's 'Minimum Free Space When Importing' so grabs stop cleanly
+    before the pool fills (R7). Singleton config resource — GET, tweak, PUT it back."""
+    cfg = http("GET", f"{base}/api/v3/config/mediamanagement", key)
+    cur = cfg.get("minimumFreeSpaceWhenImporting")
+    if cur == mb:
+        print(f"    min free space: already {mb} MB")
+        return
+    if not apply:
+        print(f"    min free space: WOULD set {cur} -> {mb} MB")
+        return
+    cfg["minimumFreeSpaceWhenImporting"] = mb
+    http("PUT", f"{base}/api/v3/config/mediamanagement/{cfg['id']}", key, cfg)
+    print(f"    min free space: set {mb} MB")
+
+
 def ensure_qbit(base, key, category, env, apply):
     clients = http("GET", f"{base}/api/v3/downloadclient", key)
     if any(c.get("implementation") == "QBittorrent" for c in clients):
@@ -200,6 +216,7 @@ def main() -> None:
     prowlarr = env.get("PROWLARR_URL", "http://media-pipeline.home:9696")
     flare = env.get("FLARESOLVERR_URL", "http://flaresolverr:8191/")
     sk, rk, pk = env.get("SONARR_API_KEY"), env.get("RADARR_API_KEY"), env.get("PROWLARR_API_KEY")
+    min_free = int(env.get("ARR_MIN_FREE_MB", "10240"))  # 10 GB default; override in .env
 
     if not all([sk, rk, pk]):
         print("  note: missing API key(s) — set them in .env. Dry run shows intended config anyway.")
@@ -207,10 +224,12 @@ def main() -> None:
     if sk:
         step("Sonarr", lambda: (
             ensure_root_folder(sonarr, sk, "/data/library/tv", args.apply),
+            ensure_min_free_space(sonarr, sk, min_free, args.apply),
             ensure_qbit(sonarr, sk, "tv-sonarr", env, args.apply)))
     if rk:
         step("Radarr", lambda: (
             ensure_root_folder(radarr, rk, "/data/library/movies", args.apply),
+            ensure_min_free_space(radarr, rk, min_free, args.apply),
             ensure_qbit(radarr, rk, "movies-radarr", env, args.apply)))
     if pk:
         step("Prowlarr", lambda: (
