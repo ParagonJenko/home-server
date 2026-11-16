@@ -3,7 +3,7 @@
 client + category on Sonarr/Radarr, Prowlarr applications + FlareSolverr proxy,
 qBittorrent's own ATM + save path + categories, Bazarr's Sonarr/Radarr
 connections + a default English language profile, and Forms authentication
-on Sonarr/Radarr/Prowlarr, disabled for local addresses).
+on Sonarr/Radarr/Prowlarr with a generated login).
 
 Dry-run by default; --apply writes. Idempotent, and asks each app for its own
 schema rather than hardcoding field names, so it survives Arr releases.
@@ -215,22 +215,26 @@ def ensure_prowlarr_app(base, key, impl, app_url, app_key, prowlarr_url, apply):
 
 
 def ensure_auth(label, base, apiver, key, user, pw, apply):
-    """Set Forms authentication, disabled for local addresses, on a Servarr app — clears
-    the 'authentication required' nag while never prompting on the LAN. API-key access is
-    unaffected. Changing this restarts the app, so it's run as the last step."""
+    """Set Forms authentication on a Servarr app to clear the 'authentication required'
+    nag. authenticationRequired=enabled (not disabledForLocalAddresses — that demands an
+    AllowedHosts whitelist that would have to cover the service name, the front name and
+    the IP, and silently blocks whatever it misses). API-key access bypasses the login, so
+    all automation and inter-app calls keep working; only the WebUI asks for a login, from
+    any host. Changing this restarts the app, so it runs as the last step."""
     cfg = http("GET", f"{base}/api/{apiver}/config/host", key)
     if (cfg.get("authenticationMethod") or "none").lower() not in ("none", "external"):
         print(f"    {label}: auth already set ({cfg.get('authenticationMethod')})")
         return
     if not apply:
-        print(f"    {label}: WOULD set forms auth (disabled for local addresses)")
+        print(f"    {label}: WOULD set forms auth (login required; API keys bypass it)")
         return
     cfg["authenticationMethod"] = "forms"
-    cfg["authenticationRequired"] = "disabledForLocalAddresses"
+    cfg["authenticationRequired"] = "enabled"
     cfg["username"] = user
     cfg["password"] = pw
+    cfg["passwordConfirmation"] = pw  # the API validates this matches password
     http("PUT", f"{base}/api/{apiver}/config/host/{cfg['id']}", key, cfg)
-    print(f"    {label}: forms auth set (disabled for local addresses) — app will restart")
+    print(f"    {label}: forms auth set — app will restart (API keys unaffected)")
 
 
 def bazarr_apikey(conf_path):
