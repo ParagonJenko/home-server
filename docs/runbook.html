@@ -1045,7 +1045,7 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: NUC-1 · host shell\n./configs/mergerfs/branch-missing-test.sh"
+            "cmd": "# @where: NUC-1 · host shell\n./configs/verify.sh B4"
           },
           {
             "callout": "note",
@@ -1071,15 +1071,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Each NUC · host shell\n# throwaway capped LV, fill it, confirm the host stays up\nlvcreate -V 5G --thinpool pve/data -n filltest pve\nmkfs.ext4 /dev/pve/filltest && mount /dev/pve/filltest /mnt/ft\ncat /dev/zero > /mnt/ft/blob 2>/dev/null ; echo \"LV full, host still up: $?\"\numount /mnt/ft && lvremove -y pve/filltest"
+            "cmd": "# @where: Each NUC · host shell\n./configs/verify.sh B5"
           },
           {
             "callout": "note",
             "title": "Context",
-            "html": "<p>The media pool is proven (B3), but Frigate, Plex and every container rootfs live on the host SSD's <code class=\"inline\">local-lvm</code>. Prove a full capped LV goes read-only without taking the host down, and that the caps can't oversubscribe the SSD. Run on each NUC.</p>"
-          },
-          {
-            "cmd": "# @where: Each NUC · host shell\n# ceiling sum: total of every LV cap must be under SSD size minus headroom\nlvs --units g -o lv_name,lv_size pve"
+            "html": "<p>The media pool is proven (B3), but Frigate, Plex and every container rootfs live on the host SSD's <code class=\"inline\">local-lvm</code>. The script fills a throwaway capped LV, confirms the host root stays writable (a full container can't take the OS down), then prints the local-lvm ceiling sum. Run on each NUC.</p>"
           },
           {
             "callout": "note",
@@ -1087,7 +1084,7 @@ var STAGES = [
             "html": "R9 is only true if a full container can't take the host root with it, and R6 only holds if the caps can't add up past the disk. B3 proved the pool; this proves the SSD the OS boots from."
           }
         ],
-        "verify": "Filling the throwaway LV leaves the host responsive and the LV read-only, never the host root. The sum of all local-lvm LV caps (Frigate 260G, Plex 32G, each rootfs, PBS 16G on NUC-2) is under SSD size minus ~10% headroom — record the sum in storage.md."
+        "verify": "Ends on green <code class=\"inline\">B5 PASS</code> — the full LV refused writes while the host root stayed writable. The ceiling sum it prints is informational now (no container LVs yet); re-run <code class=\"inline\">./configs/verify.sh B5</code> after Stage G and confirm the sum stays under SSD size minus ~10% headroom. Record both in storage.md."
       }
     ]
   },

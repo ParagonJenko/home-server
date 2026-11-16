@@ -71,6 +71,9 @@ case "$STEP" in
   B4)
     exec "$(dirname "$0")/mergerfs/branch-missing-test.sh"
     ;;
+  B5)
+    exec "$(dirname "$0")/lvm-filltest.sh"
+    ;;
   *)
     warn "No automated check for '${STEP}'. This step is verified by hand — see the runbook's Verify note."
     exit 0
