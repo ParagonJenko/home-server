@@ -6,11 +6,13 @@ Owns which physical disk is which, every workload's disk ceiling, the reserved h
 
 | Disk | Host | Model / serial | `by-id` path | Role |
 |---|---|---|---|---|
-| Internal SSD | nuc1 | TBD | TBD | Proxmox root + `local-lvm` |
+| Internal SSD | nuc1 | 512GB SSD / MQ13W07504681 | `ata-512GB_SSD_MQ13W07504681` | Proxmox root + `local-lvm` |
 | Internal SSD | nuc2 | TBD | TBD | Proxmox root + `local-lvm` (Frigate's 260G lives here) |
-| DAS disk 1 | nuc1 | TBD | TBD | mergerfs branch → `/mnt/pool/disk1` |
-| DAS disk 2 | nuc1 | TBD | TBD | mergerfs branch → `/mnt/pool/disk2` |
+| DAS disk 1 | nuc1 | ST4000DM004 / ZFN5Q3VL | `ata-ST4000DM004-2U9104_ZFN5Q3VL` | mergerfs branch → `/mnt/pool/disk1` |
+| DAS disk 2 | nuc1 | ST4000DM004 / ZW63SHWZ | `ata-ST4000DM004-2U9104_ZW63SHWZ` | mergerfs branch → `/mnt/pool/disk2` |
 | 2TB USB HDD | nuc2 | TBD | TBD | PBS datastore, passed to VM 900 as a block device |
+
+> The DAS is a USB enclosure, so each DAS disk also exposes a position-based `usb-External_USB3.0_…-0:0` / `-0:1` path. Record and use the `ata-…_<serial>` by-id — it follows the disk, not the bay (R9). Both disks are the same model, so the serial is the only thing telling them apart.
 
 ## Per-workload ceilings (R6)
 
