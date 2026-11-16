@@ -866,15 +866,15 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then get git, clone, and run NUC-1's bootstrap — it runs Stage A through E in order:"
+            "p": "On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then get git, clone, and run this step:"
           },
           {
-            "cmd": "# @where: NUC-1 · host shell\n# Fresh Proxmox has no git, and its enterprise apt repo 401s without a subscription.\n# This installs git only if missing, switching to the no-subscription repo first:\nif ! command -v git >/dev/null 2>&1; then\n  rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/ceph.sources\n  echo 'deb http://download.proxmox.com/debian/pve trixie pve-no-subscription' > /etc/apt/sources.list.d/pve-no-subscription.list\n  apt update && apt -y install git\nfi\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\nsudo ./bootstrap-nuc1.sh        # runs Stage A→E for NUC-1, prompting + pausing"
+            "cmd": "# @where: NUC-1 · host shell\n# Fresh Proxmox has no git, and its enterprise apt repo 401s without a subscription.\n# This installs git only if missing, switching to the no-subscription repo first:\nif ! command -v git >/dev/null 2>&1; then\n  rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/ceph.sources\n  echo 'deb http://download.proxmox.com/debian/pve trixie pve-no-subscription' > /etc/apt/sources.list.d/pve-no-subscription.list\n  apt update && apt -y install git\nfi\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
           },
           {
             "callout": "note",
-            "title": "Prefer one step at a time?",
-            "html": "The command above runs NUC-1 end to end. To do just this one step instead, use <code class=\"inline\">./configs/lxc/stage-a-host-setup.sh</code>; each later stage has its own script too. Either way you git-clone the repo first, as above."
+            "title": "How to run all of NUC-1 in one go",
+            "html": "The steps on this page run one at a time — that command is the default. If you would rather do the whole box in one go, after cloning (above) run the bootstrap instead of the per-step scripts; it runs Stage A→E in order, prompting and pausing:<div class=\"cmd\"><span class=\"cmd-where\">NUC-1 · host shell</span><button class=\"copy\" type=\"button\">Copy</button><pre>sudo ./bootstrap-nuc1.sh</pre></div>"
           },
           {
             "callout": "note",
