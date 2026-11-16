@@ -1426,7 +1426,7 @@ var STAGES = [
             "cmd": "# Step 3 — pull the Arr API keys into .env (reads each app's config.xml):\npct exec 210 -- bash /opt/media-pipeline/fill-arr-keys.sh"
           },
           {
-            "cmd": "# Step 4 — set the qBittorrent password (prompts you; run this line on its own):\n./configs/media-pipeline/set-qbit-pass.sh"
+            "cmd": "# Step 4 — record that SAME password in .env so arr-setup & qbit_manage can log in\n#   (it doesn't change anything in qBittorrent; prompts you — run on its own line):\n./configs/media-pipeline/set-qbit-pass.sh"
           },
           {
             "cmd": "# Step 5 — recreate the three env-driven services so they read the new keys:\npct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose up -d --force-recreate recyclarr decluttarr qbit_manage'"

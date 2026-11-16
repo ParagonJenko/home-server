@@ -7,7 +7,7 @@
 set -euo pipefail
 CTID="${1:-210}"
 
-read -rsp "qBittorrent 'admin' password: " QBP </dev/tty; echo
+read -rsp "qBittorrent password (the one you just set in the WebUI): " QBP </dev/tty; echo
 [ -n "$QBP" ] || { echo "nothing entered — .env unchanged"; exit 0; }
 
 # grep drops any existing QBIT_PASS line; cat appends the new one from stdin.
