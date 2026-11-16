@@ -326,6 +326,12 @@ details.callout > summary.ctitle:hover::after { opacity: 1; }
 }
 .cmd .copy:hover { color: var(--accent); border-color: var(--accent); }
 .cmd .copy.ok { color: var(--verify); border-color: var(--verify); }
+.save {
+  background: #FFE55C; color: #1a1a1a; font-weight: 600;
+  padding: 0 4px; border-radius: 2px;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+.save::before { content: "\270E\00A0"; font-weight: 700; }
 code.inline {
   background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 2px;
   padding: 0 4px; font-size: 12.5px;
@@ -348,7 +354,13 @@ code.inline {
   letter-spacing: .1em; text-transform: uppercase; color: var(--verify);
   display: block; margin-bottom: 4px;
 }
-.verify code.inline { background: var(--surface-2); }
+.verify .save {
+  background: #FFE55C; color: #1a1a1a; font-weight: 600;
+  padding: 0 4px; border-radius: 2px;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+.save::before { content: "\270E\00A0"; font-weight: 700; }
+code.inline { background: var(--surface-2); }
 
 /* ---------- substeps ---------- */
 .substeps { border-top: 1px solid var(--line-soft); margin-top: 4px; }
@@ -531,7 +543,7 @@ table.inv td.narrow { width: 1%; text-align: center; }
       <p><strong>Kit:</strong> two Beelink NUCs, a Raspberry Pi, a 2×4TB DAS, and a 2TB USB HDD (PBS backup datastore, Stage E).</p>
       <p>Work top to bottom. Every step is <strong>yours by hand</strong>, a <strong>script</strong> from <code class="inline">configs/</code>, or a <strong>check</strong> — don't retype script commands, run the file. Start at <a href="#stage-A">A0</a>.</p>
       <details class="callout note"><summary class="ctitle">What each stage does</summary><ul><li><strong>A</strong> — host base (NUC-1).</li><li><strong>B</strong> — storage: build the media pool, break it on purpose.</li><li><strong>C</strong> — container template.</li><li><strong>D</strong> — internal DNS on the Pi (early — everything resolves through it).</li><li><strong>E</strong> — media stack (NUC-1).</li><li><strong>F</strong> — host base (NUC-2).</li><li><strong>G</strong> — Frigate + PBS backups (NUC-2).</li><li><strong>H</strong> — monitoring &amp; alerting on the Pi (late — needs the containers).</li><li><strong>I</strong> — remote access &amp; final proof.</li><li><strong>J</strong> — resilience &amp; lifecycle.</li><li><strong>K</strong> — local inference (future, optional).</li></ul></details>
-      <details class="callout note"><summary class="ctitle">How this page works</summary><ul><li><strong>Fast path:</strong> on each box, run its bootstrap script — <code class="inline">sudo ./bootstrap-nuc1.sh</code>, then <code class="inline">./bootstrap-pi.sh</code>, then <code class="inline">./bootstrap-nuc2.sh</code>. Each prompts for what it needs (disks, the Pi's IP, secrets) and pauses at the manual bits. The stages below are the detail behind them.</li><li><strong>Where to run it:</strong> every command block is tagged with its destination. A <strong>host shell</strong> (NUC-1/NUC-2) is the Proxmox node's root shell — reach it however suits you: the Proxmox <em>Web UI</em> (Datacenter → node → Shell), SSH as <code class=\"inline\">root</code>, or physically at the NUC (HDMI + keyboard). All three are the <em>same</em> shell, so the command is identical whichever you use.</li><li><strong>Inside a container</strong> = <code class=\"inline\">pct enter &lt;id&gt;</code> from a host shell (or the container's Console in the Web UI); <strong>PBS VM</strong> = its console or SSH; <strong>Pi</strong> = SSH to the Pi. <strong>Edit — … config</strong> means a line you put in a file, not a command to run. Anything done purely in a web UI or by hand is a callout, not a command block.</li><li>Fill your values once in <em>Your values</em> — they appear in every command on the page.</li><li>Record every MAC and IP in the address register below as you go — it exports straight into <code class="inline">network.md</code>.</li><li>A script's real commands live in <code class="inline">configs/</code>; this page says which file and what it does.</li></ul></details>
+      <details class="callout note"><summary class="ctitle">How this page works</summary><ul><li><strong>Fast path:</strong> on each box, run its bootstrap script — <code class="inline">sudo ./bootstrap-nuc1.sh</code>, then <code class="inline">./bootstrap-pi.sh</code>, then <code class="inline">./bootstrap-nuc2.sh</code>. Each prompts for what it needs (disks, the Pi's IP, secrets) and pauses at the manual bits. The stages below are the detail behind them.</li><li><strong>Where to run it:</strong> every command block is tagged with its destination. A <strong>host shell</strong> (NUC-1/NUC-2) is the Proxmox node's root shell — reach it however suits you: the Proxmox <em>Web UI</em> (Datacenter → node → Shell), SSH as <code class=\"inline\">root</code>, or physically at the NUC (HDMI + keyboard). All three are the <em>same</em> shell, so the command is identical whichever you use.</li><li><strong>Inside a container</strong> = <code class=\"inline\">pct enter &lt;id&gt;</code> from a host shell (or the container's Console in the Web UI); <strong>PBS VM</strong> = its console or SSH; <strong>Pi</strong> = SSH to the Pi. <strong>Edit — … config</strong> means a line you put in a file, not a command to run. Anything done purely in a web UI or by hand is a callout, not a command block.</li><li>Fill your values once in <em>Your values</em> — they appear in every command on the page.</li><li><span class=save>Record every MAC and IP in the address register below as you go</span> — it exports straight into <code class="inline">network.md</code>.</li><li>A script's real commands live in <code class="inline">configs/</code>; this page says which file and what it does.</li></ul></details>
       <div class="principle">
         <p><strong>A single workload filling up is normal, and must be handled gracefully.</strong></p>
         <p>The shared system filling up is catastrophic, and must be impossible. An alert saying “Frigate is pruning old video” is a success. A filesystem aborting at 100% is the only real failure, and it is designed out.</p>
@@ -849,15 +861,15 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then clone the public repo and run the script:"
+            "p": "On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then get git, clone, and run NUC-1's bootstrap — it runs Stage A through E in order:"
           },
           {
-            "cmd": "# @where: NUC-1 · host shell\n# Fresh Proxmox has no git, and its enterprise apt repo 401s without a subscription.\n# This installs git only if missing, switching to the no-subscription repo first:\nif ! command -v git >/dev/null 2>&1; then\n  rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/ceph.sources\n  echo 'deb http://download.proxmox.com/debian/pve trixie pve-no-subscription' > /etc/apt/sources.list.d/pve-no-subscription.list\n  apt update && apt -y install git\nfi\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
+            "cmd": "# @where: NUC-1 · host shell\n# Fresh Proxmox has no git, and its enterprise apt repo 401s without a subscription.\n# This installs git only if missing, switching to the no-subscription repo first:\nif ! command -v git >/dev/null 2>&1; then\n  rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/ceph.sources\n  echo 'deb http://download.proxmox.com/debian/pve trixie pve-no-subscription' > /etc/apt/sources.list.d/pve-no-subscription.list\n  apt update && apt -y install git\nfi\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\nsudo ./bootstrap-nuc1.sh        # runs Stage A→E for NUC-1, prompting + pausing"
           },
           {
             "callout": "note",
-            "title": "Or just run the box's bootstrap",
-            "html": "<code class=\"inline\">sudo ./bootstrap-nuc1.sh</code> runs this step and the rest of NUC-1 in order, prompting as it goes — the fast path from the intro. Either way you clone the repo onto the box first, as above."
+            "title": "Prefer one step at a time?",
+            "html": "The command above runs NUC-1 end to end. To do just this one step instead, use <code class=\"inline\">./configs/lxc/stage-a-host-setup.sh</code>; each later stage has its own script too. Either way you git-clone the repo first, as above."
           },
           {
             "callout": "note",
@@ -867,7 +879,7 @@ var STAGES = [
           {
             "callout": "manual",
             "title": "Manual",
-            "html": "Copy the token secret when it prints — it's shown once — and add this node's endpoint and token to the Proxmox MCP server config. Vet the community MCP server before trusting it with the token."
+            "html": "<span class=save>Copy the token secret when it prints — it's shown once</span> — and add this node's endpoint and token to the Proxmox MCP server config. Vet the community MCP server before trusting it with the token."
           },
           {
             "callout": "danger",
@@ -925,7 +937,7 @@ var STAGES = [
             "cmd": "# @where: NUC-1 · host shell\nlsblk -o NAME,SIZE,TYPE,FSTYPE,MODEL"
           }
         ],
-        "verify": "Two ~4TB disks are listed. Put them into <em>Your values</em> now, and check them against the internal SSD. Record each disk's model, serial and <code class=\"inline\">by-id</code> path in the disk register at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">/dev/sdX</code> letters reorder across reboots, so that is the only durable way to know which physical disk is disk1."
+        "verify": "Two ~4TB disks are listed. <span class=save>Put them into <em>Your values</em> now</span>, and check them against the internal SSD. Record each disk's model, serial and <code class=\"inline\">by-id</code> path in the disk register at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">/dev/sdX</code> letters reorder across reboots, so that is the only durable way to know which physical disk is disk1."
       },
       {
         "id": "B2",
@@ -979,7 +991,7 @@ var STAGES = [
             "html": "A fixed count sized by guesswork can finish without reaching the limit — 100×50G is 5TB into a 7.2TB pool, so the loop completes, nothing is proven, and R10 gets signed off on a test that never ran."
           }
         ],
-        "verify": "The script reports <code class=\"inline\">STOPPED at blob_N</code>, the pool stayed mounted and readable, and cleanup restored free space. If it writes 1000 blobs without stopping, <code class=\"inline\">minfreespace</code> isn't taking effect — fix that before continuing. Record the result in storage.md."
+        "verify": "The script reports <code class=\"inline\">STOPPED at blob_N</code>, the pool stayed mounted and readable, and cleanup restored free space. If it writes 1000 blobs without stopping, <code class=\"inline\">minfreespace</code> isn't taking effect — fix that before continuing. <span class=save>Record the result in storage.md</span>."
       },
       {
         "id": "B4",
@@ -1508,7 +1520,7 @@ var STAGES = [
             "cmd": "# @where: NUC-2 · host shell\nlsblk -o NAME,SIZE,TYPE,MODEL\nls -l /dev/disk/by-id/ | grep -i <usb-model>"
           }
         ],
-        "verify": "You have a <code class=\"inline\">/dev/disk/by-id/…</code> path for the HDD. Put it in <em>Your values</em> and in the disk register at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">by-id</code> is stable across reboots, <code class=\"inline\">/dev/sdX</code> is not."
+        "verify": "You have a <code class=\"inline\">/dev/disk/by-id/…</code> path for the HDD. <span class=save>Put it in <em>Your values</em> and in the disk register</span> at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">by-id</code> is stable across reboots, <code class=\"inline\">/dev/sdX</code> is not."
       },
       {
         "id": "G3",
@@ -1635,7 +1647,7 @@ var STAGES = [
             "html": "Without it the only backup is the single USB HDD in the same room as everything it protects — fire or theft loses the lot, and R4 and R17 are unmet. The cloud copy is the disaster copy and the second access path at once."
           }
         ],
-        "verify": "A sync completes to the cloud remote, and a test restore pulls one container <em>from the cloud copy</em> (not the local USB HDD) and starts. Record it — this is the offsite half of R12."
+        "verify": "A sync completes to the cloud remote, and a test restore pulls one container <em>from the cloud copy</em> (not the local USB HDD) and starts. <span class=save>Record it — this is the offsite half of R12</span>."
       }
     ]
   },
@@ -1924,7 +1936,7 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Put every secret somewhere no single box holds alone — a password manager, or an age/gpg-encrypted bundle stored with the offsite backups:"
+            "p": "<span class=save>Put every secret somewhere no single box holds alone</span> — a password manager, or an age/gpg-encrypted bundle stored with the offsite backups:"
           },
           {
             "list": [
@@ -2059,7 +2071,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Why",
-            "html": "Treating a 7TB re-downloadable library like irreplaceable data either wastes offsite capacity or starves the files that actually can't be recovered. Record the split in storage.md so it's a decision, not an accident."
+            "html": "Treating a 7TB re-downloadable library like irreplaceable data either wastes offsite capacity or starves the files that actually can't be recovered. <span class=save>Record the split in storage.md</span> so it's a decision, not an accident."
           },
           {
             "callout": "note",
@@ -2531,7 +2543,7 @@ var ADDR = [
     own: ["pi.home"],
     md: "Pi — AdGuard, Prometheus, Alertmanager, Grafana",
     note: "The resolver itself. Its IP is the one literal IP configs may contain ([R13](rules.md)) — it goes in every `configs/lxc/*.sh` and `homelab.conf`'s `resolver` line",
-    hint: "This one is PI_IP — the only literal IP the rules allow. Put it in Your values too." },
+    hint: "This one is PI_IP — the only literal IP the rules allow. <span class=save>Put it in Your values too</span>." },
   { g: "Guests — NUC-1" },
   { id: "lxc210", plannedIp: "192.168.1.21", kind: "reserved", dev: "media-pipeline", meta: "LXC 210 · :8080 :8989 :7878 :6767 :9696 :8191",
     own: ["media-pipeline.home"], front: ["sonarr.home", "radarr.home", "bazarr.home", "prowlarr.home"],
