@@ -1,2 +1,2 @@
-mcp>=1.2.0,<2   # v1 API (FastMCP). mcp 2.x renamed it to MCPServer; server.py targets v1.
+mcp>=2,<3       # v2 API (MCPServer). server.py targets v2.
 requests>=2.31.0

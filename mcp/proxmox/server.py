@@ -23,7 +23,7 @@ import sys
 
 import requests
 import urllib3
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 # ---- config -----------------------------------------------------------------
 _envfile = os.environ.get("PROXMOX_ENV") or os.path.join(
@@ -55,7 +55,7 @@ else:
     VERIFY_ARG = VERIFY  # a CA bundle path
 HEADERS = {"Authorization": f"PVEAPIToken={TOKEN_ID}={TOKEN_SECRET}"}
 
-mcp = FastMCP("proxmox-home-server")
+mcp = MCPServer("proxmox-home-server")
 
 
 def _req(method: str, path: str, **kw):
@@ -153,6 +153,6 @@ def snapshot_create(node: str, vmid: int, kind: str, name: str, description: str
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
         import json
-        print(json.dumps(list_nodes(), indent=2))
+        print(json.dumps(_req("GET", "/nodes"), indent=2))  # call the API directly, not the tool wrapper
         sys.exit(0)
-    mcp.run()
+    mcp.run(transport="stdio")
