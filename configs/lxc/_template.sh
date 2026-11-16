@@ -15,6 +15,9 @@ resolve_template() {
   name="$(pveam available --section system | awk '{print $2}' \
             | grep -E "debian-13.*_${arch}\.tar" | sort -V | tail -1)"
   require_filled "debian-13 template for ${arch}" "$name"
-  pveam list local | grep -q "$name" || pveam download local "$name"
+  # download output must go to stderr: this function's stdout is captured with
+  # $(resolve_template), and pveam's progress text would otherwise be concatenated
+  # into the volid (ostemplate > 255 chars). Only the echo below belongs on stdout.
+  pveam list local | grep -q "$name" || pveam download local "$name" >&2
   echo "local:vztmpl/${name}"
 }
