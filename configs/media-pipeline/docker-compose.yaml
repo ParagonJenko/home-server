@@ -44,6 +44,7 @@ services:
     image: ghcr.io/recyclarr/recyclarr:latest        # ENTER: pin a version tag
     user: "1000:1000"
     environment: { TZ: "Europe/London" }
+    env_file: .env                                   # SONARR_API_KEY / RADARR_API_KEY
     volumes: [ /opt/recyclarr/config:/config ]       # owns quality profiles (not arr-setup.py)
     restart: unless-stopped
   decluttarr:
@@ -56,5 +57,6 @@ services:
     image: ghcr.io/stuffanthings/qbit_manage:latest  # ENTER: pin a version tag
     user: "1000:1000"
     environment: { TZ: "Europe/London" }
+    env_file: .env                                   # QBIT_USER / QBIT_PASS
     volumes: [ /opt/qbit_manage/config:/config, /data:/data ]
     restart: unless-stopped

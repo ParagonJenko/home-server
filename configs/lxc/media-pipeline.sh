@@ -43,6 +43,10 @@ if [ -f ../media-pipeline/.env ]; then
 else
   warn "  ENTER: ../media-pipeline/.env not found — create it (secrets-init.sh) before the stack is useful."
 fi
+# quality-profile (recyclarr) + qBittorrent housekeeping (qbit_manage) configs
+pct exec "$CTID" -- mkdir -p /opt/recyclarr/config /opt/qbit_manage/config
+pct push "$CTID" ../media-pipeline/recyclarr.yml /opt/recyclarr/config/recyclarr.yml
+pct push "$CTID" ../media-pipeline/qbit_manage.config.yml /opt/qbit_manage/config/config.yml
 pct exec "$CTID" -- bash -c 'cd /opt/media-pipeline && docker compose up -d'
 
 ok "media-pipeline up. Next: ../media-pipeline/arr-setup.py --apply  (wires the Arrs over their APIs)."

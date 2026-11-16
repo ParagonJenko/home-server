@@ -1367,7 +1367,7 @@ var STAGES = [
     "name": "Media stack",
     "where": "NUC-1",
     "title": "Media containers",
-    "intro": "For each script: fill in PI_IP, run it (it creates the container, applies the idmap and starts it), then pct enter the container and run configs/lxc/_install-docker.sh, then push that app's docker-compose.yaml in and docker compose up -d. Each script prints its exact push/start sequence when it finishes — read it, they differ per app.",
+    "intro": "Each script is one-shot: it creates the container, applies the idmap, installs Docker inside it, deploys that app's compose stack and starts it — no manual pct enter or push. The Pi's IP (192.168.1.4) is baked in, so there's nothing to fill. Once the media-pipeline container is up, one run of arr-setup.py wires the Arr stack over its APIs.",
     "steps": [
       {
         "id": "E0",
@@ -1417,7 +1417,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Most of the list below is scriptable",
-            "html": "<p><code class=\"inline\">configs/media-pipeline/arr-setup.py</code> sets the root folders, the qBittorrent client and category on Sonarr and Radarr, links both into Prowlarr and adds the FlareSolverr proxy — over the APIs. Dry run by default, idempotent, and it asks each app for its own schema rather than hardcoding field names, so it survives Arr releases.</p><p>Indexers stay manual: they need your accounts. Quality profiles are Recyclarr's job.</p>"
+            "html": "<p><code class=\"inline\">configs/media-pipeline/arr-setup.py</code> sets the root folders, the qBittorrent client and category on Sonarr and Radarr, links both into Prowlarr and adds the FlareSolverr proxy — over the APIs. Dry run by default, idempotent, and it asks each app for its own schema rather than hardcoding field names, so it survives Arr releases.</p><p>Indexers stay manual — they need your accounts. Quality profiles (Recyclarr) and qBittorrent housekeeping (qbit_manage) ship as configs in the repo and deploy with the stack; run <code class=\"inline\">docker compose run --rm recyclarr sync</code> to apply the profiles.</p>"
           },
           {
             "cmd": "# @where: Inside LXC 210\ncp .env.example .env      # add PROWLARR_API_KEY alongside the others\npython3 arr-setup.py      # shows the plan; --apply writes it"
@@ -1513,11 +1513,8 @@ var STAGES = [
           {
             "list": [
               "Install AMP via <a href=\"https://cubecoders.com/AMP\">CubeCoders' installer</a> inside the container.",
-              "Nginx: set the resolver line in <code class=\"inline\">configs/nginx/homelab.conf</code> before <code class=\"inline\">nginx -t</code>."
+              "Nginx: <code class=\"inline\">amp-nginx.sh</code> fills the resolver line (the Pi, 192.168.1.4) and deploys <code class=\"inline\">homelab.conf</code> automatically — nothing to edit."
             ]
-          },
-          {
-            "cmd": "# @where: Edit — nginx config (LXC 240)\nresolver {{PI_IP}} valid=10s;"
           },
           {
             "callout": "note",

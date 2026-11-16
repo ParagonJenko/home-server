@@ -1,0 +1,33 @@
+# recyclarr.yml — quality definitions, profiles and custom formats for Sonarr + Radarr,
+# pulled from the TRaSH guides that recyclarr bundles as templates. This is the piece
+# arr-setup.py deliberately leaves alone ("quality profiles are Recyclarr's job").
+# Deployed to /opt/recyclarr/config/recyclarr.yml inside LXC 210.
+#
+# api_key is read from the env (SONARR_API_KEY / RADARR_API_KEY in .env) — the same
+# keys arr-setup.py uses, so you set them once.
+#
+# These are sensible 1080p defaults. To change tier (e.g. 2160p) or see every template,
+# run:  docker compose run --rm recyclarr config list templates
+# then swap the template ids below. Apply with:  docker compose run --rm recyclarr sync
+
+sonarr:
+  main:
+    base_url: http://sonarr:8989
+    api_key: !env_var SONARR_API_KEY
+    delete_old_custom_formats: true
+    replace_existing_custom_formats: true
+    include:
+      - template: sonarr-quality-definition-series
+      - template: sonarr-v4-quality-profile-web-1080p
+      - template: sonarr-v4-custom-formats-web-1080p
+
+radarr:
+  main:
+    base_url: http://radarr:7878
+    api_key: !env_var RADARR_API_KEY
+    delete_old_custom_formats: true
+    replace_existing_custom_formats: true
+    include:
+      - template: radarr-quality-definition-movie
+      - template: radarr-quality-profile-hd-bluray-web
+      - template: radarr-custom-formats-hd-bluray-web

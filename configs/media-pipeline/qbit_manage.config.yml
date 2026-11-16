@@ -1,0 +1,38 @@
+# qbit_manage config — housekeeping for qBittorrent: keep categories/tags tidy, tag
+# torrents with no hardlinks (safe to clean), recheck/resume. Deployed to
+# /opt/qbit_manage/config/config.yml inside LXC 210.
+# Conservative defaults — nothing is DELETED here (rem_* are off); it only tags and
+# tidies. Turn rem_orphaned / rem_unregistered on once you trust it.
+# qbt creds come from the env (QBIT_USER / QBIT_PASS in .env).
+
+commands:
+  dry_run: false
+  recheck: true
+  cat_update: true
+  tag_update: true
+  rem_unregistered: 0          # don't auto-remove unregistered torrents yet
+  rem_orphaned: false          # don't auto-remove orphaned files yet
+  tag_nohardlinks: true        # tag torrents whose data is no longer hardlinked
+  share_limits: false
+
+qbt:
+  host: qbittorrent:8080
+  user: !ENV QBIT_USER
+  pass: !ENV QBIT_PASS
+
+directory:
+  root_dir: /data/torrents
+  remote_dir: /data/torrents
+
+# Categories map to the save paths the Arrs use (set in arr-setup.py).
+cat:
+  tv-sonarr: /data/torrents
+  movies-radarr: /data/torrents
+
+# Tags qbit_manage applies; leave as-is to start.
+nohardlinks:
+  tv-sonarr:
+  movies-radarr:
+
+tracker:
+cat_change:
