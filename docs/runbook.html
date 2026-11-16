@@ -1453,9 +1453,13 @@ var STAGES = [
         ],
         "after": [
           {
-            "callout": "note",
-            "title": "Turn on Decluttarr once the stack is running",
-            "html": "Decluttarr ships fully configured — connected to Sonarr/Radarr/qBittorrent with the safe cleanup jobs on — but starts in dry-run so it can't bin anything by surprise. Check it, then flip the switch:<ol><li><code class=\"inline\">pct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose logs decluttarr | tail -20'</code> — it should list your Sonarr/Radarr and flag nothing it shouldn't.</li><li><code class=\"inline\">pct exec 210 -- sed -i 's/^TEST_RUN=.*/TEST_RUN=False/' /opt/media-pipeline/.env</code></li><li><code class=\"inline\">pct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose up -d decluttarr'</code></li></ol>"
+            "p": "<strong>Step 8 — turn on Decluttarr.</strong> It ships configured (Sonarr/Radarr/qBittorrent, safe cleanup jobs on) but starts in dry-run so it can't bin anything by surprise. Check what it would do, then flip the switch."
+          },
+          {
+            "cmd": "# Decluttarr's dry-run log — it should list your Sonarr/Radarr and flag nothing it shouldn't:\npct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose logs decluttarr | tail -20'"
+          },
+          {
+            "cmd": "# Happy with it? Turn dry-run off and restart Decluttarr:\npct exec 210 -- sed -i 's/^TEST_RUN=.*/TEST_RUN=False/' /opt/media-pipeline/.env\npct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose up -d decluttarr'"
           },
           {
             "callout": "note",
