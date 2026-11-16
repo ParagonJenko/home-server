@@ -22,15 +22,18 @@ if ! "$PY" -c 'import ensurepip' >/dev/null 2>&1; then
     echo "   python3-venv package, then re-run ./setup.sh"; exit 1
   fi
 fi
-# (Re)create if absent or broken — a failed venv leaves an unusable .venv behind.
-if [ ! -x .venv/bin/python ]; then
+# (Re)create if absent or broken — the first failed run left a pip-less .venv behind,
+# so check for pip too, not just python.
+if [ ! -x .venv/bin/python ] || [ ! -x .venv/bin/pip ]; then
   rm -rf .venv
   "$PY" -m venv .venv
 fi
+# belt-and-braces: guarantee pip inside the venv
+.venv/bin/python -m ensurepip --upgrade >/dev/null 2>&1 || true
 
 echo "==> dependencies"
-.venv/bin/pip install -q --upgrade pip
-.venv/bin/pip install -q -r requirements.txt
+.venv/bin/python -m pip install -q --upgrade pip
+.venv/bin/python -m pip install -q -r requirements.txt
 
 if [ ! -f proxmox.env ]; then
   echo
