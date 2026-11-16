@@ -26,10 +26,12 @@ else warn "  Docker not running"; FAIL=1; fi
 say "SD-card write reductions (journald volatile, swap off)"
 mkdir -p /etc/systemd/journald.conf.d
 printf '[Journal]\nStorage=volatile\n' > /etc/systemd/journald.conf.d/volatile.conf
-systemctl disable --now dphys-swapfile >/dev/null 2>&1 || true
 systemctl restart systemd-journald >/dev/null 2>&1 || true
+swapoff -a 2>/dev/null || true                                       # turn off all ACTIVE swap now
+systemctl disable --now dphys-swapfile >/dev/null 2>&1 || true       # keep it off across reboots
+command -v dphys-swapfile >/dev/null 2>&1 && dphys-swapfile uninstall >/dev/null 2>&1 || true
 if [ -z "$(swapon --show 2>/dev/null)" ]; then ok "  swap off, journald volatile"
-else warn "  swap still on"; FAIL=1; fi
+else warn "  swap still on — run: sudo swapoff -a"; FAIL=1; fi
 
 say "deploy the stack into /opt (configs come from the repo — edit there, re-run to redeploy)"
 mkdir -p /opt/pi-stack /opt/monitoring
