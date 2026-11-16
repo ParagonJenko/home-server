@@ -40,8 +40,9 @@ pct exec "$CTID" -- bash -c 'command -v python3 >/dev/null || { apt-get update -
 say "deploy the compose stack"
 pct exec "$CTID" -- mkdir -p /opt/media-pipeline
 pct push "$CTID" ../media-pipeline/docker-compose.yaml /opt/media-pipeline/docker-compose.yaml
-pct push "$CTID" ../media-pipeline/arr-setup.py /opt/media-pipeline/arr-setup.py        # phase 2
-pct push "$CTID" ../media-pipeline/fill-arr-keys.sh /opt/media-pipeline/fill-arr-keys.sh # phase 2
+pct push "$CTID" ../media-pipeline/arr-setup.py /opt/media-pipeline/arr-setup.py          # phase 2
+pct push "$CTID" ../media-pipeline/fill-arr-keys.sh /opt/media-pipeline/fill-arr-keys.sh  # phase 2
+pct push "$CTID" ../media-pipeline/set-qbit-pass.sh /opt/media-pipeline/set-qbit-pass.sh  # phase 2
 if [ -f ../media-pipeline/.env ]; then
   pct push "$CTID" ../media-pipeline/.env /opt/media-pipeline/.env
 else
@@ -69,8 +70,8 @@ echo "     qbittorrent.home  sonarr.home  radarr.home  bazarr.home  prowlarr.hom
 echo "   Until DNS resolves, use this LXC's IP directly:"
 echo "     qBittorrent http://${IP}:8080   Sonarr http://${IP}:8989   Radarr http://${IP}:7878"
 echo "     Prowlarr    http://${IP}:9696   Bazarr http://${IP}:6767"
-echo "   Phase 2 — after the apps have booted once (set a qBittorrent password in its WebUI first):"
+echo "   Phase 2 — after the apps have booted once:"
 echo "     pct exec ${CTID} -- bash /opt/media-pipeline/fill-arr-keys.sh    # Arr keys -> .env"
-echo "     ./configs/media-pipeline/set-qbit-pass.sh                        # qBit password -> .env"
+echo "     pct exec ${CTID} -- bash /opt/media-pipeline/set-qbit-pass.sh    # generate qBit password -> .env (prints it)"
 echo "     pct exec ${CTID} -- bash -c 'cd /opt/media-pipeline && docker compose up -d --force-recreate recyclarr decluttarr qbit_manage'"
 echo "     pct exec ${CTID} -- bash -c 'cd /opt/media-pipeline && python3 arr-setup.py --apply'"
