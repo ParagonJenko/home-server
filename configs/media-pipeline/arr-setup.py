@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """arr-setup.py — wire the Arr stack over their APIs (root folders, qBittorrent
 client + category on Sonarr/Radarr, Prowlarr applications + FlareSolverr proxy,
-qBittorrent's own ATM + save path + categories, and Bazarr's Sonarr/Radarr
-connections + a default English language profile).
+qBittorrent's own ATM + save path + categories, Bazarr's Sonarr/Radarr
+connections + a default English language profile, and Forms authentication
+on Sonarr/Radarr/Prowlarr, disabled for local addresses).
 
 Dry-run by default; --apply writes. Idempotent, and asks each app for its own
 schema rather than hardcoding field names, so it survives Arr releases.
@@ -22,10 +23,25 @@ Reads config from .env (gitignored) next to this file, e.g.:
   FLARESOLVERR_URL=http://flaresolverr:8191/
 Stdlib only — runs anywhere that can reach the Arr APIs.
 """
-import argparse, json, os, sys, urllib.request, urllib.error, urllib.parse
+import argparse, json, os, secrets, sys, urllib.request, urllib.error, urllib.parse
 from http.cookiejar import CookieJar  # imported by name: the http() func below shadows the module
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def upsert_env(key, value):
+    """Set key=value in the .env next to this script (replace in place, or append), so a
+    generated credential survives re-runs."""
+    path = os.path.join(HERE, ".env")
+    lines = open(path).read().splitlines() if os.path.exists(path) else []
+    for i, ln in enumerate(lines):
+        if ln.startswith(key + "="):
+            lines[i] = f"{key}={value}"
+            break
+    else:
+        lines.append(f"{key}={value}")
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
 
 
 def load_env():
@@ -198,6 +214,25 @@ def ensure_prowlarr_app(base, key, impl, app_url, app_key, prowlarr_url, apply):
     print(f"    Prowlarr -> {impl} ({app_url}): added")
 
 
+def ensure_auth(label, base, apiver, key, user, pw, apply):
+    """Set Forms authentication, disabled for local addresses, on a Servarr app — clears
+    the 'authentication required' nag while never prompting on the LAN. API-key access is
+    unaffected. Changing this restarts the app, so it's run as the last step."""
+    cfg = http("GET", f"{base}/api/{apiver}/config/host", key)
+    if (cfg.get("authenticationMethod") or "none").lower() not in ("none", "external"):
+        print(f"    {label}: auth already set ({cfg.get('authenticationMethod')})")
+        return
+    if not apply:
+        print(f"    {label}: WOULD set forms auth (disabled for local addresses)")
+        return
+    cfg["authenticationMethod"] = "forms"
+    cfg["authenticationRequired"] = "disabledForLocalAddresses"
+    cfg["username"] = user
+    cfg["password"] = pw
+    http("PUT", f"{base}/api/{apiver}/config/host/{cfg['id']}", key, cfg)
+    print(f"    {label}: forms auth set (disabled for local addresses) — app will restart")
+
+
 def bazarr_apikey(conf_path):
     """Read auth.apikey out of Bazarr's config.yaml without a YAML dependency. Tracks the
     current top-level section (unindented line ending in ':') and returns the apikey under
@@ -303,6 +338,16 @@ def main() -> None:
     if not all([sk, rk, pk]):
         print("  note: missing API key(s) — set them in .env. Dry run shows intended config anyway.")
 
+    # Shared WebUI credential for the auth step. Generate once and persist to .env so it's
+    # stable across re-runs; it's bypassed on the LAN so it's rarely typed, but keep it safe.
+    auth_user = env.get("ARR_AUTH_USER", "admin")
+    auth_pass = env.get("ARR_AUTH_PASS", "")
+    if args.apply and not auth_pass:
+        auth_pass = secrets.token_urlsafe(18)
+        upsert_env("ARR_AUTH_USER", auth_user)
+        upsert_env("ARR_AUTH_PASS", auth_pass)
+        print(f"  generated Arr WebUI login — SAVE to your vault:  {auth_user} / {auth_pass}")
+
     if sk:
         step("Sonarr", lambda: (
             ensure_root_folder(sonarr, sk, "/data/library/tv", args.apply),
@@ -322,6 +367,11 @@ def main() -> None:
         step("qBittorrent", lambda: configure_qbittorrent(env, args.apply))
     if sk and rk:
         step("Bazarr", lambda: configure_bazarr(env, sk, rk, args.apply))
+    # Auth LAST: setting it restarts each app, so do it after all inter-app wiring.
+    step("Authentication", lambda: [
+        ensure_auth("Sonarr", sonarr, "v3", sk, auth_user, auth_pass, args.apply) if sk else None,
+        ensure_auth("Radarr", radarr, "v3", rk, auth_user, auth_pass, args.apply) if rk else None,
+        ensure_auth("Prowlarr", prowlarr, "v1", pk, auth_user, auth_pass, args.apply) if pk else None])
 
     if not args.apply:
         print("dry run — pass --apply to write. Indexers stay manual; profiles are Recyclarr's job.")
