@@ -7,8 +7,11 @@ set -euo pipefail
 POOL="${1:-/mnt/media}"
 DIR="${POOL}/.filltest"
 
-[[ -d "${POOL}/library" && -n "$(ls -A "${POOL}/library" 2>/dev/null)" ]] && {
-  echo "!! ${POOL} already has data — refusing to fill-test." >&2; exit 1; }
+# Refuse only if the pool holds real files — the empty torrents/ library/ scaffold
+# and lost+found are directories (created by stage-b) and don't count.
+if find "$POOL" -type f ! -path "${DIR}/*" -print -quit 2>/dev/null | grep -q .; then
+  echo "!! ${POOL} already has files — refusing to fill-test." >&2; exit 1
+fi
 
 mkdir -p "$DIR"; n=0
 while dd if=/dev/zero of="${DIR}/blob_${n}" bs=1G count=50 status=none 2>/dev/null; do
