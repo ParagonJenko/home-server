@@ -1446,13 +1446,14 @@ var STAGES = [
           {
             "name": "Prowlarr — your indexers",
             "html": "<ol><li>Open <code class=\"inline\">http://prowlarr.home</code> (or the LXC IP :9696).</li><li>Indexers → <strong>Add Indexer</strong> → search the tracker's name → select it.</li><li>Private tracker: paste your API key or cookie. Public: nothing to enter.</li><li>Cloudflare-protected only: open the <strong>Tags</strong> field → type <code class=\"inline\">flaresolverr</code> → Enter. (Do the same once under Settings → Indexers → FlareSolverr so the proxy carries that tag.)</li><li>Click <strong>Test</strong> → <strong>Save</strong>.</li><li>Settings → Apps → <strong>Sync App Indexers</strong> to push it to Sonarr/Radarr now (they're already linked, so this is just to skip the wait).</li></ol>"
-          },
-          {
-            "name": "Decluttarr — review and flip TEST_RUN",
-            "html": "Ships fully configured — connected to Sonarr, Radarr and qBittorrent with the safe cleanup jobs on (failed downloads, failed imports, metadata-missing, stalled, orphans). The only manual bit is the dry-run switch <code class=\"inline\">TEST_RUN</code> in <code class=\"inline\">.env</code>, shipped <code class=\"inline\">True</code> so it only logs at first.<ol><li>Check it: <code class=\"inline\">pct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose logs decluttarr | tail -20'</code> — it should list your Sonarr/Radarr and flag nothing it shouldn't.</li><li>Flip it: <code class=\"inline\">pct exec 210 -- sed -i 's/^TEST_RUN=.*/TEST_RUN=False/' /opt/media-pipeline/.env</code></li><li>Restart: <code class=\"inline\">pct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose up -d decluttarr'</code></li></ol>"
           }
         ],
         "after": [
+          {
+            "callout": "note",
+            "title": "Turn on Decluttarr once the stack is running",
+            "html": "Decluttarr ships fully configured — connected to Sonarr/Radarr/qBittorrent with the safe cleanup jobs on — but starts in dry-run so it can't bin anything by surprise. Check it, then flip the switch:<ol><li><code class=\"inline\">pct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose logs decluttarr | tail -20'</code> — it should list your Sonarr/Radarr and flag nothing it shouldn't.</li><li><code class=\"inline\">pct exec 210 -- sed -i 's/^TEST_RUN=.*/TEST_RUN=False/' /opt/media-pipeline/.env</code></li><li><code class=\"inline\">pct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose up -d decluttarr'</code></li></ol>"
+          },
           {
             "callout": "note",
             "title": "Verify hardlinks actually work",
