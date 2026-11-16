@@ -6,9 +6,27 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 PY="${PYTHON:-python3}"
+SUDO=""; [ "$(id -u)" -ne 0 ] && SUDO="sudo"
 
 echo "==> virtualenv (.venv)"
-[ -d .venv ] || "$PY" -m venv .venv
+# Debian/Ubuntu ship venv support in a separate package — install it if ensurepip
+# is missing, rather than failing halfway (check-and-fix, not a gotcha).
+if ! "$PY" -c 'import ensurepip' >/dev/null 2>&1; then
+  if command -v apt-get >/dev/null 2>&1; then
+    echo "    installing python3-venv (ensurepip missing)"
+    $SUDO apt-get update -qq
+    $SUDO apt-get install -y python3-venv \
+      || $SUDO apt-get install -y "python$("$PY" -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")')-venv"
+  else
+    echo "!! python venv support missing and no apt here — install your platform's"
+    echo "   python3-venv package, then re-run ./setup.sh"; exit 1
+  fi
+fi
+# (Re)create if absent or broken — a failed venv leaves an unusable .venv behind.
+if [ ! -x .venv/bin/python ]; then
+  rm -rf .venv
+  "$PY" -m venv .venv
+fi
 
 echo "==> dependencies"
 .venv/bin/pip install -q --upgrade pip
