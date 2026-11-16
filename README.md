@@ -84,4 +84,4 @@ Three in-code labels, so an unfinished script is never confused with a step that
 
 ## Status
 
-Scaffold, with Stage A and B implemented. The `.md` docs carry the plan; the `configs/` scripts are starting points — `TODO:`-marked ones still need code, `ENTER:`/`SAVE:` ones are ready to run. Record what you actually did in the doc that owns that fact — the test is whether the stack rebuilds from this repo plus PBS on hardware that has never seen it.
+All stage scripts implemented — no `TODO:` code left, only `ENTER:` values you supply and `SAVE:` values the scripts print. Untested on hardware (no Proxmox in the authoring environment): the destructive steps (disk wipe in stage-b, VM/CT creates) keep their interactive confirms. Record what you actually did in the doc that owns that fact — the test is whether the stack rebuilds from this repo plus PBS on hardware that has never seen it.

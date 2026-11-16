@@ -18,7 +18,7 @@ The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headr
 
 | Workload | Device | Cap | Degradation at full (R7) |
 |---|---|---|---|
-| media-pipeline (LXC 210) rootfs | nuc1 local-lvm | TBD G | — |
+| media-pipeline (LXC 210) rootfs | nuc1 local-lvm | 20 G | — |
 | plex (LXC 220) rootfs | nuc1 local-lvm | 32 G | Stops importing, keeps serving |
 | amp (LXC 230) rootfs | nuc1 local-lvm | TBD G | — |
 | nginx (LXC 240) rootfs | nuc1 local-lvm | TBD G | — |

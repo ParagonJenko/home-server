@@ -1,7 +1,7 @@
 # media-pipeline/docker-compose.yaml — LXC 210. qBittorrent + the Arr stack.
 # Each service has its own mem_limit (memory cap; disk is bounded by the LXC rootfs
 # cap + mergerfs minfreespace + per-app Min Free Space). Secrets go in .env (gitignored).
-# This is a scaffold — pin image tags and fill volumes/ports per services.md.
+# Pin each image tag (ENTER markers) before you rely on it; volumes/ports per services.md.
 services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest   # ENTER: pin a version tag (don't leave :latest)
@@ -23,5 +23,38 @@ services:
     volumes: [ /opt/radarr/config:/config, /data:/data ]
     mem_limit: 1g
     restart: unless-stopped
-  # TODO: bazarr, prowlarr, recyclarr, decluttarr, flaresolverr, qbit_manage
-  #       (see rules.md E1). flaresolverr at http://flaresolverr:8191.
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest        # ENTER: pin a version tag
+    environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
+    volumes: [ /opt/bazarr/config:/config, /data:/data ]
+    mem_limit: 1g
+    restart: unless-stopped
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest      # ENTER: pin a version tag
+    environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
+    volumes: [ /opt/prowlarr/config:/config ]
+    mem_limit: 512m
+    restart: unless-stopped
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest # ENTER: pin a version tag
+    environment: { TZ: "Europe/London" }
+    mem_limit: 1g                                    # headless Chrome — the hungriest of the stack
+    restart: unless-stopped
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:latest        # ENTER: pin a version tag
+    user: "1000:1000"
+    environment: { TZ: "Europe/London" }
+    volumes: [ /opt/recyclarr/config:/config ]       # owns quality profiles (not arr-setup.py)
+    restart: unless-stopped
+  decluttarr:
+    image: ghcr.io/manimatter/decluttarr:latest      # ENTER: pin a version tag
+    environment: { TZ: "Europe/London" }
+    env_file: .env                                   # reads SONARR/RADARR URLs + keys
+    mem_limit: 256m
+    restart: unless-stopped
+  qbit_manage:
+    image: ghcr.io/stuffanthings/qbit_manage:latest  # ENTER: pin a version tag
+    user: "1000:1000"
+    environment: { TZ: "Europe/London" }
+    volumes: [ /opt/qbit_manage/config:/config, /data:/data ]
+    restart: unless-stopped

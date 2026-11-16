@@ -34,4 +34,20 @@ groups:
         labels: { severity: critical }
         annotations: { summary: "Internal DNS not resolving *.home" }
 
-      # TODO (R24): SmartFailurePredicted (critical) + DiskTempHigh, off smartmon.sh metrics.
+      - alert: SmartFailurePredicted      # off smartmon.sh textfile metrics (R24)
+        expr: smartmon_device_smart_healthy == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} SMART health FAILED — replace the disk" }
+
+      - alert: DiskTempHigh
+        expr: smartmon_temperature_celsius > 55
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} over 55°C" }
+
+      - alert: SmartCollectorStale        # cron/smartmon.sh stopped writing — blind to disk health
+        expr: time() - smartmon_last_collect_timestamp_seconds > 3600
+        for: 15m
+        labels: { severity: warning }
+        annotations: { summary: "{{ $labels.instance }} SMART metrics stale (smartmon.sh not running?)" }
