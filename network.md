@@ -23,7 +23,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 |---|---|---|---|---|---|
 | nuc1 — Beelink S13, Proxmox host | static | `192.168.1.2` | TBD | nuc1.home | Dual NIC — record the MAC of the port actually patched |
 | nuc2 — Beelink S12 Pro, Proxmox host | static | `192.168.1.3` | TBD | nuc2.home | |
-| pi — AdGuard/Prometheus/Alertmanager/Grafana | static | `192.168.1.4` | TBD | pi.home | The resolver itself; the one literal IP configs may contain (R13) |
+| pi — AdGuard/Prometheus/Alertmanager/Grafana | static | `192.168.1.4` | TBD | pi.home | The resolver itself; the one literal IP configs may contain (R13). OS hostname is `raspberry-pi-5` (cosmetic — reached by IP + `pi.home`, not hostname) |
 | pbs — VM 900 | static | `192.168.1.5` | TBD | pbs.home | `pvesm add pbs --server pbs.home` uses the name, never this IP |
 | switch — managed | static | `192.168.1.6` | TBD | — | Management address only |
 | ap — access point(s) | static | `192.168.1.7` | TBD | — | DHCP-issued DNS must also be the Pi (R14) |

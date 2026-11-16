@@ -1204,20 +1204,25 @@ var STAGES = [
       {
         "id": "D1",
         "type": "manual",
-        "title": "Image the Pi",
+        "title": "Image and bring up the Pi",
         "rules": [
           "R6",
           "R8"
         ],
         "body": [
           {
-            "p": "Imager → <strong>Pi OS Lite (64-bit)</strong>. In the settings panel set hostname, SSH public key, and locale. No desktop."
+            "p": "Image <strong>Pi OS Lite (64-bit / arm64)</strong> with Raspberry Pi Imager. In the imager's settings (the gear icon) set the hostname, a username + password, <strong>enable SSH and paste your public key</strong>, set locale, and skip wifi — it's wired. No desktop."
           },
           {
-            "p": "Set the static address <code class=\"inline\">192.168.1.4</code> (outside the DHCP pool), via NetworkManager on Bookworm+:"
+            "callout": "note",
+            "title": "Already imaged? (hostname + SSH)",
+            "html": "<p>The OS hostname is cosmetic — <code class=\"inline\">raspberry-pi-5</code> is fine. The system reaches the Pi by its static IP (<code class=\"inline\">192.168.1.4</code>) and the <code class=\"inline\">pi.home</code> DNS rewrite, never its hostname, so there's nothing to rename. What matters is SSH being on and the static IP below. If SSH wasn't enabled in the imager, turn it on from a monitor + keyboard on the Pi: <code class=\"inline\">sudo raspi-config</code> → Interface Options → SSH, or the command below.</p>"
           },
           {
-            "cmd": "# @where: Pi · shell\nCON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.method manual \\\n  ipv4.addresses 192.168.1.4/24 ipv4.gateway 192.168.1.1 ipv4.dns 1.1.1.1\nnmcli con up \"$CON\""
+            "cmd": "# @where: Pi · console (monitor + keyboard) — only if SSH wasn't enabled in the imager\nsudo systemctl enable --now ssh"
+          },
+          {
+            "cmd": "# @where: Pi · shell\n# static address 192.168.1.4 (outside the DHCP pool), via NetworkManager\nCON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.method manual \\\n  ipv4.addresses 192.168.1.4/24 ipv4.gateway 192.168.1.1 ipv4.dns 1.1.1.1\nnmcli con up \"$CON\""
           },
           {
             "callout": "note",
@@ -1225,12 +1230,28 @@ var STAGES = [
             "html": "AdGuard isn't running yet. D3 switches the Pi to its own resolver — Prometheus and blackbox share the Pi's network namespace, so they use the Pi's resolver to scrape <code class=\"inline\">nuc1.home</code> and the rest by name."
           },
           {
+            "cmd": "# @where: Your desktop AND laptop — run on EACH machine you'll work from\nssh-keygen -t ed25519        # skip if you already have a key\nssh-copy-id <user>@192.168.1.4"
+          },
+          {
+            "callout": "note",
+            "title": "Key login from both machines (+ optional hardening)",
+            "html": "<p>Run <code class=\"inline\">ssh-copy-id</code> from your desktop and your laptop, so both their keys land in the Pi's <code class=\"inline\">~/.ssh/authorized_keys</code>. Then connect with <code class=\"inline\">ssh &lt;user&gt;@192.168.1.4</code> — no password. Once key login works from both, harden by disabling password SSH: put <code class=\"inline\">PasswordAuthentication no</code> in <code class=\"inline\">/etc/ssh/sshd_config.d/99-hardening.conf</code>, then <code class=\"inline\">sudo systemctl restart ssh</code>. If you want Claude to manage the Pi over its gated shell (see A0), add Claude's public key here too.</p>"
+          },
+          {
+            "cmd": "# @where: Pi · shell (SSH in now)\nsudo apt update && sudo apt -y full-upgrade && sudo reboot"
+          },
+          {
             "callout": "note",
             "title": "microSD shapes what comes next",
             "html": "Cards die from write volume, not age. That is why Prometheus retention is capped small, scrapes are 30s rather than 15s, journald is volatile and swap is off. All of it is in <code class=\"inline\">configs/pi/</code>; the reasoning and the USB-SSD upgrade path are in storage.md's Metrics domain."
           }
         ],
-        "verify": "You can SSH in on <code class=\"inline\">192.168.1.4</code>, and <code class=\"inline\">uname -m</code> reports <code class=\"inline\">aarch64</code> — the arm64 container images need 64-bit."
+        "verify": [
+          {
+            "cmd": "# @where: Your desktop / laptop\nssh <user>@192.168.1.4 'uname -m'"
+          },
+          "Key login works from both machines (no password) and it prints <code class=\"inline\">aarch64</code> — the arm64 container images need 64-bit."
+        ]
       },
       {
         "id": "D2",
