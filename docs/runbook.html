@@ -1439,6 +1439,19 @@ var STAGES = [
           },
           {
             "cmd": "# Step 7 — verify the whole stage is wired and healthy (read-only; green PASS / red FAIL per check):\npct exec 210 -- bash /opt/media-pipeline/verify-media.sh"
+          },
+          {
+            "p": "<code class=\"inline\">verify-media.sh</code> (<code class=\"inline\">configs/media-pipeline/verify-media.sh</code>) checks, changing nothing:"
+          },
+          {
+            "list": [
+              "All nine containers are running.",
+              "qBittorrent WebUI login works.",
+              "Sonarr &amp; Radarr: root folder, qBittorrent download client, and Forms auth set.",
+              "Prowlarr: FlareSolverr proxy + the <code class=\"inline\">flaresolverr</code> tag, Sonarr/Radarr apps linked, and auth set.",
+              "Bazarr: connected to Sonarr &amp; Radarr.",
+              "Hardlinks work — <code class=\"inline\">/data/torrents</code> → <code class=\"inline\">/data/library</code> land on one mergerfs branch (R6)."
+            ]
           }
         ],
         "subs": [
