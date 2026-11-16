@@ -1214,9 +1214,12 @@ var STAGES = [
             "cmd": "# @where: Your desktop AND laptop — do this FIRST, so you can paste the keys into the imager\nssh-keygen -t ed25519        # skip if you already have a key\ncat ~/.ssh/id_ed25519.pub    # macOS/Linux: copy this whole line"
           },
           {
+            "cmd": "# @where: Your desktop AND laptop — Windows PowerShell (use this instead of the line above)\nssh-keygen -t ed25519\nGet-Content $env:USERPROFILE\\.ssh\\id_ed25519.pub | clip"
+          },
+          {
             "callout": "note",
-            "title": "On Windows (both PCs)",
-            "html": "<p>Windows 10/11 has OpenSSH built in — open <strong>PowerShell</strong>. (If <code class=\"inline\">ssh-keygen</code> is missing: Settings → Apps → Optional Features → Add → OpenSSH Client.)</p><ul><li>Generate a key (press Enter through the prompts): <code class=\"inline\">ssh-keygen -t ed25519</code></li><li>Copy the public key to the clipboard: <code class=\"inline\">Get-Content $env:USERPROFILE\\.ssh\\id_ed25519.pub | clip</code></li></ul><p>Paste it into the imager's SSH box. Do this on <em>both</em> the desktop and the laptop — two keys, one per line.</p>"
+            "title": "On Windows",
+            "html": "<p>Windows 10/11 has OpenSSH built in — run the above in <strong>PowerShell</strong>. <code class=\"inline\">| clip</code> copies the key to the clipboard to paste into the imager. If <code class=\"inline\">ssh-keygen</code> is missing: Settings → Apps → Optional Features → Add → OpenSSH Client. Do it on both PCs — two keys, one per line.</p>"
           },
           {
             "callout": "note",
@@ -1244,8 +1247,16 @@ var STAGES = [
           },
           {
             "callout": "note",
-            "title": "Key login from both machines (+ optional hardening)",
-            "html": "<p>If you pasted both machines' keys into the imager, SSH already works passwordless from both — skip the command above and just connect with <code class=\"inline\">ssh &lt;user&gt;@192.168.1.4</code>. Optional hardening once key login works: set <code class=\"inline\">PasswordAuthentication no</code> in <code class=\"inline\">/etc/ssh/sshd_config.d/99-hardening.conf</code>, then <code class=\"inline\">sudo systemctl restart ssh</code>. For Claude to manage the Pi over its gated shell (see A0), add Claude's public key to <code class=\"inline\">~/.ssh/authorized_keys</code> too.</p>"
+            "title": "Key login from both machines",
+            "html": "<p>If you pasted both machines' keys into the imager, SSH already works passwordless from both — skip the <code class=\"inline\">ssh-copy-id</code> command above and just connect with <code class=\"inline\">ssh &lt;user&gt;@192.168.1.4</code>.</p>"
+          },
+          {
+            "cmd": "# @where: Pi · shell — optional hardening, ONLY after key login works from both PCs\necho 'PasswordAuthentication no' | sudo tee /etc/ssh/sshd_config.d/99-hardening.conf\nsudo systemctl restart ssh"
+          },
+          {
+            "callout": "note",
+            "title": "What the hardening does",
+            "html": "<p>Turns off password SSH so <em>only</em> your keys work — worth doing, but <strong>only after</strong> you've confirmed key login from both PCs, or you can lock yourself out. For Claude to manage the Pi over its gated shell (see A0), add Claude's public key to <code class=\"inline\">~/.ssh/authorized_keys</code> first.</p>"
           },
           {
             "cmd": "# @where: Pi · shell (SSH in now)\nsudo apt update && sudo apt -y full-upgrade && sudo reboot"
