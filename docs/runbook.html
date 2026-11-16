@@ -905,9 +905,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: NUC-1 · host shell\npveversion\npveum user token list claude@pve\npveum role list | grep ClaudeAutomation\napt update"
+            "cmd": "# @where: NUC-1 · host shell\n./configs/verify.sh A2"
           },
-          "Version 9.2+, the automation token is listed, the role shows no Sys.Console, and apt is clean — no duplicate or enterprise warnings."
+          "Expect every line PASS."
         ]
       },
       {
@@ -932,7 +932,12 @@ var STAGES = [
             "html": "A full thin-pool <em>metadata</em> volume (separate from the data volume that R6's per-container caps govern) takes the whole pool read-only and isn't simply resizable."
           }
         ],
-        "verify": "<code class=\"inline\">thin_pool_autoextend_threshold</code> and <code class=\"inline\">thin_pool_autoextend_percent</code> are set, not commented out. If they're missing, fix that before building anything on local-lvm — see storage.md's reserved-headroom section."
+        "verify": [
+          {
+            "cmd": "# @where: NUC-1 · host shell\n./configs/verify.sh A3"
+          },
+          "Expect every line PASS."
+        ]
       }
     ]
   },
@@ -996,9 +1001,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: NUC-1 · host shell\ndf -h /mnt/media\nls -la /mnt/media"
+            "cmd": "# @where: NUC-1 · host shell\n./configs/verify.sh B2"
           },
-          "~7.2T total, and torrents/ and library/ owned by 1000:1000."
+          "Expect every line PASS."
         ]
       },
       {
@@ -1119,9 +1124,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: NUC-1 · host shell\npveam list local"
+            "cmd": "# @where: NUC-1 · host shell\n./configs/verify.sh C1"
           },
-          "The Debian 13 template is listed."
+          "Expect every line PASS."
         ]
       },
       {
@@ -1256,9 +1261,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: Pi · shell\ndocker run --rm hello-world\nswapon --show"
+            "cmd": "# @where: Pi · shell\n./configs/verify.sh D2"
           },
-          "hello-world runs, and swapon prints nothing (swap is off)."
+          "Expect every line PASS."
         ]
       },
       {
@@ -1809,9 +1814,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: Each NUC · host shell\ncurl -s localhost:9100/metrics | grep lvm_thinpool"
+            "cmd": "# @where: Each NUC · host shell\n./configs/verify.sh H2"
           },
-          "Both thin-pool metrics return on each NUC."
+          "Expect every line PASS."
         ]
       },
       {
@@ -2111,9 +2116,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: Each NUC · host shell\ncurl -s localhost:9100/metrics | grep smartmon"
+            "cmd": "# @where: Each NUC · host shell\n./configs/verify.sh J3"
           },
-          "Per-disk SMART health returns on each NUC, and Prometheus → Alerts lists SmartFailurePredicted."
+          "Expect every line PASS."
         ]
       },
       {
@@ -2144,7 +2149,12 @@ var STAGES = [
             "html": "Before any manual upgrade, take a PBS backup of the guest. If it breaks, the restore you proved in G5 is the undo."
           }
         ],
-        "verify": "<code class=\"inline\">unattended-upgrade --dry-run</code> on each host and container shows security updates in scope, and <code class=\"inline\">systemctl is-active unattended-upgrades</code> returns active."
+        "verify": [
+          {
+            "cmd": "# @where: Each host + container\n./configs/verify.sh J4"
+          },
+          "Expect every line PASS."
+        ]
       },
       {
         "id": "J5",
@@ -2292,9 +2302,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: Inside the inference guest\nnvidia-smi"
+            "cmd": "# @where: Inside the inference guest\n./configs/verify.sh K2"
           },
-          "nvidia-smi inside the guest sees the card, and Ollama reports GPU layers offloaded."
+          "Expect every line PASS."
         ]
       },
       {
