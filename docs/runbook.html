@@ -867,10 +867,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then get git, clone, and run this step:"
+            "cmd": "# @where: NUC-1 · host shell\n# Fresh Proxmox has no git, and its enterprise apt repo 401s without a subscription.\n# This installs git only if missing, switching to the no-subscription repo first:\nif ! command -v git >/dev/null 2>&1; then\n  rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/ceph.sources\n  echo 'deb http://download.proxmox.com/debian/pve trixie pve-no-subscription' > /etc/apt/sources.list.d/pve-no-subscription.list\n  apt update && apt -y install git\nfi\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
           },
           {
-            "cmd": "# @where: NUC-1 · host shell\n# Fresh Proxmox has no git, and its enterprise apt repo 401s without a subscription.\n# This installs git only if missing, switching to the no-subscription repo first:\nif ! command -v git >/dev/null 2>&1; then\n  rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/ceph.sources\n  echo 'deb http://download.proxmox.com/debian/pve trixie pve-no-subscription' > /etc/apt/sources.list.d/pve-no-subscription.list\n  apt update && apt -y install git\nfi\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then get git, clone, and run this step:</p>"
           },
           {
             "callout": "note",
@@ -901,7 +903,12 @@ var STAGES = [
             "html": "The script deletes the enterprise repo files rather than rewriting their <code class=\"inline\">Components:</code> — a rewritten entry still points at <code class=\"inline\">enterprise.proxmox.com</code> and 401s on every <code class=\"inline\">apt update</code> whatever component you ask for. If apt still complains that a repo is “configured multiple times”, run <code class=\"inline\">grep -r Suites /etc/apt/sources.list.d/</code>: fresh PVE 9.2 ISOs sometimes ship a unified <code class=\"inline\">proxmox.sources</code> instead of a separate <code class=\"inline\">pve-enterprise.sources</code>, so remove whichever file still references an enterprise component."
           }
         ],
-        "verify": "<code class=\"inline\">pveversion</code> shows pve-manager/9.2+; <code class=\"inline\">pveum user token list claude@pve</code> shows the automation token; <code class=\"inline\">pveum role list | grep ClaudeAutomation</code> shows no Sys.Console; <code class=\"inline\">apt update</code> shows no duplicate or enterprise warnings."
+        "verify": [
+          {
+            "cmd": "# @where: NUC-1 · host shell\npveversion\npveum user token list claude@pve\npveum role list | grep ClaudeAutomation\napt update"
+          },
+          "Version 9.2+, the automation token is listed, the role shows no Sys.Console, and apt is clean — no duplicate or enterprise warnings."
+        ]
       },
       {
         "id": "A3",
@@ -912,10 +919,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Confirm autoextend is on — Proxmox sets it by default, but check:"
+            "cmd": "# @where: NUC-1 · host shell\ngrep -E 'thin_pool_autoextend' /etc/lvm/lvm.conf"
           },
           {
-            "cmd": "# @where: NUC-1 · host shell\ngrep -E 'thin_pool_autoextend' /etc/lvm/lvm.conf"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Confirm autoextend is on — Proxmox sets it by default, but check:</p>"
           },
           {
             "callout": "note",
@@ -959,15 +968,15 @@ var STAGES = [
         ],
         "body": [
           {
+            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/stage-b-storage.sh"
+          },
+          {
             "callout": "danger",
             "title": "Destructive",
             "html": "<p>Wipes the two DAS disks you pick — intended for a clean build. The script is interactive: it lists every disk with size, model and serial, you type each DAS device, and it shows the model+size and asks <code class=\"inline\">Use /dev/sdX? [y/N]</code> before accepting it, then one final <code class=\"inline\">WIPE … ? [y/N]</code>. Check each against the internal SSD (the 512GB one) before you confirm.</p>"
           },
           {
             "p": "Run it as root — it prompts for each DAS disk, so there's nothing to edit first:"
-          },
-          {
-            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/stage-b-storage.sh"
           },
           {
             "callout": "note",
@@ -985,7 +994,12 @@ var STAGES = [
             "html": "<code class=\"inline\">torrents/</code> and <code class=\"inline\">library/</code> sit side by side on one filesystem so Arr imports are hardlinks, not copies. Both owned by <code class=\"inline\">1000:1000</code>, the shared media user, across every container."
           }
         ],
-        "verify": "<code class=\"inline\">df -h /mnt/media</code> shows ~7.2TB total; <code class=\"inline\">ls -la /mnt/media</code> shows torrents and library owned by 1000:1000."
+        "verify": [
+          {
+            "cmd": "# @where: NUC-1 · host shell\ndf -h /mnt/media\nls -la /mnt/media"
+          },
+          "~7.2T total, and torrents/ and library/ owned by 1000:1000."
+        ]
       },
       {
         "id": "B3",
@@ -997,7 +1011,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Run on the empty pool (it refuses if there's already data). It writes 50G blobs until the pool refuses — no fixed count."
+            "cmd": "# @where: NUC-1 · host shell\n./configs/mergerfs/filltest.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Run on the empty pool (it refuses if there's already data). It writes 50G blobs until the pool refuses — no fixed count.</p>"
           },
           {
             "callout": "note",
@@ -1016,10 +1035,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "With the pool built and before any container exists, pull a branch and confirm the pool refuses to mount:"
+            "cmd": "# @where: NUC-1 · host shell\numount /mnt/media && umount /mnt/pool/disk1\nsystemctl start mnt-media.mount ; echo \"exit=$?\"   # must FAIL\nfindmnt /mnt/media || echo \"OK: pool refused to mount without its branch\"\nmount -a && mount /mnt/media                        # put it back"
           },
           {
-            "cmd": "# @where: NUC-1 · host shell\numount /mnt/media && umount /mnt/pool/disk1\nsystemctl start mnt-media.mount ; echo \"exit=$?\"   # must FAIL\nfindmnt /mnt/media || echo \"OK: pool refused to mount without its branch\"\nmount -a && mount /mnt/media                        # put it back"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>With the pool built and before any container exists, pull a branch and confirm the pool refuses to mount:</p>"
           },
           {
             "callout": "note",
@@ -1040,10 +1061,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "The media pool is proven (B3), but Frigate, Plex and every container rootfs live on the host SSD's <code class=\"inline\">local-lvm</code>. Prove a full capped LV goes read-only without taking the host down, and that the caps can't oversubscribe the SSD. Run on each NUC."
+            "cmd": "# @where: Each NUC · host shell\n# throwaway capped LV, fill it, confirm the host stays up\nlvcreate -V 5G --thinpool pve/data -n filltest pve\nmkfs.ext4 /dev/pve/filltest && mount /dev/pve/filltest /mnt/ft\ncat /dev/zero > /mnt/ft/blob 2>/dev/null ; echo \"LV full, host still up: $?\"\numount /mnt/ft && lvremove -y pve/filltest"
           },
           {
-            "cmd": "# @where: Each NUC · host shell\n# throwaway capped LV, fill it, confirm the host stays up\nlvcreate -V 5G --thinpool pve/data -n filltest pve\nmkfs.ext4 /dev/pve/filltest && mount /dev/pve/filltest /mnt/ft\ncat /dev/zero > /mnt/ft/blob 2>/dev/null ; echo \"LV full, host still up: $?\"\numount /mnt/ft && lvremove -y pve/filltest"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>The media pool is proven (B3), but Frigate, Plex and every container rootfs live on the host SSD's <code class=\"inline\">local-lvm</code>. Prove a full capped LV goes read-only without taking the host down, and that the caps can't oversubscribe the SSD. Run on each NUC.</p>"
           },
           {
             "cmd": "# @where: Each NUC · host shell\n# ceiling sum: total of every LV cap must be under SSD size minus headroom\nlvs --units g -o lv_name,lv_size pve"
@@ -1071,7 +1094,12 @@ var STAGES = [
         "title": "configs/lxc/stage-c-template.sh",
         "body": [
           {
-            "p": "Run as root — downloads the current Debian 13 LXC template."
+            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/stage-c-template.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Run as root — downloads the current Debian 13 LXC template.</p>"
           },
           {
             "callout": "note",
@@ -1084,7 +1112,12 @@ var STAGES = [
             "html": "Run this on NUC-2 as well before Stage G's <code class=\"inline\">frigate.sh</code> — the template has to exist locally on whichever host creates the container."
           }
         ],
-        "verify": "<code class=\"inline\">pveam list local</code> shows it."
+        "verify": [
+          {
+            "cmd": "# @where: NUC-1 · host shell\npveam list local"
+          },
+          "The Debian 13 template is listed."
+        ]
       },
       {
         "id": "C2",
@@ -1198,7 +1231,12 @@ var STAGES = [
         "title": "configs/pi/setup-pi.sh",
         "body": [
           {
-            "p": "Clone the public repo on the Pi, then run as root:"
+            "cmd": "# @where: Pi · shell\ncommand -v git >/dev/null 2>&1 || { sudo apt update && sudo apt -y install git; }\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server && sudo ./configs/pi/setup-pi.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Clone the public repo on the Pi, then run as root:</p>"
           },
           {
             "callout": "note",
@@ -1206,15 +1244,17 @@ var STAGES = [
             "html": "Installs base packages, timezone, Docker, the SD-card write reductions and stack directories. It stops short of bringing the stack up — that needs secrets — and prints the remaining steps when it finishes."
           },
           {
-            "cmd": "# @where: Pi · shell\ncommand -v git >/dev/null 2>&1 || { sudo apt update && sudo apt -y install git; }\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server && sudo ./configs/pi/setup-pi.sh"
-          },
-          {
             "callout": "gotcha",
             "title": "Two changes worth knowing before you run it",
             "html": "journald is set to <code class=\"inline\">Storage=volatile</code>, so <strong>logs do not survive a reboot</strong> — set it back to <code class=\"inline\">persistent</code> temporarily if you are chasing a crash. And swap is disabled. Both are one command to undo, both are in the script's comments."
           }
         ],
-        "verify": "<code class=\"inline\">docker run --rm hello-world</code> succeeds and <code class=\"inline\">swapon --show</code> prints nothing."
+        "verify": [
+          {
+            "cmd": "# @where: Pi · shell\ndocker run --rm hello-world\nswapon --show"
+          },
+          "hello-world runs, and swapon prints nothing (swap is off)."
+        ]
       },
       {
         "id": "D3",
@@ -1227,10 +1267,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Copy <code class=\"inline\">configs/pi/</code> → <code class=\"inline\">/opt/pi-stack/</code> and <code class=\"inline\">configs/monitoring/</code> → <code class=\"inline\">/opt/monitoring/</code>, then bring up AdGuard alone:"
+            "cmd": "# @where: Pi · shell\ncd /opt/pi-stack\ncp .env.example .env                                                          # Grafana admin password\ncp alertmanager/discord-webhook-url.example alertmanager/discord-webhook-url   # paste the real webhook\nchmod 600 .env alertmanager/discord-webhook-url\ndocker compose up -d adguardhome"
           },
           {
-            "cmd": "# @where: Pi · shell\ncd /opt/pi-stack\ncp .env.example .env                                                          # Grafana admin password\ncp alertmanager/discord-webhook-url.example alertmanager/discord-webhook-url   # paste the real webhook\nchmod 600 .env alertmanager/discord-webhook-url\ndocker compose up -d adguardhome"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Copy <code class=\"inline\">configs/pi/</code> → <code class=\"inline\">/opt/pi-stack/</code> and <code class=\"inline\">configs/monitoring/</code> → <code class=\"inline\">/opt/monitoring/</code>, then bring up AdGuard alone:</p>"
           },
           {
             "callout": "gotcha",
@@ -1316,7 +1358,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Run <code class=\"inline\">media-pipeline.sh</code>, then inside the container bring up <code class=\"inline\">configs/media-pipeline/docker-compose.yaml</code> — one LXC runs qBittorrent, Sonarr, Radarr, Bazarr, Prowlarr, Recyclarr, Decluttarr, FlareSolverr and qbit_manage."
+            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/media-pipeline.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Run <code class=\"inline\">media-pipeline.sh</code>, then inside the container bring up <code class=\"inline\">configs/media-pipeline/docker-compose.yaml</code> — one LXC runs qBittorrent, Sonarr, Radarr, Bazarr, Prowlarr, Recyclarr, Decluttarr, FlareSolverr and qbit_manage.</p>"
           },
           {
             "callout": "note",
@@ -1380,7 +1427,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Run <code class=\"inline\">plex.sh</code>, bring up <code class=\"inline\">configs/plex/docker-compose.yaml</code> inside the container, then:"
+            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/plex.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Run <code class=\"inline\">plex.sh</code>, bring up <code class=\"inline\">configs/plex/docker-compose.yaml</code> inside the container, then:</p>"
           },
           {
             "list": [
@@ -1407,7 +1459,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Run <code class=\"inline\">amp-nginx.sh</code> (AMP 230, Nginx 240 — neither needs the media mount), then:"
+            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/amp-nginx.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Run <code class=\"inline\">amp-nginx.sh</code> (AMP 230, Nginx 240 — neither needs the media mount), then:</p>"
           },
           {
             "list": [
@@ -1492,7 +1549,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Run <code class=\"inline\">frigate.sh</code> (VMID 111); config lives in <code class=\"inline\">configs/frigate/</code>."
+            "cmd": "# @where: NUC-2 · host shell\n./configs/lxc/frigate.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Run <code class=\"inline\">frigate.sh</code> (VMID 111); config lives in <code class=\"inline\">configs/frigate/</code>.</p>"
           },
           {
             "callout": "note",
@@ -1520,7 +1582,12 @@ var STAGES = [
             "html": "<p>Fill in <code class=\"inline\">configs/frigate/.env.example</code> → <code class=\"inline\">.env</code> with the real Eufy RTSP credentials. <code class=\"inline\">config.yaml</code> itself holds no secrets and is safe as committed.</p><p><strong>The cameras are addressed by hostname</strong> (<code class=\"inline\">cam-living-room.home</code>, …), not IP — literal camera IPs are exactly what broke the old setup, and R13's rationale names this file. Add a DHCP reservation per camera on the router and a matching rewrite in AdGuard (D3) <em>before</em> starting Frigate; they're in network.md's tables. <strong>This is one of the three steps that needs the Pi already built</strong> — without it Frigate starts and records nothing. Pressing on anyway: add the four cameras to <code class=\"inline\">/etc/hosts</code> inside LXC 111, and delete those lines the moment AdGuard has the rewrites.</p>"
           }
         ],
-        "verify": "Before running: <code class=\"inline\">lvs</code> on NUC-2 shows local-lvm has room for 260G plus the PBS VM's 16G, with headroom left."
+        "verify": [
+          {
+            "cmd": "# @where: NUC-2 · host shell\nlvs"
+          },
+          "Before running Frigate: local-lvm on NUC-2 has room for 260G plus the PBS VM's 16G, with headroom left."
+        ]
       },
       {
         "id": "G2",
@@ -1539,17 +1606,19 @@ var STAGES = [
       {
         "id": "G3",
         "type": "script",
-        "title": "configs/lxc/pbs-vm.sh (VMID 900) — USB HDD passed through as a block device",
+        "title": "configs/pbs/pbs-vm.sh (VMID 900) — USB HDD passed through as a block device",
         "rules": [
           "R3",
           "R6"
         ],
         "body": [
           {
-            "p": "Download the PBS ISO to <code class=\"inline\">local:iso</code>, set both placeholders, then run <code class=\"inline\">pbs-vm.sh</code>:"
+            "cmd": "# @where: NUC-2 · host shell\n./configs/pbs/pbs-vm.sh"
           },
           {
-            "cmd": "# @where: NUC-2 · host shell\nISO_FILENAME=\"{{ISO}}\"\nUSB_BY_ID=\"{{USB_ID}}\""
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Download the PBS ISO to <code class=\"inline\">local:iso</code>, set both placeholders, then run <code class=\"inline\">pbs-vm.sh</code>:</p>"
           },
           {
             "callout": "note",
@@ -1586,15 +1655,17 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "On <strong>each</strong> NUC host — use the hostname <code class=\"inline\">pbs.home</code>, not an IP. Fingerprint from PBS web UI → Certificates:"
+            "cmd": "# @where: Each NUC · host shell\npvesm add pbs pbs-backup --server pbs.home --datastore backups \\\n  --username root@pam --password --fingerprint {{PBS_FP}}"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>On <strong>each</strong> NUC host — use the hostname <code class=\"inline\">pbs.home</code>, not an IP. Fingerprint from PBS web UI → Certificates:</p>"
           },
           {
             "callout": "gotcha",
             "title": "This fails unless pbs.home resolves",
             "html": "Needs Stage D done, or a temporary <code class=\"inline\">/etc/hosts</code> line on each NUC (<code class=\"inline\">192.168.1.5 pbs.home</code>) removed once AdGuard has the rewrite. Adding the storage by IP is <em>not</em> the workaround — it breaks R13 and quietly fails the next time PBS moves."
-          },
-          {
-            "cmd": "# @where: Each NUC · host shell\npvesm add pbs pbs-backup --server pbs.home --datastore backups \\\n  --username root@pam --password --fingerprint {{PBS_FP}}"
           },
           {
             "callout": "manual",
@@ -1613,15 +1684,17 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Restore into a spare VMID so the running container is untouched (let <code class=\"inline\">pvesm list</code> give you the volid):"
+            "cmd": "# @where: NUC-1 · host shell\nvzdump 210 --storage pbs-backup --mode snapshot"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Restore into a spare VMID so the running container is untouched (let <code class=\"inline\">pvesm list</code> give you the volid):</p>"
           },
           {
             "callout": "gotcha",
             "title": "The scheduled job is daily, so it hasn't run yet",
             "html": "Take one backup by hand first, or <code class=\"inline\">pvesm list</code> comes back empty and the restore has no source."
-          },
-          {
-            "cmd": "# @where: NUC-1 · host shell\nvzdump 210 --storage pbs-backup --mode snapshot"
           },
           {
             "cmd": "# @where: NUC-1 · host shell\npvesm list pbs-backup                       # copy the volid of a ct/210 backup\npct restore 8210 <volid-from-above> --storage local-lvm\npct start 8210 && pct status 8210\npct stop 8210 && pct destroy 8210           # remove the test once it's proven"
@@ -1645,7 +1718,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Push the datastore to encrypted cloud object storage (Backblaze B2 or S3 via rclone, or a remote PBS), scheduled daily after the backup window:"
+            "cmd": "# @where: PBS VM · shell\n./configs/pbs/offsite-sync.sh --install-timer"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Push the datastore to encrypted cloud object storage (Backblaze B2 or S3 via rclone, or a remote PBS), scheduled daily after the backup window:</p>"
           },
           {
             "cmd": "# @where: PBS VM · shell\n# in the PBS VM\nrclone config            # add the cloud remote, with a crypt layer over it\n# schedule: datastore -> crypt:remote, daily after the backup window\nsystemctl list-timers | grep offsite   # or the sync-job in configs/pbs/"
@@ -1684,7 +1762,9 @@ var STAGES = [
             "cmd": "# @where: Pi · shell\ncd /opt/pi-stack && docker compose up -d"
           },
           {
-            "p": "Grafana <code class=\"inline\">pi.home:3000</code>, Prometheus <code class=\"inline\">:9090</code>, Alertmanager <code class=\"inline\">:9093</code>."
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Grafana <code class=\"inline\">pi.home:3000</code>, Prometheus <code class=\"inline\">:9090</code>, Alertmanager <code class=\"inline\">:9093</code>.</p>"
           },
           {
             "callout": "note",
@@ -1709,10 +1789,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "On each NUC (native on the host, not a container) install node_exporter + the thin-pool check:"
+            "cmd": "# @where: Each NUC · host shell\napt -y install prometheus-node-exporter\nmkdir -p /var/lib/node_exporter/textfile_collector\n\n# Debian's package takes its flags from /etc/default/ and ships with none.\n# This is the line that turns the textfile collector on:\necho 'ARGS=\"--collector.textfile.directory=/var/lib/node_exporter/textfile_collector\"' \\\n  > /etc/default/prometheus-node-exporter\nsystemctl restart prometheus-node-exporter\n\n# LVM thin-pool metadata, every 15 min\ncp configs/monitoring/check-thinpool.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/check-thinpool.sh\" ) | crontab -"
           },
           {
-            "cmd": "# @where: Each NUC · host shell\napt -y install prometheus-node-exporter\nmkdir -p /var/lib/node_exporter/textfile_collector\n\n# Debian's package takes its flags from /etc/default/ and ships with none.\n# This is the line that turns the textfile collector on:\necho 'ARGS=\"--collector.textfile.directory=/var/lib/node_exporter/textfile_collector\"' \\\n  > /etc/default/prometheus-node-exporter\nsystemctl restart prometheus-node-exporter\n\n# LVM thin-pool metadata, every 15 min\ncp configs/monitoring/check-thinpool.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/check-thinpool.sh\" ) | crontab -"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>On each NUC (native on the host, not a container) install node_exporter + the thin-pool check:</p>"
           },
           {
             "callout": "gotcha",
@@ -1720,7 +1802,12 @@ var STAGES = [
             "html": "The path in the script and node_exporter's <code class=\"inline\">--collector.textfile.directory</code> have to be the same. If they differ, <code class=\"inline\">lvm_thinpool_metadata_percent</code> never appears, <code class=\"inline\">ThinPoolMetadataHigh</code> has no series to evaluate, and the alert closest to unrecoverable is the one silently doing nothing. node_exporter's filesystem collector cannot see LVM-internal metadata at all."
           }
         ],
-        "verify": "<code class=\"inline\">curl -s localhost:9100/metrics | grep lvm_thinpool</code> returns both metrics on each NUC."
+        "verify": [
+          {
+            "cmd": "# @where: Each NUC · host shell\ncurl -s localhost:9100/metrics | grep lvm_thinpool"
+          },
+          "Both thin-pool metrics return on each NUC."
+        ]
       },
       {
         "id": "H3",
@@ -1772,15 +1859,17 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Fire a test alert and confirm it reaches Discord:"
+            "cmd": "# @where: Pi · shell\ndocker compose exec alertmanager amtool alert add \\\n  alertname=TestAlert severity=warning instance=pi \\\n  --alertmanager.url=http://localhost:9093"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Fire a test alert and confirm it reaches Discord:</p>"
           },
           {
             "callout": "note",
             "title": "Why test it",
             "html": "Alerts inform, they never protect — an untested notification channel is the same class of claim as an untested restore."
-          },
-          {
-            "cmd": "# @where: Pi · shell\ndocker compose exec alertmanager amtool alert add \\\n  alertname=TestAlert severity=warning instance=pi \\\n  --alertmanager.url=http://localhost:9093"
           },
           {
             "callout": "gotcha",
@@ -1808,10 +1897,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Install on the hosts or containers you want reachable remotely (Plex, custom apps):"
+            "cmd": "# @where: Each host/container you expose\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up"
           },
           {
-            "cmd": "# @where: Each host/container you expose\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Install on the hosts or containers you want reachable remotely (Plex, custom apps):</p>"
           },
           {
             "callout": "manual",
@@ -1840,7 +1931,9 @@ var STAGES = [
             "cmd": "# @where: Each NUC · host shell\n# No container rootfs on the DAS/media pool [R9]\ngrep -r \"rootfs\" /etc/pve/lxc/*.conf | grep -i media && echo \"!! rootfs on media — FIX\" || echo \"OK: no rootfs on media\"\n\n# Every container has a rootfs size cap [R6]\ngrep -H \"rootfs\" /etc/pve/lxc/*.conf\n\n# mergerfs headroom present [R8]\ngrep mergerfs /etc/fstab | grep minfreespace && echo \"OK: minfreespace set\"\n\n# A missing branch must stop the pool, not be unioned from the root device [R9]\ngrep mergerfs /etc/fstab | grep -q \"x-systemd.requires\" \\\n  && echo \"OK: pool requires its branches\" \\\n  || echo \"!! only ordering, not a dependency — FIX (see configs/mergerfs/fstab-snippet)\"\n\n# Media containers must refuse to start without the pool [R9]\nfor id in 210 220; do\n  systemctl cat \"pve-container@${id}\" 2>/dev/null | grep -q RequiresMountsFor \\\n    && echo \"OK: ${id} requires its mount\" \\\n    || echo \"!! ${id} would start against an empty directory — run apply_requires_mount\"\ndone"
           },
           {
-            "p": "Then the no-literal-IPs check, from the repo root:"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Then the no-literal-IPs check, from the repo root:</p>"
           },
           {
             "callout": "note",
@@ -1922,10 +2015,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Put <strong>everything that writes</strong> on the UPS: both NUCs, the DAS, the Pi, and the USB HDD (PBS writes to it mid-backup). Install NUT — the host the UPS USB plugs into is master; the other NUC, the Pi and the PBS VM are netclients, so each shuts down gracefully:"
+            "cmd": "# @where: Each box · shell\napt -y install nut\n# configure /etc/nut/ups.conf, upsmon.conf, upssched.conf — see configs/nut/\nupsc <ups-name>        # confirm the UPS is readable"
           },
           {
-            "cmd": "# @where: Each box · shell\napt -y install nut\n# configure /etc/nut/ups.conf, upsmon.conf, upssched.conf — see configs/nut/\nupsc <ups-name>        # confirm the UPS is readable"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Put <strong>everything that writes</strong> on the UPS: both NUCs, the DAS, the Pi, and the USB HDD (PBS writes to it mid-backup). Install NUT — the host the UPS USB plugs into is master; the other NUC, the Pi and the PBS VM are netclients, so each shuts down gracefully:</p>"
           },
           {
             "callout": "note",
@@ -1986,10 +2081,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "On both NUCs: enable smartd self-tests and export SMART to Prometheus via the textfile collector from H2:"
+            "cmd": "# @where: Each NUC · host shell\napt -y install smartmontools\n# smartd.conf: schedule short + long self-tests on every disk\n# cron: write smartmon metrics into the collector dir from H2\ncp configs/monitoring/smartmon.sh /usr/local/bin/"
           },
           {
-            "cmd": "# @where: Each NUC · host shell\napt -y install smartmontools\n# smartd.conf: schedule short + long self-tests on every disk\n# cron: write smartmon metrics into the collector dir from H2\ncp configs/monitoring/smartmon.sh /usr/local/bin/"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>On both NUCs: enable smartd self-tests and export SMART to Prometheus via the textfile collector from H2:</p>"
           },
           {
             "callout": "note",
@@ -2007,7 +2104,12 @@ var STAGES = [
             "html": "<code class=\"inline\">configs/monitoring/alerts.yml</code> gets <code class=\"inline\">SmartFailurePredicted</code> (critical) and <code class=\"inline\">DiskTempHigh</code> — the same file H2's thin-pool alert lives in, so there is one copy. Fire it once end-to-end like H4, so you know the critical path works."
           }
         ],
-        "verify": "<code class=\"inline\">curl -s localhost:9100/metrics | grep smartmon</code> returns per-disk health on each NUC, and Prometheus → Alerts lists SmartFailurePredicted."
+        "verify": [
+          {
+            "cmd": "# @where: Each NUC · host shell\ncurl -s localhost:9100/metrics | grep smartmon"
+          },
+          "Per-disk SMART health returns on each NUC, and Prometheus → Alerts lists SmartFailurePredicted."
+        ]
       },
       {
         "id": "J4",
@@ -2019,10 +2121,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Enable automatic security updates on the hosts and inside each container:"
+            "cmd": "# @where: Each box · shell\napt -y install unattended-upgrades\ndpkg-reconfigure -plow unattended-upgrades   # security origins only"
           },
           {
-            "cmd": "# @where: Each box · shell\napt -y install unattended-upgrades\ndpkg-reconfigure -plow unattended-upgrades   # security origins only"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Enable automatic security updates on the hosts and inside each container:</p>"
           },
           {
             "callout": "note",
@@ -2137,10 +2241,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Stand up an LXC (pattern from C2), install Docker, run Ollama + Open WebUI, pull an 8B model. No GPU needed — CPU/iGPU inference:"
+            "cmd": "# @where: Inside the LLM LXC\n# in the LXC\ndocker compose up -d        # ollama + open-webui, see configs/ollama/\ndocker exec -it ollama ollama pull llama3.3:8b"
           },
           {
-            "cmd": "# @where: Inside the LLM LXC\n# in the LXC\ndocker compose up -d        # ollama + open-webui, see configs/ollama/\ndocker exec -it ollama ollama pull llama3.3:8b"
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>Stand up an LXC (pattern from C2), install Docker, run Ollama + Open WebUI, pull an 8B model. No GPU needed — CPU/iGPU inference:</p>"
           },
           {
             "callout": "note",
@@ -2179,7 +2285,12 @@ var STAGES = [
             "html": "A 3090 draws ~350W under load — it blows the UPS budget (R22), so it is “shut down first”, not rideout-protected, and it makes the “portable island” heavier. Size the UPS and the relocation plan for it, or keep it as a stay-at-home node."
           }
         ],
-        "verify": "<code class=\"inline\">nvidia-smi</code> inside the guest sees the card, and Ollama reports GPU layers offloaded."
+        "verify": [
+          {
+            "cmd": "# @where: Inside the inference guest\nnvidia-smi"
+          },
+          "nvidia-smi inside the guest sees the card, and Ollama reports GPU layers offloaded."
+        ]
       },
       {
         "id": "K3",
@@ -2271,6 +2382,17 @@ function cmdBlock(text) {
   return '<div class="cmd">' + chip + '<button class="copy" type="button">Copy</button><pre>' + subst(text) + "</pre></div>";
 }
 
+function renderVerify(v) {
+  // A verify is either prose (string) or an ordered list of parts: a string renders
+  // as prose, a {cmd} renders as a copyable command block (same as body commands).
+  if (typeof v === "string") return substHtml(v);
+  return v.map(function (it) {
+    if (typeof it === "string") return "<p>" + substHtml(it) + "</p>";
+    if (it && it.cmd) return cmdBlock(it.cmd);
+    return "";
+  }).join("");
+}
+
 function stepKey(stageId, stepId, subIdx) {
   return stageId + "|" + stepId + (subIdx === undefined ? "" : "|s" + subIdx);
 }
@@ -2307,7 +2429,7 @@ function renderStep(stage, step) {
       (step.type === "verify" ? (done ? "Verified" : "Mark verified") : (done ? "Done" : "Mark done")) +
     "</button></div>" +
     '<div class="step-body">' + blocks(step.body) + subsHtml + blocks(step.after) +
-      (step.verify ? '<div class="verify"><span class="vlabel">Verify</span>' + substHtml(step.verify) + "</div>" : "") +
+      (step.verify ? '<div class="verify"><span class="vlabel">Verify</span>' + renderVerify(step.verify) + "</div>" : "") +
     "</div></article>";
 }
 
