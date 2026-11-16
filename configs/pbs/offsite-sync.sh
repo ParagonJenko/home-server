@@ -11,4 +11,4 @@ set -euo pipefail
 # TODO: rclone sync /mnt/datastore/backups crypt:home-server-pbs --fast-list --transfers 4
 # TODO: wrap in a systemd timer (offsite-sync.timer) firing after the backup window.
 # VERIFY: a test restore must pull a container FROM THE CLOUD COPY (not the USB HDD).
-echo "offsite-sync: configure rclone crypt remote + timer (rules.md E7)."
+echo "offsite-sync: configure rclone crypt remote + timer (rules.md G6)."

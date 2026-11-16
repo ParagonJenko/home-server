@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# stage-a-host-setup.sh — Proxmox host base (A2–A4). Run as root on each NUC. [R19]
+# stage-a-host-setup.sh — Proxmox host base (step A2). Run as root on each NUC. [R19]
 # - switch to the no-subscription repo
 # - install base tools
 # - create the scoped MCP automation token (ClaudeAutomation role + claude@pve)
@@ -21,4 +21,4 @@ apt -y install curl git jq lsb-release
 # TODO: pveum role add ClaudeAutomation -privs "VM.Allocate VM.Config.* VM.PowerMgmt VM.Audit Datastore.Audit ..."
 # TODO: pveum user add claude@pve; pveum aclmod / -user claude@pve -role ClaudeAutomation
 # TODO: pveum user token add claude@pve automation --privsep 0   # COPY THE SECRET — shown once → vault
-echo "stage-a: review the TODOs above and fill in per rules.md A2–A4."
+echo "stage-a: review the TODOs above and fill in per rules.md A2."

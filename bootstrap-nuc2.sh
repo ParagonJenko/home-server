@@ -8,7 +8,7 @@ need_root
 
 echo "=== NUC-2 bootstrap ==="
 pause "Prereq: Proxmox VE 9.2 installed on NUC-2 (Stage F), USB HDD attached, Pi DNS up."
-ask PI_IP "The Pi's IP" 192.168.1.4
+ask PI_IP "The Pi's IP (already up by now; press Enter for the default)" 192.168.1.4
 
 echo "--- Stage F: host base ---"
 run ./configs/lxc/stage-a-host-setup.sh            # repos, tools, MCP token

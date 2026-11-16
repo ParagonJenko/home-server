@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# filltest.sh — prove the pool degrades gracefully instead of corrupting when full (B6). [R10 R7]
+# filltest.sh — prove the pool degrades gracefully instead of corrupting when full (B3). [R10 R7]
 # Writes 50G blobs UNTIL THE POOL REFUSES (no fixed count — a fixed count can finish
 # without ever reaching the limit). Refuses to run on a non-empty pool.
 set -euo pipefail

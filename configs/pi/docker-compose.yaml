@@ -1,5 +1,5 @@
 # pi/docker-compose.yaml — AdGuard + Prometheus + Alertmanager + Grafana + exporters.
-# ALL services on host networking (three things break on a bridge — see rules.md F0).
+# ALL services on host networking (three things break on a bridge — see rules.md D0).
 # Mounts alerts.yml from ../monitoring/ so there is ONE canonical copy of the rules.
 # Secrets: Grafana password in .env; Discord webhook in alertmanager/discord-webhook-url
 # (both gitignored, both chmod 600).

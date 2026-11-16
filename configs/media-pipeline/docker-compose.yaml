@@ -24,4 +24,4 @@ services:
     mem_limit: 1g
     restart: unless-stopped
   # TODO: bazarr, prowlarr, recyclarr, decluttarr, flaresolverr, qbit_manage
-  #       (see rules.md D1). flaresolverr at http://flaresolverr:8191.
+  #       (see rules.md E1). flaresolverr at http://flaresolverr:8191.

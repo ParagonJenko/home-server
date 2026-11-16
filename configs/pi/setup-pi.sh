@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup-pi.sh — base the Pi (F2). Run as root. Base packages, timezone, Docker,
+# setup-pi.sh — base the Pi (D2). Run as root. Base packages, timezone, Docker,
 # SD-card write reductions, stack directories. Stops short of bringing the stack up
 # (that needs secrets) and prints the remaining steps.
 set -euo pipefail
@@ -16,4 +16,4 @@ systemctl disable --now dphys-swapfile 2>/dev/null || true
 
 mkdir -p /opt/pi-stack /opt/monitoring
 echo "setup-pi done. Next: copy configs/pi -> /opt/pi-stack, configs/monitoring -> /opt/monitoring,"
-echo "cp .env.example .env + alertmanager/discord-webhook-url.example -> real (chmod 600), then F3."
+echo "cp .env.example .env + alertmanager/discord-webhook-url.example -> real (chmod 600), then D3."

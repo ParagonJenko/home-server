@@ -27,7 +27,7 @@ cameras:
   # TODO: cam-kitchen, cam-bedroom, cam-basement (same shape, by name).
   # NOTE: no HomeBase — confirm each Eufy model exposes standalone RTSP (many need a base).
 
-# Optional (Stage I): genai descriptions via local Ollama instead of OpenAI.
+# Optional (Stage K): genai descriptions via local Ollama instead of OpenAI.
 # genai:
 #   provider: ollama
 #   base_url: http://llm.home:11434

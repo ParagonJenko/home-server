@@ -11,4 +11,4 @@ DATASTORE_PATH="<DATASTORE_PATH>"   # e.g. /mnt/datastore/backups (where the USB
 # TODO: set prune: keep-daily=7 keep-weekly=4 keep-monthly=6
 # TODO: schedule prune + garbage-collection (prune frees nothing without GC)
 # TODO: enable datastore encryption; the key is a secret → vault (R21)
-echo "datastore-setup: fill DATASTORE_PATH and the TODOs (rules.md E4)."
+echo "datastore-setup: fill DATASTORE_PATH and the TODOs (rules.md G3)."

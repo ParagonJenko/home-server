@@ -10,9 +10,7 @@ need_root
 
 echo "=== NUC-1 bootstrap ==="
 pause "Prereq: Proxmox VE 9.2 installed on NUC-1 (Stage A1), DAS attached."
-ask PI_IP "The Pi's IP (used by every container)" 192.168.1.4
-
-run ./configs/lxc/stage-a-host-setup.sh            # A2–A3: repos, tools, MCP token
+run ./configs/lxc/stage-a-host-setup.sh            # step A2: repos, tools, MCP token
 pause "Copy the printed API token into your Proxmox MCP config AND your vault (shown once)."
 
 run ./configs/lxc/stage-b-storage.sh               # B: pick disks, build the pool (destructive)
@@ -24,6 +22,7 @@ echo
 echo ">> The media stack (E) needs DNS. If you haven't run ./bootstrap-pi.sh yet, do it now."
 confirm "Is the Pi's DNS up (Stage D done)?" || { echo "Run ./bootstrap-pi.sh, then re-run me."; exit 0; }
 
+ask PI_IP "The Pi's IP (planned — built in Stage D, now up; press Enter for the default)" 192.168.1.4
 run ./configs/lxc/media-pipeline.sh                # E1
 pause "Inside LXC 210: ./configs/lxc/_install-docker.sh, push the compose, up -d, then arr-setup.py"
 run ./configs/lxc/plex.sh                          # E2

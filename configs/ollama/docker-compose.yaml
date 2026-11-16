@@ -1,4 +1,4 @@
-# ollama/docker-compose.yaml — local LLM inference (Stage I, FUTURE/OPTIONAL).
+# ollama/docker-compose.yaml — local LLM inference (Stage K, FUTURE/OPTIONAL).
 # Ollama (OpenAI-compatible API) + Open WebUI. Runs on CPU/iGPU now; a GPU node
 # offloads layers later. Model weights are reconstructable (R26) — put them on a
 # dedicated volume and EXCLUDE from PBS.

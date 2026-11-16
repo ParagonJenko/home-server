@@ -2,7 +2,7 @@
 #
 # Two branches unioned into /mnt/media. Key options:
 #   minfreespace=250G   reserved headroom — new files refuse once a branch is this full (R8)
-#   category.create=epmff (or mfs)  keep a path's files on ONE branch so hardlinks work (R1/D1)
+#   category.create=epmff (or mfs)  keep a path's files on ONE branch so hardlinks work (R1/E1)
 #   x-systemd.requires=  the pool REFUSES to mount if a branch is missing, instead of
 #                        silently unioning from the host root device (R9)
 #
