@@ -51,11 +51,17 @@ mount -a
 
 # 3. Shared media user + the tree. torrents/ and library/ share ONE branch root so
 #    the Arr apps can hardlink on import instead of copying (R1).
-say "shared media user (1000:1000) + torrents/ library/"
+say "shared media user (1000:1000) + torrents/ library/ on EVERY branch [R1]"
 getent group media >/dev/null || groupadd -g 1000 media
 id -u media >/dev/null 2>&1 || useradd -u 1000 -g 1000 -M -s /usr/sbin/nologin media
-mkdir -p /mnt/media/torrents /mnt/media/library/movies /mnt/media/library/tv
-chown -R 1000:1000 /mnt/media/torrents /mnt/media/library
+# Create the base tree on each branch DIRECTLY, not through the union. If torrents/
+# and library/ land on different branches, hardlinks fail with EXDEV (cross-device).
+# With the base paths on every disk, mergerfs keeps each file's download + import on
+# one disk, so Arr imports hardlink instead of copying.
+for b in /mnt/pool/disk1 /mnt/pool/disk2; do
+  mkdir -p "$b/torrents" "$b/library/movies" "$b/library/tv"
+  chown -R 1000:1000 "$b/torrents" "$b/library"
+done
 
 ok "pool built — expect ~7.2 TiB across the two 4TB disks:"
 df -h /mnt/media

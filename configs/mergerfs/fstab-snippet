@@ -3,6 +3,9 @@
 # Two branches unioned into /mnt/media. Key options:
 #   minfreespace=250G   reserved headroom — new files refuse once a branch is this full (R8)
 #   category.create=epmfs (or mfs)  keep a path's files on ONE branch so hardlinks work (R1/E1)
+#                        NB: the base dirs (torrents/, library/) must exist on EVERY branch, or
+#                        a split across disks makes hardlinks fail with EXDEV. stage-b creates
+#                        them per-branch for exactly this reason.
 #   x-systemd.requires=  the pool REFUSES to mount if a branch is missing, instead of
 #                        silently unioning from the host root device (R9)
 #
