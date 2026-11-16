@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+
 <title>Proxmox Rebuild Runbook</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -879,12 +880,12 @@ var STAGES = [
           {
             "callout": "note",
             "title": "What it does",
-            "html": "Switches to the no-subscription repo, installs base tools, and creates the scoped MCP token — the <code class=\"inline\">ClaudeAutomation</code> role plus the <code class=\"inline\">claude@pve</code> token."
+            "html": "Switches to the no-subscription repo, installs base tools, creates the scoped MCP token — the <code class=\"inline\">ClaudeAutomation</code> role plus the <code class=\"inline\">claude@pve</code> token — and writes that token straight into <code class=\"inline\">mcp/proxmox/proxmox.env</code> so there's nothing to paste."
           },
           {
             "callout": "manual",
-            "title": "Manual",
-            "html": "<span class=save>Copy the token secret when it prints — it's shown once</span> — and add this node's endpoint and token to the Proxmox MCP server config. Vet the community MCP server before trusting it with the token."
+            "title": "Stand up the MCP server",
+            "html": "The script writes the token into <code class=\"inline\">mcp/proxmox/proxmox.env</code> (chmod 600) itself — <span class=save>no copy-paste</span>. It's still shown once, so also save it to your vault (R21). Then bring up our own MCP server (we built a small read-plus-lifecycle one rather than trust an unaudited community server with the token): in <code class=\"inline\">mcp/proxmox/</code> make a venv, <code class=\"inline\">pip install -r requirements.txt</code>, run <code class=\"inline\">python server.py --selftest</code> (should print this node), then register it with your Claude client — see that folder's README. Running the MCP server on a different machine than this NUC? Copy <code class=\"inline\">proxmox.env</code> across."
           },
           {
             "callout": "danger",

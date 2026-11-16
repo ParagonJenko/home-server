@@ -62,11 +62,33 @@ if pveum user token list "$TUSER" --output-format json 2>/dev/null | jq -e '.[]|
   echo "   Lost it? Run:  pveum user token remove ${TUSER} automation   then re-run this script."
 else
   SECRET=$(pveum user token add "$TUSER" automation --privsep 0 --output-format json | jq -r '.value')
+
+  # Write it straight into the MCP server's env so there's no copy-paste. The secret
+  # is shown by the API only once, so this is the one moment we can capture it.
+  ENVFILE="$(dirname "$0")/../../mcp/proxmox/proxmox.env"
+  HOSTIP="$(hostname -I | awk '{print $1}')"
+  if [ -f "$ENVFILE" ]; then
+    warn "  $ENVFILE already exists — leaving it; edit it by hand if the token changed."
+  else
+    mkdir -p "$(dirname "$ENVFILE")"
+    cat > "$ENVFILE" <<EOF
+PROXMOX_HOST=${HOSTIP}
+PROXMOX_PORT=8006
+PROXMOX_TOKEN_ID=claude@pve!automation
+PROXMOX_TOKEN_SECRET=${SECRET}
+PROXMOX_VERIFY_SSL=false
+PROXMOX_READONLY=false
+EOF
+    chmod 600 "$ENVFILE"
+    ok "  wrote $ENVFILE (chmod 600) — the MCP server on THIS box needs no paste."
+    warn "  Running the MCP server on another machine? Copy that file across."
+  fi
+
   hdr "================= MCP API TOKEN — shown once ================="
   echo  "  Token ID:  claude@pve!automation"
   printf '  Secret:    '; save "$SECRET"
   echo  "============================================================="
-  ok    "Put the Token ID + Secret into your Proxmox MCP config AND your vault (R21)."
+  ok    "Already written to proxmox.env above; also store it in your vault (R21)."
 fi
 
 ok "stage-a done."
