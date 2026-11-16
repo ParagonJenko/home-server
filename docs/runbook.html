@@ -1011,12 +1011,17 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: NUC-1 · host shell\n./configs/mergerfs/filltest.sh"
+            "cmd": "# @where: NUC-1 · host shell\n# Quick (recommended on SMR): refuses after ~30G/branch, ~30-60 min\n./configs/mergerfs/filltest.sh --quick\n# Or the full soak — writes until it refuses (~6.9TB, a day+ on SMR):\n./configs/mergerfs/filltest.sh"
           },
           {
             "callout": "note",
             "title": "Context",
             "html": "<p>Run on the empty pool (it refuses if there's already data). It writes 50G blobs until the pool refuses — no fixed count.</p>"
+          },
+          {
+            "callout": "note",
+            "title": "Quick vs full",
+            "html": "<code class=\"inline\">--quick</code> temporarily raises <code class=\"inline\">minfreespace</code> through mergerfs' runtime control file so the pool refuses after a few hundred GB, then restores the floor — same graceful-stop proof in ~30-60 min instead of filling the whole pool (a day+ on SMR, plus the wear). The full soak is the real-world version if you want it."
           },
           {
             "callout": "note",
