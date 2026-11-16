@@ -600,7 +600,7 @@ var values = JSON.parse(store.get(VKEY) || "{}");
 /* ---------------- values ---------------- */
 var FIELDS = [
   { key: "PI_IP", label: "PI_IP", hint: "The Pi's IP — the DNS server. Needed in every configs/lxc/*.sh and in homelab.conf's resolver line. The one literal IP the rules allow. Pre-filled from network.md's addressing plan.", ph: "192.168.1.4", seed: "192.168.1.4" },
-  { key: "DAS_1", label: "first-DAS-disk", hint: "First DAS disk device, from lsblk. Edited into stage-b-storage.sh.", ph: "/dev/sda" },
+  { key: "DAS_1", label: "first-DAS-disk", hint: "First DAS disk device (e.g. /dev/sdb). stage-b-storage.sh prompts for this at runtime — no editing needed; this is just your note.", ph: "/dev/sdb" },
   { key: "DAS_2", label: "second-DAS-disk", hint: "Second DAS disk device. Check both against the internal SSD before running anything.", ph: "/dev/sdb" },
   { key: "ISO", label: "ISO_FILENAME", hint: "PBS ISO name as it appears in local:iso on NUC-2.", ph: "proxmox-backup-server_4.0-1.iso" },
   { key: "USB_ID", label: "usb-hdd-by-id", hint: "Stable by-id path for the 2TB USB HDD: ls -l /dev/disk/by-id/ | grep <usb-model>", ph: "/dev/disk/by-id/usb-..." },
@@ -961,13 +961,18 @@ var STAGES = [
           {
             "callout": "danger",
             "title": "Destructive",
-            "html": "<p>Wipes the two disks named in the script's <code class=\"inline\">SDX</code> / <code class=\"inline\">SDY</code> variables. That's intended for a clean build — but edit those variables to your actual DAS disks first, and double-check them against the internal SSD.</p><p>Both ship as <code class=\"inline\">&lt;first-DAS-disk&gt;</code> / <code class=\"inline\">&lt;second-DAS-disk&gt;</code> on purpose: a realistic-looking default like <code class=\"inline\">/dev/sdX</code> slips past the placeholder guard. <code class=\"inline\">require_block_device</code> also proves the device exists before anything destructive runs.</p>"
+            "html": "<p>Wipes the two DAS disks you pick — intended for a clean build. The script is interactive: it lists every disk with size, model and serial, you type each DAS device, and it shows the model+size and asks <code class=\"inline\">Use /dev/sdX? [y/N]</code> before accepting it, then one final <code class=\"inline\">WIPE … ? [y/N]</code>. Check each against the internal SSD (the 512GB one) before you confirm.</p>"
           },
           {
-            "p": "Set your disks in the script, then run it as root:"
+            "p": "Run it as root — it prompts for each DAS disk, so there's nothing to edit first:"
           },
           {
-            "cmd": "# @where: NUC-1 · host shell\nSDX=\"{{DAS_1}}\"\nSDY=\"{{DAS_2}}\""
+            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/stage-b-storage.sh"
+          },
+          {
+            "callout": "note",
+            "title": "It's interactive — enter the disks when asked",
+            "html": "The script lists your disks, then prompts <code class=\"inline\">First DAS disk (e.g. /dev/sdb):</code> and <code class=\"inline\">Second DAS disk:</code>. Type the device for each — your DAS is <code class=\"inline\">/dev/sdb</code> and <code class=\"inline\">/dev/sdc</code> (the two ST4000DM004s) — confirm each, then confirm the wipe. It remembers them in <code class=\"inline\">~/.homelab.env</code>, so a re-run skips the questions."
           },
           {
             "callout": "note",
