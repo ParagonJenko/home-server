@@ -37,28 +37,17 @@ for pair in "sonarr:SONARR_API_KEY" "radarr:RADARR_API_KEY" "prowlarr:PROWLARR_A
   fi
 done
 
-# qBittorrent password — it lives in no config file (you set it in the WebUI), so prompt
-# for it here. Only ask if it's not already set and we have a terminal to read from.
-cur_pass="$(sed -n 's/^QBIT_PASS=//p' "$ENV_FILE" 2>/dev/null | head -1)"
-if [ -z "$cur_pass" ]; then
-  qp=""
-  if { exec 3</dev/tty; } 2>/dev/null; then        # a real terminal, even if stdin is a pipe
-    echo; read -rsp "qBittorrent password for user 'admin' (blank to skip): " qp <&3; echo
-    exec 3<&-
-  elif [ -t 0 ]; then
-    echo; read -rsp "qBittorrent password for user 'admin' (blank to skip): " qp; echo
-  else
-    echo "${Y}NOTE${Z} QBIT_PASS is empty and no terminal to prompt — set it in ${ENV_FILE} by hand,"
-    echo "     or re-run this script on its own line (not pasted with others)."
-  fi
-  if [ -n "$qp" ]; then upsert QBIT_PASS "$qp"; echo "${G}OK${Z}   QBIT_PASS set"; fi
-fi
+# The qBittorrent password lives in no config file (you set it in the WebUI), and this
+# script runs under `pct exec`, which has no terminal to prompt on. It's set separately
+# by set-qbit-pass.sh on the host — see the note below.
 
 echo
 if [ "$fail" = 0 ]; then
   echo "${G}API keys written to ${ENV_FILE}.${Z}"
-  [ -z "$(sed -n 's/^QBIT_PASS=//p' "$ENV_FILE" | head -1)" ] \
-    && echo "${Y}QBIT_PASS still empty${Z} — arr-setup can't log into qBittorrent until it's set."
+  if [ -z "$(sed -n 's/^QBIT_PASS=//p' "$ENV_FILE" | head -1)" ]; then
+    echo "${Y}Next:${Z} set the qBittorrent password — on the NUC-1 host run:"
+    echo "   ./configs/media-pipeline/set-qbit-pass.sh"
+  fi
   exit 0
 else
   echo "${Y}Some API keys missing.${Z} Make sure the core apps are running (docker ps) and have"
