@@ -49,3 +49,8 @@ id_rsa.pub
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Proxmox MCP secret (keep only the .example)
+mcp/proxmox/proxmox.env
+mcp/proxmox/proxmox-*.env
+mcp/proxmox/.venv/
