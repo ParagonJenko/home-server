@@ -57,8 +57,30 @@ services:
     restart: unless-stopped
   decluttarr:
     image: ghcr.io/manimatter/decluttarr:latest      # ENTER: pin a version tag
-    environment: { TZ: "Europe/London" }
-    env_file: .env                                   # reads SONARR/RADARR URLs + keys
+    env_file: .env                                   # supplies the $..._API_KEY / $QBIT_* below
+    environment:
+      TZ: Europe/London
+      LOG_LEVEL: INFO
+      TIMER: "10"                      # minutes between queue checks
+      # TEST_RUN comes from .env (TEST_RUN=True by default) so you can flip it without
+      # editing this file — set it False there and `docker compose up -d decluttarr`.
+      # jobs: all off by default, so turn on the safe ones (each blocklists + re-searches)
+      REMOVE_FAILED_DOWNLOADS: "True"  # download failed
+      REMOVE_FAILED_IMPORTS: "True"    # grabbed but wouldn't import
+      REMOVE_METADATA_MISSING: "True"  # stuck fetching metadata
+      REMOVE_STALLED: "True"           # no connections / no progress
+      REMOVE_ORPHANS: "True"           # media was deleted from the Arr
+      # REMOVE_SLOW / REMOVE_UNMONITORED left off — they can bin downloads you still want.
+      SONARR: |
+        - base_url: http://sonarr:8989
+          api_key: "$SONARR_API_KEY"
+      RADARR: |
+        - base_url: http://radarr:7878
+          api_key: "$RADARR_API_KEY"
+      QBITTORRENT: |
+        - base_url: http://qbittorrent:8080
+          username: "$QBIT_USER"
+          password: "$QBIT_PASS"
     mem_limit: 256m
     restart: unless-stopped
   qbit_manage:
