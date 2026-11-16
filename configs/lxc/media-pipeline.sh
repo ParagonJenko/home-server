@@ -34,19 +34,39 @@ say "start CT ${CTID} + install Docker"
 pct start "$CTID" 2>/dev/null || true
 pct push "$CTID" ./_install-docker.sh /root/_install-docker.sh
 pct exec "$CTID" -- bash -c 'command -v docker >/dev/null || bash /root/_install-docker.sh'
+# arr-setup.py (phase 2) runs inside this container; the minimal template has no python3
+pct exec "$CTID" -- bash -c 'command -v python3 >/dev/null || { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3; }'
 
 say "deploy the compose stack"
 pct exec "$CTID" -- mkdir -p /opt/media-pipeline
 pct push "$CTID" ../media-pipeline/docker-compose.yaml /opt/media-pipeline/docker-compose.yaml
+pct push "$CTID" ../media-pipeline/arr-setup.py /opt/media-pipeline/arr-setup.py   # for phase 2
 if [ -f ../media-pipeline/.env ]; then
   pct push "$CTID" ../media-pipeline/.env /opt/media-pipeline/.env
 else
-  warn "  ENTER: ../media-pipeline/.env not found — create it (secrets-init.sh) before the stack is useful."
+  # seed an empty .env (keys don't exist until the apps first boot) — but never clobber
+  # one already filled in the container on a re-run.
+  pct exec "$CTID" -- test -f /opt/media-pipeline/.env \
+    || pct push "$CTID" ../media-pipeline/.env.example /opt/media-pipeline/.env
+  warn "  .env seeded empty — fill the API keys after first boot (phase 2 below)."
 fi
 # quality-profile (recyclarr) + qBittorrent housekeeping (qbit_manage) configs
 pct exec "$CTID" -- mkdir -p /opt/recyclarr/config /opt/qbit_manage/config
 pct push "$CTID" ../media-pipeline/recyclarr.yml /opt/recyclarr/config/recyclarr.yml
 pct push "$CTID" ../media-pipeline/qbit_manage.config.yml /opt/qbit_manage/config/config.yml
-pct exec "$CTID" -- bash -c 'cd /opt/media-pipeline && docker compose up -d'
 
-ok "media-pipeline up. Next: ../media-pipeline/arr-setup.py --apply  (wires the Arrs over their APIs)."
+# Phase 1: bring up only the apps that need no secrets. recyclarr/decluttarr/qbit_manage
+# read .env (API keys + qBit creds) and have nothing to do until those exist, so they're
+# started in phase 2 after the keys are filled — starting them now just crash-loops them.
+say "start the core apps (qBittorrent + Arr stack)"
+pct exec "$CTID" -- bash -c 'cd /opt/media-pipeline && docker compose up -d \
+  qbittorrent sonarr radarr bazarr prowlarr flaresolverr'
+
+IP="$(pct exec "$CTID" -- hostname -I | awk '{print $1}')"
+ok "Core stack up. Reach the web UIs at (replace with the LXC IP if the name doesn't resolve):"
+echo "     qBittorrent  http://${IP}:8080     Prowlarr  http://${IP}:9696"
+echo "     Sonarr       http://${IP}:8989     Radarr    http://${IP}:7878"
+echo "     Bazarr       http://${IP}:6767"
+echo "   Phase 2 (after the apps have booted once): fill keys, then"
+echo "     pct exec ${CTID} -- bash -c 'cd /opt/media-pipeline && docker compose up -d'  # the rest"
+echo "     then run arr-setup.py --apply"

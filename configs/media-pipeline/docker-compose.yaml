@@ -9,30 +9,38 @@ services:
     volumes:
       - /opt/qbittorrent/config:/config
       - /data:/data           # torrents + library on ONE mount so imports hardlink
+    ports:
+      - "8080:8080"           # WebUI
+      - "6881:6881"           # torrent peers (tcp)
+      - "6881:6881/udp"       # torrent peers (udp)
     mem_limit: 2g
     restart: unless-stopped
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
     volumes: [ /opt/sonarr/config:/config, /data:/data ]
+    ports: [ "8989:8989" ]
     mem_limit: 1g
     restart: unless-stopped
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
     volumes: [ /opt/radarr/config:/config, /data:/data ]
+    ports: [ "7878:7878" ]
     mem_limit: 1g
     restart: unless-stopped
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest        # ENTER: pin a version tag
     environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
     volumes: [ /opt/bazarr/config:/config, /data:/data ]
+    ports: [ "6767:6767" ]
     mem_limit: 1g
     restart: unless-stopped
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest      # ENTER: pin a version tag
     environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
     volumes: [ /opt/prowlarr/config:/config ]
+    ports: [ "9696:9696" ]
     mem_limit: 512m
     restart: unless-stopped
   flaresolverr:

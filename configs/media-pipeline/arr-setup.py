@@ -96,7 +96,8 @@ def ensure_qbit(base, key, category, env, apply):
     for f in tmpl.get("fields", []):
         n = f.get("name", "").lower()
         if n == "host":
-            f["value"] = env.get("QBIT_HOST", "qbittorrent")
+            # value used BY Sonarr/Radarr, which sit on the compose net → service name
+            f["value"] = env.get("QBIT_SVC", "qbittorrent")
         elif n == "port":
             f["value"] = int(env.get("QBIT_PORT", "8080"))
         elif n == "username":
@@ -114,7 +115,8 @@ def configure_qbittorrent(env, apply):
     Management on, a default save path under /data/torrents, and the two categories the
     Arrs push to (same branch as the library so imports hardlink, not copy). qBittorrent
     has no native 'pause when disk is low' knob — that one stays a manual Options tweak."""
-    host = env.get("QBIT_HOST", "qbittorrent")
+    # arr-setup itself runs on the LXC host, so it logs into qBit via the published port
+    host = env.get("QBIT_HOST", "localhost")
     port = env.get("QBIT_PORT", "8080")
     base = f"http://{host}:{port}"
     user = env.get("QBIT_USER", "")
@@ -211,9 +213,12 @@ def main() -> None:
     env = load_env()
     print("arr-setup:", "APPLY" if args.apply else "DRY RUN")
 
-    sonarr = env.get("SONARR_URL", "http://media-pipeline.home:8989")
-    radarr = env.get("RADARR_URL", "http://media-pipeline.home:7878")
-    prowlarr = env.get("PROWLARR_URL", "http://media-pipeline.home:9696")
+    # Defaults assume this runs INSIDE LXC 210, reaching the apps on their published
+    # ports via localhost. FlareSolverr stays a Docker service name because Prowlarr
+    # (a compose service) is what calls it, over the compose network.
+    sonarr = env.get("SONARR_URL", "http://localhost:8989")
+    radarr = env.get("RADARR_URL", "http://localhost:7878")
+    prowlarr = env.get("PROWLARR_URL", "http://localhost:9696")
     flare = env.get("FLARESOLVERR_URL", "http://flaresolverr:8191/")
     sk, rk, pk = env.get("SONARR_API_KEY"), env.get("RADARR_API_KEY"), env.get("PROWLARR_API_KEY")
     min_free = int(env.get("ARR_MIN_FREE_MB", "10240"))  # 10 GB default; override in .env
