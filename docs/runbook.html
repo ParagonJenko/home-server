@@ -1441,7 +1441,7 @@ var STAGES = [
         "subs": [
           {
             "name": "Bazarr — subtitle providers",
-            "html": "<ol><li>Open <code class=\"inline\">http://bazarr.home</code> (or the LXC IP :6767).</li><li>Settings → Languages → <strong>Languages Filter</strong>: add English (and any others).</li><li>Settings → Languages → <strong>Languages Profiles</strong> → Add → add your language → Save.</li><li>Settings → Sonarr → set <strong>Default Language Profile</strong> to it. Repeat under Settings → Radarr.</li><li>Settings → Providers → Add → pick <strong>OpenSubtitles.com</strong> → enter your username + password → Save.</li><li>Click <strong>Save</strong> (top-left), then Restart when prompted.</li></ol>"
+            "html": "arr-setup.py now connects Bazarr to Sonarr and Radarr and sets an English language profile as the default for both — so all that's left is your provider account (which needs a login):<ol><li>Open <code class=\"inline\">http://bazarr.home</code> (or the LXC IP :6767).</li><li>Settings → Providers → Add → pick <strong>OpenSubtitles.com</strong> (or others) → enter your username + password → Save.</li></ol>"
           },
           {
             "name": "Prowlarr — your indexers",

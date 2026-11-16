@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """arr-setup.py — wire the Arr stack over their APIs (root folders, qBittorrent
-client + category on Sonarr/Radarr, Prowlarr applications + FlareSolverr proxy, and
-qBittorrent's own ATM + save path + categories).
+client + category on Sonarr/Radarr, Prowlarr applications + FlareSolverr proxy,
+qBittorrent's own ATM + save path + categories, and Bazarr's Sonarr/Radarr
+connections + a default English language profile).
 
 Dry-run by default; --apply writes. Idempotent, and asks each app for its own
 schema rather than hardcoding field names, so it survives Arr releases.
@@ -197,6 +198,68 @@ def ensure_prowlarr_app(base, key, impl, app_url, app_key, prowlarr_url, apply):
     print(f"    Prowlarr -> {impl} ({app_url}): added")
 
 
+def bazarr_apikey(conf_path):
+    """Read auth.apikey out of Bazarr's config.yaml without a YAML dependency. Tracks the
+    current top-level section (unindented line ending in ':') and returns the apikey under
+    'auth' — not the sonarr/radarr apikeys that also live in the file."""
+    section = None
+    try:
+        for line in open(conf_path):
+            if line.strip() and not line[0].isspace() and line.rstrip().endswith(":"):
+                section = line.strip().rstrip(":")
+            elif section == "auth" and line.strip().startswith("apikey:"):
+                return line.split("apikey:", 1)[1].strip()
+    except FileNotFoundError:
+        return None
+    return None
+
+
+def configure_bazarr(env, sk, rk, apply):
+    """Configure Bazarr over its settings API: Sonarr/Radarr connections (by compose
+    service name), an English language filter + profile, and that profile as the default
+    for series and movies. Subtitle providers still need your accounts. Bazarr's own API
+    key is read from its config.yaml. One POST /api/system/settings drives all of it."""
+    conf = env.get("BAZARR_CONFIG", "/opt/bazarr/config/config/config.yaml")
+    base = env.get("BAZARR_URL", "http://localhost:6767")
+    apikey = bazarr_apikey(conf)
+    if not apikey:
+        print(f"    no API key in {conf} yet — has Bazarr booted once?")
+        return
+    if not apply:
+        print("    WOULD set Sonarr/Radarr connections + an English profile as default")
+        return
+    # Bazarr reaches the Arrs over the compose network, so service names, not localhost.
+    profile = [{"profileId": 1, "name": "English", "cutoff": None,
+                "items": [{"id": 1, "language": "en", "audio_exclude": "False",
+                           "hi": "False", "forced": "False"}],
+                "mustContain": [], "mustNotContain": [], "originalFormat": None, "tag": None}]
+    fields = [
+        ("settings-general-use_sonarr", "true"),
+        ("settings-sonarr-ip", env.get("SONARR_SVC_HOST", "sonarr")),
+        ("settings-sonarr-port", "8989"),
+        ("settings-sonarr-base_url", "/"),
+        ("settings-sonarr-ssl", "false"),
+        ("settings-sonarr-apikey", sk),
+        ("settings-general-use_radarr", "true"),
+        ("settings-radarr-ip", env.get("RADARR_SVC_HOST", "radarr")),
+        ("settings-radarr-port", "7878"),
+        ("settings-radarr-base_url", "/"),
+        ("settings-radarr-ssl", "false"),
+        ("settings-radarr-apikey", rk),
+        ("languages-enabled", "en"),
+        ("languages-profiles", json.dumps(profile)),
+        ("settings-general-serie_default_enabled", "true"),
+        ("settings-general-serie_default_profile", "1"),
+        ("settings-general-movie_default_enabled", "true"),
+        ("settings-general-movie_default_profile", "1"),
+    ]
+    url = base + "/api/system/settings?" + urllib.parse.urlencode({"apikey": apikey})
+    req = urllib.request.Request(url, data=urllib.parse.urlencode(fields).encode())
+    req.add_header("X-API-KEY", apikey)  # Bazarr accepts the key as header or query param
+    urllib.request.urlopen(req, timeout=20)  # 204 on success; 406 (validation) raises
+    print("    Sonarr + Radarr connected; English profile set as the default for both")
+
+
 def step(label, fn):
     print(f"  {label}:")
     try:
@@ -257,6 +320,8 @@ def main() -> None:
             ensure_prowlarr_app(prowlarr, pk, "Radarr", radarr_svc, rk, prowlarr_svc, args.apply)))
     if env.get("QBIT_USER"):
         step("qBittorrent", lambda: configure_qbittorrent(env, args.apply))
+    if sk and rk:
+        step("Bazarr", lambda: configure_bazarr(env, sk, rk, args.apply))
 
     if not args.apply:
         print("dry run — pass --apply to write. Indexers stay manual; profiles are Recyclarr's job.")
