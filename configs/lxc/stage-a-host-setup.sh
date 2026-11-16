@@ -43,7 +43,21 @@ apt update
 say "install base tools"
 apt -y install curl git jq lsb-release
 
-# 3. Scoped MCP automation token ----------------------------------------------
+# 3. LVM-thin autoextend ------------------------------------------------------
+# Default lvm.conf leaves this disabled (compiled default threshold=100 = never),
+# so a thin pool at 100% aborts writes — the exact corruption R8 designs out.
+# Extend at 70% full, grow 20%. Idempotent; skips if an active setting exists.
+say "LVM-thin autoextend (R8): threshold 70%, grow 20%"
+if grep -qE '^[[:space:]]*thin_pool_autoextend_threshold[[:space:]]*=' /etc/lvm/lvm.conf; then
+  ok "  already set ($(lvmconfig activation/thin_pool_autoextend_threshold 2>/dev/null))"
+else
+  sed -i '/^activation {/a\        thin_pool_autoextend_threshold = 70\n        thin_pool_autoextend_percent = 20' /etc/lvm/lvm.conf
+  ok "  enabled: threshold=70 percent=20"
+fi
+VFREE_PE="$(vgs --noheadings -o vg_free_count pve 2>/dev/null | tr -d ' ' || true)"
+[ "${VFREE_PE:-0}" = "0" ] && warn "  NOTE: VG 'pve' has ~0 free extents — autoextend can't grow; the R6 ceilings are the real guard."
+
+# 4. Scoped MCP automation token ----------------------------------------------
 say "role ${ROLE} (verify it has no Sys.Console)"
 if pveum role list --output-format json | jq -e --arg r "$ROLE" '.[]|select(.roleid==$r)' >/dev/null; then
   pveum role modify "$ROLE" --privs "$PRIVS"
