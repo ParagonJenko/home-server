@@ -138,7 +138,9 @@ def configure_qbittorrent(env, apply):
         req.add_header("Referer", base)  # qBittorrent's WebUI CSRF check wants this
         return opener.open(req, timeout=15).read().decode()
 
-    if post("/api/v2/auth/login", {"username": user, "password": pw}).strip() != "Ok.":
+    # Success is "Ok." (older qBittorrent) or an empty 204 body (5.x+). Only an explicit
+    # "Fails." is wrong credentials; a ban is a 4xx and raises before we get here.
+    if post("/api/v2/auth/login", {"username": user, "password": pw}).strip() == "Fails.":
         raise RuntimeError("login failed (check QBIT_USER / QBIT_PASS in .env)")
     post("/api/v2/app/setPreferences", {"json": json.dumps(
         {"auto_tmm_enabled": True, "save_path": "/data/torrents",
