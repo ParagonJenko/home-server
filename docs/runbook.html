@@ -1211,18 +1211,23 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Image <strong>Pi OS Lite (64-bit / arm64)</strong> with Raspberry Pi Imager. In the imager's settings (the gear icon) set the hostname, a username + password, <strong>enable SSH and paste your public key</strong>, set locale, and skip wifi — it's wired. No desktop."
+            "cmd": "# @where: Your desktop AND laptop — do this FIRST, so you can paste the keys into the imager\nssh-keygen -t ed25519        # skip if you already have a key\ncat ~/.ssh/id_ed25519.pub    # copy this whole line"
           },
           {
             "callout": "note",
-            "title": "Already imaged? (hostname + SSH)",
-            "html": "<p>The OS hostname is cosmetic — <code class=\"inline\">raspberry-pi-5</code> is fine. The system reaches the Pi by its static IP (<code class=\"inline\">192.168.1.4</code>) and the <code class=\"inline\">pi.home</code> DNS rewrite, never its hostname, so there's nothing to rename. What matters is SSH being on and the static IP below. If SSH wasn't enabled in the imager, turn it on from a monitor + keyboard on the Pi: <code class=\"inline\">sudo raspi-config</code> → Interface Options → SSH, or the command below.</p>"
+            "title": "Raspberry Pi Imager — what to set (headless, no monitor needed)",
+            "html": "<p><strong>Device:</strong> Raspberry Pi 5. <strong>OS:</strong> Raspberry Pi OS (other) → <strong>Raspberry Pi OS Lite (64-bit)</strong>. <strong>Storage:</strong> the microSD. Then <strong>Next → Edit Settings</strong>:</p><ul><li><strong>General tab:</strong> set the hostname (<code class=\"inline\">raspberry-pi-5</code> is fine); set a username + password; <strong>leave wifi unchecked</strong> (it's wired); set locale to Europe/London.</li><li><strong>Services tab:</strong> tick <strong>Enable SSH</strong> → <strong>Allow public-key authentication only</strong>, and paste the <code class=\"inline\">.pub</code> line from <em>each</em> machine — desktop and laptop — one per line in the box.</li><li><strong>Options tab:</strong> optional (eject when done).</li></ul><p>Save → Yes → Write. Setting SSH + keys here is exactly what lets you skip the monitor and keyboard — it boots ready to log into from both machines.</p>"
           },
           {
-            "cmd": "# @where: Pi · console (monitor + keyboard) — only if SSH wasn't enabled in the imager\nsudo systemctl enable --now ssh"
+            "callout": "note",
+            "title": "Hostname — raspberry-pi-5 is fine",
+            "html": "<p>Cosmetic. The system reaches the Pi by its static IP (<code class=\"inline\">192.168.1.4</code>) and the <code class=\"inline\">pi.home</code> DNS rewrite, never its hostname — nothing to rename.</p>"
           },
           {
-            "cmd": "# @where: Pi · shell\n# static address 192.168.1.4 (outside the DHCP pool), via NetworkManager\nCON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.method manual \\\n  ipv4.addresses 192.168.1.4/24 ipv4.gateway 192.168.1.1 ipv4.dns 1.1.1.1\nnmcli con up \"$CON\""
+            "cmd": "# @where: Your desktop — after first boot (it's on DHCP; find it by its mDNS name)\nssh <user>@raspberry-pi-5.local"
+          },
+          {
+            "cmd": "# @where: Pi · shell — pin the static address 192.168.1.4 (outside the DHCP pool)\nCON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.method manual \\\n  ipv4.addresses 192.168.1.4/24 ipv4.gateway 192.168.1.1 ipv4.dns 1.1.1.1\nnmcli con up \"$CON\""
           },
           {
             "callout": "note",
@@ -1230,12 +1235,12 @@ var STAGES = [
             "html": "AdGuard isn't running yet. D3 switches the Pi to its own resolver — Prometheus and blackbox share the Pi's network namespace, so they use the Pi's resolver to scrape <code class=\"inline\">nuc1.home</code> and the rest by name."
           },
           {
-            "cmd": "# @where: Your desktop AND laptop — run on EACH machine you'll work from\nssh-keygen -t ed25519        # skip if you already have a key\nssh-copy-id <user>@192.168.1.4"
+            "cmd": "# @where: Your desktop AND laptop — ONLY if you didn't paste the keys in the imager\nssh-copy-id <user>@192.168.1.4"
           },
           {
             "callout": "note",
             "title": "Key login from both machines (+ optional hardening)",
-            "html": "<p>Run <code class=\"inline\">ssh-copy-id</code> from your desktop and your laptop, so both their keys land in the Pi's <code class=\"inline\">~/.ssh/authorized_keys</code>. Then connect with <code class=\"inline\">ssh &lt;user&gt;@192.168.1.4</code> — no password. Once key login works from both, harden by disabling password SSH: put <code class=\"inline\">PasswordAuthentication no</code> in <code class=\"inline\">/etc/ssh/sshd_config.d/99-hardening.conf</code>, then <code class=\"inline\">sudo systemctl restart ssh</code>. If you want Claude to manage the Pi over its gated shell (see A0), add Claude's public key here too.</p>"
+            "html": "<p>If you pasted both machines' keys into the imager, SSH already works passwordless from both — skip the command above and just connect with <code class=\"inline\">ssh &lt;user&gt;@192.168.1.4</code>. Optional hardening once key login works: set <code class=\"inline\">PasswordAuthentication no</code> in <code class=\"inline\">/etc/ssh/sshd_config.d/99-hardening.conf</code>, then <code class=\"inline\">sudo systemctl restart ssh</code>. For Claude to manage the Pi over its gated shell (see A0), add Claude's public key to <code class=\"inline\">~/.ssh/authorized_keys</code> too.</p>"
           },
           {
             "cmd": "# @where: Pi · shell (SSH in now)\nsudo apt update && sudo apt -y full-upgrade && sudo reboot"
