@@ -1040,12 +1040,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: NUC-1 · host shell\n# 1. Confirm the pool depends on its branches (expect both mnt-pool-diskN.mount):\nsystemctl show -p Requires mnt-media.mount\n# 2. Simulate a MISSING branch: mask disk1 so it can't mount, then try the pool\numount /mnt/media 2>/dev/null\nsystemctl stop mnt-pool-disk1.mount\nsystemctl mask mnt-pool-disk1.mount\nsystemctl start mnt-media.mount ; echo \"exit=$?\"    # must be non-zero\nfindmnt /mnt/media || echo \"OK: pool refused without its branch\"\n# 3. Restore:\nsystemctl unmask mnt-pool-disk1.mount && systemctl daemon-reload\nmount -a && findmnt /mnt/media"
+            "cmd": "# @where: NUC-1 · host shell\n./configs/mergerfs/branch-missing-test.sh"
           },
           {
             "callout": "note",
             "title": "Context",
-            "html": "<p>A plain <code class=\"inline\">umount</code> of a branch does NOT test this — <code class=\"inline\">x-systemd.requires</code> makes systemd remount the branch as a dependency, so the pool comes straight back up and you get a false pass. To simulate a disk that's genuinely gone, <strong>mask</strong> the branch's mount unit so it can't start, then start the pool.</p>"
+            "html": "<p>A plain <code class=\"inline\">umount</code> of a branch does NOT test this — <code class=\"inline\">x-systemd.requires</code> makes systemd remount the branch as a dependency, so the pool comes straight back up and you get a false pass. The script simulates a genuinely-gone disk by <strong>masking</strong> the branch's mount unit, then restores everything. It hides systemd's red <code class=\"inline\">Unit … is masked</code> line — that error is the expected result, not a fault — and prints a clear green <strong>PASS</strong> or red <strong>FAIL</strong> instead.</p>"
           },
           {
             "callout": "note",
@@ -1053,7 +1053,7 @@ var STAGES = [
             "html": "The pool must never silently fall back to writing on the host SSD when a branch is missing."
           }
         ],
-        "verify": "<code class=\"inline\">exit=</code> is non-zero and <code class=\"inline\">findmnt</code> prints nothing while disk1 is masked — the pool refused because its branch couldn't mount. Step 1 lists both <code class=\"inline\">mnt-pool-diskN.mount</code> under Requires. If the pool mounts anyway, the <code class=\"inline\">x-systemd.requires=</code> entries are missing from /etc/fstab — see configs/mergerfs/fstab-snippet."
+        "verify": "The script ends on a green <code class=\"inline\">B4 PASS (R9)</code> — the pool refused to mount while its branch was masked, then came back. A red <code class=\"inline\">B4 FAIL</code> means it mounted without a branch (it would silently run off the host SSD) — fix the <code class=\"inline\">x-systemd.requires=</code> lines in /etc/fstab, see configs/mergerfs/fstab-snippet."
       },
       {
         "id": "B5",
