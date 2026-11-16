@@ -1284,13 +1284,11 @@ var STAGES = [
           },
           {
             "callout": "note",
-            "title": "Context",
-            "html": "<p>Clone the public repo on the Pi, then run as root:</p>"
+            "title": "What it does",
+            "html": "Installs base packages + Docker, applies the SD-card write reductions (journald volatile, swap off), deploys <code class=\"inline\">configs/pi</code> → <code class=\"inline\">/opt/pi-stack</code> and <code class=\"inline\">configs/monitoring</code> → <code class=\"inline\">/opt/monitoring</code>, and creates the two secret files from their templates. It ends on a green <strong>PASS</strong>. The only thing left to you is filling those secrets:"
           },
           {
-            "callout": "note",
-            "title": "What it does",
-            "html": "Installs base packages, timezone, Docker, the SD-card write reductions and stack directories. It stops short of bringing the stack up — that needs secrets — and prints the remaining steps when it finishes."
+            "cmd": "# @where: Pi · shell — ENTER your real values, then D3\nsudo nano /opt/pi-stack/.env                              # Grafana admin password\nsudo nano /opt/pi-stack/alertmanager/discord-webhook-url  # Discord webhook URL"
           },
           {
             "callout": "gotcha",
