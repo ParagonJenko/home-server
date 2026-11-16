@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """arr-setup.py — wire the Arr stack over their APIs (root folders, qBittorrent
-client + category on Sonarr/Radarr, Prowlarr applications + FlareSolverr proxy).
+client + category on Sonarr/Radarr, Prowlarr applications + FlareSolverr proxy, and
+qBittorrent's own ATM + save path + categories).
 
 Dry-run by default; --apply writes. Idempotent, and asks each app for its own
 schema rather than hardcoding field names, so it survives Arr releases.
@@ -20,7 +21,7 @@ Reads config from .env (gitignored) next to this file, e.g.:
   FLARESOLVERR_URL=http://flaresolverr:8191/
 Stdlib only — runs anywhere that can reach the Arr APIs.
 """
-import argparse, json, os, sys, urllib.request, urllib.error
+import argparse, json, os, sys, urllib.request, urllib.error, urllib.parse, http.cookiejar
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -90,6 +91,46 @@ def ensure_qbit(base, key, category, env, apply):
             f["value"] = category
     http("POST", f"{base}/api/v3/downloadclient", key, tmpl)
     print(f"    qBittorrent client (category={category}): added")
+
+
+def configure_qbittorrent(env, apply):
+    """Log into qBittorrent and set the few things the Arrs rely on: Automatic Torrent
+    Management on, a default save path under /data/torrents, and the two categories the
+    Arrs push to (same branch as the library so imports hardlink, not copy). qBittorrent
+    has no native 'pause when disk is low' knob — that one stays a manual Options tweak."""
+    host = env.get("QBIT_HOST", "qbittorrent")
+    port = env.get("QBIT_PORT", "8080")
+    base = f"http://{host}:{port}"
+    user = env.get("QBIT_USER", "")
+    pw = env.get("QBIT_PASS", "")
+    # flat save path: /data/torrents exists on both mergerfs branches (stage-b base tree),
+    # so the create policy never has to invent a subfolder. qbit_manage's cat map matches this.
+    cats = {"tv-sonarr": "/data/torrents", "movies-radarr": "/data/torrents"}
+    if not apply:
+        print(f"    qBittorrent @ {base}: WOULD set ATM on, save path /data/torrents, "
+              f"categories {', '.join(cats)}")
+        return
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+
+    def post(path, fields):
+        data = urllib.parse.urlencode(fields).encode()
+        req = urllib.request.Request(base + path, data=data)
+        req.add_header("Referer", base)  # qBittorrent's WebUI CSRF check wants this
+        return opener.open(req, timeout=15).read().decode()
+
+    if post("/api/v2/auth/login", {"username": user, "password": pw}).strip() != "Ok.":
+        raise RuntimeError("login failed (check QBIT_USER / QBIT_PASS in .env)")
+    post("/api/v2/app/setPreferences", {"json": json.dumps(
+        {"auto_tmm_enabled": True, "save_path": "/data/torrents",
+         "torrent_changed_tmm_enabled": True, "save_path_changed_tmm_enabled": True})})
+    for cat, path in cats.items():
+        # createCategory is idempotent-ish; editCategory fixes the path if it already exists
+        try:
+            post("/api/v2/torrents/createCategory", {"category": cat, "savePath": path})
+        except urllib.error.HTTPError:
+            post("/api/v2/torrents/editCategory", {"category": cat, "savePath": path})
+    print(f"    qBittorrent: ATM on, save path /data/torrents, categories {', '.join(cats)}")
 
 
 def ensure_prowlarr_proxy(base, key, flare_url, apply):
@@ -176,6 +217,8 @@ def main() -> None:
             ensure_prowlarr_proxy(prowlarr, pk, flare, args.apply),
             ensure_prowlarr_app(prowlarr, pk, "Sonarr", sonarr, sk, prowlarr, args.apply),
             ensure_prowlarr_app(prowlarr, pk, "Radarr", radarr, rk, prowlarr, args.apply)))
+    if env.get("QBIT_USER"):
+        step("qBittorrent", lambda: configure_qbittorrent(env, args.apply))
 
     if not args.apply:
         print("dry run — pass --apply to write. Indexers stay manual; profiles are Recyclarr's job.")

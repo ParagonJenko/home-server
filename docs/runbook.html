@@ -1417,7 +1417,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Most of the list below is scriptable",
-            "html": "<p><code class=\"inline\">configs/media-pipeline/arr-setup.py</code> sets the root folders, the qBittorrent client and category on Sonarr and Radarr, links both into Prowlarr and adds the FlareSolverr proxy — over the APIs. Dry run by default, idempotent, and it asks each app for its own schema rather than hardcoding field names, so it survives Arr releases.</p><p>Indexers stay manual — they need your accounts. Quality profiles (Recyclarr) and qBittorrent housekeeping (qbit_manage) ship as configs in the repo and deploy with the stack; run <code class=\"inline\">docker compose run --rm recyclarr sync</code> to apply the profiles.</p>"
+            "html": "<p><code class=\"inline\">configs/media-pipeline/arr-setup.py</code> does most of the wiring over the APIs: root folders, the qBittorrent download client + category on Sonarr and Radarr, both apps linked into Prowlarr with the FlareSolverr proxy, <em>and</em> qBittorrent itself (ATM on, save path <code class=\"inline\">/data/torrents</code>, the two categories). Dry run by default, idempotent, and it asks each app for its own schema rather than hardcoding field names, so it survives Arr releases.</p><p>Quality profiles (Recyclarr) and qBittorrent housekeeping (qbit_manage) ship as configs in the repo and deploy with the stack — no file to copy, keys come from <code class=\"inline\">.env</code>; run <code class=\"inline\">docker compose run --rm recyclarr sync</code> to apply the profiles. What's genuinely left to do by hand is the short list below — mostly things that need <em>your</em> accounts.</p>"
           },
           {
             "cmd": "# @where: Inside LXC 210\ncp .env.example .env      # add PROWLARR_API_KEY alongside the others\npython3 arr-setup.py      # shows the plan; --apply writes it"
@@ -1425,28 +1425,24 @@ var STAGES = [
         ],
         "subs": [
           {
-            "name": "qBittorrent",
-            "html": "Download path <code class=\"inline\">/data/torrents</code>. Follow <a href=\"https://trash-guides.info/Downloaders/qBittorrent/Basic-Setup/\">TRaSH's basic setup</a>: Automatic Torrent Management on, save-to-category-subdirectory on, one category per app (<code class=\"inline\">sonarr</code>, <code class=\"inline\">radarr</code>). <strong>Leave its own seeding ratio and time limits disabled</strong> — TRaSH routes that through qbit_manage or per-indexer settings instead. Stalled downloading torrents are Decluttarr's job. Set a disk-space threshold so qBittorrent <strong>pauses</strong> rather than errors when the pool nears full — that is its R7 degradation."
+            "name": "qBittorrent — disk-space pause",
+            "html": "arr-setup.py already turned on Automatic Torrent Management, set the save path to <code class=\"inline\">/data/torrents</code> and created the <code class=\"inline\">tv-sonarr</code> / <code class=\"inline\">movies-radarr</code> categories. The one knob it can't set over the API: a disk-space threshold so qBittorrent <strong>pauses</strong> rather than errors when the pool nears full. Set that in Options → Downloads — it's qBittorrent's R7 degradation. Leave its own seeding ratio and time limits <strong>off</strong>; qbit_manage owns those, and stalled downloads are Decluttarr's job."
           },
           {
-            "name": "Sonarr / Radarr / Bazarr",
-            "html": "Root folders <code class=\"inline\">/data/library/tv</code> (Sonarr) and <code class=\"inline\">/data/library/movies</code> (Radarr); download client <code class=\"inline\">qbittorrent</code> — the Docker service name; category set so imports hardlink from <code class=\"inline\">/data/torrents/*</code> to <code class=\"inline\">/data/library/*</code>. Leave Search on Missing and RSS Sync on — the auto-retry loop needs them. Set each app's <strong>Minimum Free Space</strong> so grabs stop cleanly before the disk is full (R7)."
+            "name": "Sonarr / Radarr — Minimum Free Space",
+            "html": "arr-setup.py set the root folders (<code class=\"inline\">/data/library/tv</code>, <code class=\"inline\">/data/library/movies</code>) and the qBittorrent client + category — imports hardlink from <code class=\"inline\">/data/torrents</code> to <code class=\"inline\">/data/library/*</code>. By hand: set each app's <strong>Minimum Free Space</strong> (Settings → Media Management) so grabs stop cleanly before the disk fills (R7). Search-on-Missing and RSS Sync are on by default — leave them, the auto-retry loop needs them."
           },
           {
-            "name": "Prowlarr",
-            "html": "Add indexers and sync to Sonarr/Radarr by service name. For Cloudflare-protected indexers, add the FlareSolverr tag <code class=\"inline\">http://flaresolverr:8191</code>."
+            "name": "Bazarr — subtitle providers",
+            "html": "Point Bazarr at the same <code class=\"inline\">/data/library/tv</code> and <code class=\"inline\">/data/library/movies</code> paths, then add your subtitle-provider accounts (OpenSubtitles etc.). Those logins are yours, so this one stays manual."
           },
           {
-            "name": "Recyclarr",
-            "html": "<code class=\"inline\">recyclarr-config/recyclarr.yml</code> already carries the TRaSH profiles, picked to penalize low-seeder and known-bad groups. Copy <code class=\"inline\">recyclarr-config/secrets.yml.example</code> → <code class=\"inline\">secrets.yml</code> and fill in the API keys."
+            "name": "Prowlarr — your indexers",
+            "html": "arr-setup.py already linked Sonarr and Radarr and added the FlareSolverr proxy. By hand: add your indexers — they need your accounts. Tag any Cloudflare-protected ones with FlareSolverr (<code class=\"inline\">http://flaresolverr:8191</code>)."
           },
           {
-            "name": "Decluttarr",
-            "html": "Needs Sonarr, Radarr and qBittorrent credentials in <code class=\"inline\">.env</code> (see <code class=\"inline\">configs/media-pipeline/.env.example</code>). Ships with <code class=\"inline\">TEST_RUN: \"True\"</code> — run once, read the logs, then flip to <code class=\"inline\">\"False\"</code>. Each removal blocklists the release so the next RSS sync grabs something different; that loop is what gives “no stuck downloads”."
-          },
-          {
-            "name": "qbit_manage",
-            "html": "Fill in <code class=\"inline\">.env</code> (shared with Decluttarr) and copy <code class=\"inline\">qbit-manage-config/config.yml.example</code> → <code class=\"inline\">config.yml</code>. This is what actually enforces seeding goals, since qBittorrent's own limits are deliberately off. Skippable only if you set seeding goals per-indexer instead — pick one path, don't leave both undone."
+            "name": "Decluttarr — flip TEST_RUN",
+            "html": "Runs entirely off <code class=\"inline\">.env</code> (the same Sonarr/Radarr/qBittorrent creds) — no config file to copy. Ships with <code class=\"inline\">TEST_RUN=\"True\"</code>: run once, read the logs, then set it <code class=\"inline\">\"False\"</code> so it actually clears stuck downloads. Each removal blocklists the release so the next RSS sync grabs something else — that loop is what gives “no stuck downloads”."
           }
         ],
         "after": [
