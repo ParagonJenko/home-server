@@ -1426,15 +1426,15 @@ var STAGES = [
         "subs": [
           {
             "name": "Bazarr — subtitle providers",
-            "html": "Point Bazarr at the same <code class=\"inline\">/data/library/tv</code> and <code class=\"inline\">/data/library/movies</code> paths, then add your subtitle-provider accounts (OpenSubtitles etc.). Those logins are yours, so this one stays manual."
+            "html": "<ol><li>Open <code class=\"inline\">http://media-pipeline.home:6767</code>.</li><li>Settings → Languages → <strong>Languages Filter</strong>: add English (and any others).</li><li>Settings → Languages → <strong>Languages Profiles</strong> → Add → add your language → Save.</li><li>Settings → Sonarr → set <strong>Default Language Profile</strong> to it. Repeat under Settings → Radarr.</li><li>Settings → Providers → Add → pick <strong>OpenSubtitles.com</strong> → enter your username + password → Save.</li><li>Click <strong>Save</strong> (top-left), then Restart when prompted.</li></ol>"
           },
           {
             "name": "Prowlarr — your indexers",
-            "html": "arr-setup.py already linked Sonarr and Radarr and added the FlareSolverr proxy. By hand: add your indexers — they need your accounts. Tag any Cloudflare-protected ones with FlareSolverr (<code class=\"inline\">http://flaresolverr:8191</code>)."
+            "html": "<ol><li>Open <code class=\"inline\">http://media-pipeline.home:9696</code>.</li><li>Indexers → <strong>Add Indexer</strong> → search the tracker's name → select it.</li><li>Private tracker: paste your API key or cookie. Public: nothing to enter.</li><li>Cloudflare-protected only: open the <strong>Tags</strong> field → type <code class=\"inline\">flaresolverr</code> → Enter. (Do the same once under Settings → Indexers → FlareSolverr so the proxy carries that tag.)</li><li>Click <strong>Test</strong> → <strong>Save</strong>.</li><li>Settings → Apps → <strong>Sync App Indexers</strong> to push it to Sonarr/Radarr now (they're already linked, so this is just to skip the wait).</li></ol>"
           },
           {
             "name": "Decluttarr — flip TEST_RUN",
-            "html": "Runs entirely off <code class=\"inline\">.env</code> (the same Sonarr/Radarr/qBittorrent creds) — no config file to copy. Ships with <code class=\"inline\">TEST_RUN=\"True\"</code>: run once, read the logs, then set it <code class=\"inline\">\"False\"</code> so it actually clears stuck downloads. Each removal blocklists the release so the next RSS sync grabs something else — that loop is what gives “no stuck downloads”."
+            "html": "No UI — it's the <code class=\"inline\">TEST_RUN</code> value in <code class=\"inline\">.env</code>, shipped <code class=\"inline\">\"True\"</code> so it only logs at first.<ol><li><code class=\"inline\">docker logs decluttarr</code> — check it lists your Sonarr/Radarr and isn't flagging anything it shouldn't.</li><li>Edit <code class=\"inline\">/opt/media-pipeline/.env</code>: set <code class=\"inline\">TEST_RUN=\"False\"</code>.</li><li><code class=\"inline\">cd /opt/media-pipeline && docker compose up -d decluttarr</code>.</li><li><code class=\"inline\">docker logs -f decluttarr</code> — confirm it now removes stuck downloads.</li></ol>"
           }
         ],
         "after": [
