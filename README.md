@@ -54,6 +54,8 @@ configs/          The runnable definitions (run the file; don't retype from docs
   monitoring/     Alert rules + host exporters (thin-pool, SMART)
   nut/            UPS / graceful-shutdown config
   ollama/         Local LLM inference (future, optional)
+runbooks/         Operational procedures (run on a live system, not during the build)
+  power-cycle.md  Safely power the homelab off and back on (cable management, moves)
 ```
 
 ## Rules of the repo
