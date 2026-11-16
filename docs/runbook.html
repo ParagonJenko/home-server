@@ -883,9 +883,12 @@ var STAGES = [
             "html": "Switches to the no-subscription repo, installs base tools, creates the scoped MCP token — the <code class=\"inline\">ClaudeAutomation</code> role plus the <code class=\"inline\">claude@pve</code> token — and writes that token straight into <code class=\"inline\">mcp/proxmox/proxmox.env</code> so there's nothing to paste."
           },
           {
+            "cmd": "# @where: MCP host · shell (where you run your Claude client — often NUC-1)\n# One-time: venv + deps + self-test against Proxmox, using the token stage-a wrote\n./mcp/proxmox/setup.sh"
+          },
+          {
             "callout": "manual",
-            "title": "Stand up the MCP server",
-            "html": "The script writes the token into <code class=\"inline\">mcp/proxmox/proxmox.env</code> (chmod 600) itself — <span class=save>no copy-paste</span>. It's still shown once, so also save it to your vault (R21). Then bring up our own MCP server (we built a small read-plus-lifecycle one rather than trust an unaudited community server with the token): in <code class=\"inline\">mcp/proxmox/</code> make a venv, <code class=\"inline\">pip install -r requirements.txt</code>, run <code class=\"inline\">python server.py --selftest</code> (should print this node), then register it with your Claude client — see that folder's README. Running the MCP server on a different machine than this NUC? Copy <code class=\"inline\">proxmox.env</code> across."
+            "title": "Register it with your Claude client",
+            "html": "The token is already in <code class=\"inline\">mcp/proxmox/proxmox.env</code> — stage-a wrote it (<span class=save>no copy-paste</span>); copy that file over if the MCP server runs on a different box than the NUC. We run our own read-plus-lifecycle server here, not an unaudited community one. <code class=\"inline\">setup.sh</code> finishes by printing the exact line to register the server — paste it into <code class=\"inline\">claude_desktop_config.json</code>, or run it as <code class=\"inline\">claude mcp add</code>. Also save the token to your vault (R21)."
           },
           {
             "callout": "danger",

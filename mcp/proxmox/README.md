@@ -15,17 +15,13 @@ shutdown/reboot), `snapshot_create` (writes — set `PROXMOX_READONLY=true` to b
 
 ```bash
 cd mcp/proxmox
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-
-cp proxmox.env.example proxmox.env     # fill in the token secret
-chmod 600 proxmox.env                  # lock it down — it holds the secret
-
-.venv/bin/python server.py --selftest  # should print NUC-1's node list
+./setup.sh      # venv + deps + self-test, then prints the client-registration line
 ```
 
-`proxmox.env` is gitignored. It is the ONLY place the secret lives — it never goes
-into the client config below.
+`setup.sh` does everything — no commands to type by hand. It needs `proxmox.env`,
+which stage-a writes automatically on the NUC; if the MCP server runs on a different
+machine, copy that file across first. `proxmox.env` is gitignored and is the ONLY
+place the secret lives — it never goes into the client config below.
 
 ## Wire it into Claude
 

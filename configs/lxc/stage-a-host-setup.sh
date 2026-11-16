@@ -57,38 +57,62 @@ pveum user list --output-format json | jq -e --arg u "$TUSER" '.[]|select(.useri
 pveum aclmod / --user "$TUSER" --role "$ROLE"
 
 say "API token"
-if pveum user token list "$TUSER" --output-format json 2>/dev/null | jq -e '.[]|select(.tokenid=="automation")' >/dev/null; then
-  warn "!! token ${TUSER}!automation already exists — its secret is only shown once."
-  echo "   Lost it? Run:  pveum user token remove ${TUSER} automation   then re-run this script."
-else
-  SECRET=$(pveum user token add "$TUSER" automation --privsep 0 --output-format json | jq -r '.value')
+ENVFILE="$(dirname "$0")/../../mcp/proxmox/proxmox.env"
+HOSTIP="$(hostname -I | awk '{print $1}')"
 
-  # Write it straight into the MCP server's env so there's no copy-paste. The secret
-  # is shown by the API only once, so this is the one moment we can capture it.
-  ENVFILE="$(dirname "$0")/../../mcp/proxmox/proxmox.env"
-  HOSTIP="$(hostname -I | awk '{print $1}')"
-  if [ -f "$ENVFILE" ]; then
-    warn "  $ENVFILE already exists — leaving it; edit it by hand if the token changed."
+upsert_env() {  # upsert_env KEY VALUE — update in place, else append; keeps other settings
+  local k="$1" v="$2"
+  if grep -q "^${k}=" "$ENVFILE" 2>/dev/null; then
+    sed -i "s|^${k}=.*|${k}=${v}|" "$ENVFILE"
   else
-    mkdir -p "$(dirname "$ENVFILE")"
+    echo "${k}=${v}" >> "$ENVFILE"
+  fi
+}
+
+create_token() {  # create the token, record it in proxmox.env, print it once
+  local secret
+  secret=$(pveum user token add "$TUSER" automation --privsep 0 --output-format json | jq -r '.value')
+  mkdir -p "$(dirname "$ENVFILE")"
+  if [ -f "$ENVFILE" ]; then
+    upsert_env PROXMOX_HOST "$HOSTIP"
+    upsert_env PROXMOX_TOKEN_ID "claude@pve!automation"
+    upsert_env PROXMOX_TOKEN_SECRET "$secret"
+    chmod 600 "$ENVFILE"
+    ok "  updated $ENVFILE with the new secret (kept your other settings)."
+  else
     cat > "$ENVFILE" <<EOF
 PROXMOX_HOST=${HOSTIP}
 PROXMOX_PORT=8006
 PROXMOX_TOKEN_ID=claude@pve!automation
-PROXMOX_TOKEN_SECRET=${SECRET}
+PROXMOX_TOKEN_SECRET=${secret}
 PROXMOX_VERIFY_SSL=false
 PROXMOX_READONLY=false
 EOF
     chmod 600 "$ENVFILE"
     ok "  wrote $ENVFILE (chmod 600) — the MCP server on THIS box needs no paste."
-    warn "  Running the MCP server on another machine? Copy that file across."
   fi
-
+  warn "  Running the MCP server on another machine? Copy proxmox.env across."
   hdr "================= MCP API TOKEN — shown once ================="
   echo  "  Token ID:  claude@pve!automation"
-  printf '  Secret:    '; save "$SECRET"
+  printf '  Secret:    '; save "$secret"
   echo  "============================================================="
-  ok    "Already written to proxmox.env above; also store it in your vault (R21)."
+  ok    "Written to proxmox.env above; also store it in your vault (R21)."
+}
+
+if pveum user token list "$TUSER" --output-format json 2>/dev/null | jq -e '.[]|select(.tokenid=="automation")' >/dev/null; then
+  # Token already exists — its secret can't be re-read, so the only way to refill
+  # proxmox.env is to rotate. Gated: --rotate-token, or a yes here. A bare re-run
+  # (e.g. the bootstrap) keeps the working token untouched.
+  if [ "${1:-}" = "--rotate-token" ] || confirm "token ${TUSER}!automation exists — rotate it now (revokes the current secret)?"; then
+    pveum user token remove "$TUSER" automation
+    warn "  revoked the old token — anything still using it breaks until it takes the new secret."
+    create_token
+  else
+    warn "!! keeping the existing token — its secret was only shown when it was created."
+    echo "   Put your saved copy into ${ENVFILE}, or re-run with --rotate-token to regenerate."
+  fi
+else
+  create_token
 fi
 
 ok "stage-a done."
