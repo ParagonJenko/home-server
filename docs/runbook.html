@@ -228,6 +228,11 @@ button { font: inherit; color: inherit; }
   padding: 2px 6px; border-radius: 2px;
   border: 1px solid var(--type-color); color: var(--type-color);
 }
+.badge.device {
+  border-color: var(--accent); background: var(--accent-wash); color: var(--accent);
+  text-transform: none; letter-spacing: .01em;
+}
+.badge.device::before { content: "\25B8\00A0"; }
 .step h4 {
   margin: 6px 0 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
   flex-basis: 100%; text-wrap: balance;
@@ -1084,7 +1089,8 @@ var STAGES = [
             "html": "R9 is only true if a full container can't take the host root with it, and R6 only holds if the caps can't add up past the disk. B3 proved the pool; this proves the SSD the OS boots from."
           }
         ],
-        "verify": "Ends on green <code class=\"inline\">B5 PASS</code> — the full LV refused writes while the host root stayed writable. The ceiling sum it prints is informational now (no container LVs yet); re-run <code class=\"inline\">./configs/verify.sh B5</code> after Stage G and confirm the sum stays under SSD size minus ~10% headroom. Record both in storage.md."
+        "verify": "Ends on green <code class=\"inline\">B5 PASS</code> — the full LV refused writes while the host root stayed writable. The ceiling sum it prints is informational now (no container LVs yet); re-run <code class=\"inline\">./configs/verify.sh B5</code> after Stage G and confirm the sum stays under SSD size minus ~10% headroom. Record both in storage.md.",
+        "device": "Each NUC"
       }
     ]
   },
@@ -1272,7 +1278,8 @@ var STAGES = [
             "cmd": "# @where: Your desktop / laptop\nssh <user>@192.168.1.4 'uname -m'"
           },
           "Key login works from both machines (no password) and it prints <code class=\"inline\">aarch64</code> — the arm64 container images need 64-bit."
-        ]
+        ],
+        "device": "Your PC → Pi"
       },
       {
         "id": "D2",
@@ -1303,7 +1310,8 @@ var STAGES = [
             "cmd": "# @where: Pi · shell\n./configs/verify.sh D2"
           },
           "Expect every line PASS."
-        ]
+        ],
+        "device": "Pi"
       },
       {
         "id": "D3",
@@ -1316,46 +1324,27 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Pi · shell\ncd /opt/pi-stack\ncp .env.example .env                                                          # Grafana admin password\ncp alertmanager/discord-webhook-url.example alertmanager/discord-webhook-url   # paste the real webhook\nchmod 600 .env alertmanager/discord-webhook-url\ndocker compose up -d adguardhome"
+            "cmd": "# @where: Pi · shell — run from the repo\n./configs/pi/stage-d-adguard.sh"
           },
           {
             "callout": "note",
-            "title": "Context",
-            "html": "<p>Copy <code class=\"inline\">configs/pi/</code> → <code class=\"inline\">/opt/pi-stack/</code> and <code class=\"inline\">configs/monitoring/</code> → <code class=\"inline\">/opt/monitoring/</code>, then bring up AdGuard alone:</p>"
-          },
-          {
-            "callout": "gotcha",
-            "title": "Copy the webhook file before the first up -d",
-            "html": "Docker creates a <em>directory</em> where a bind-mount source doesn't exist. Miss the <code class=\"inline\">cp</code> above and Alertmanager fails with a read error on a path that looks perfectly present — ten minutes you don't get back."
+            "title": "What it does",
+            "html": "<p>Brings up AdGuard on its own, <strong>pauses for the first-run wizard</strong>, then pushes every DNS rewrite from <code class=\"inline\">network.md</code> over the API and points the Pi at its own resolver (127.0.0.1). Ends on a green PASS. It does <em>not</em> touch your secrets — <code class=\"inline\">setup-pi.sh</code> (D2) already handled <code class=\"inline\">.env</code> and the webhook.</p>"
           },
           {
             "callout": "manual",
-            "title": "Finish the wizard, then add the rewrites",
-            "html": "<p>Wizard is at <code class=\"inline\">http://&lt;pi&gt;:3000</code>. Set the admin interface to <strong>8081</strong>. Then add three groups of rewrites — nothing resolves without all three:</p><ul><li><strong>Front names</strong> → Nginx's IP: plex, frigate, sonarr, radarr, bazarr, prowlarr.</li><li><strong>Backend names</strong> → the container's own IP: <code class=\"inline\">plex-lxc.home</code>, <code class=\"inline\">frigate-lxc.home</code>, <code class=\"inline\">media-pipeline.home</code>.</li><li><strong>Hosts and cameras</strong> → their own IPs: four <code class=\"inline\">cam-*.home</code>, plus nuc1, nuc2, pbs, and <code class=\"inline\">pi.home</code> — Grafana, Prometheus, Alertmanager and AdGuard's own UI all live behind that name.</li></ul>"
+            "title": "The AdGuard wizard — the script pauses for it",
+            "html": "<p>At <code class=\"inline\">http://&lt;pi&gt;:3000</code>: set the admin interface to <strong>8081</strong> (Grafana owns 3000), create the admin user + password, set upstream DNS to <code class=\"inline\">1.1.1.1</code>. The script then asks for those admin creds and pushes these three rewrite groups from network.md — nothing resolves without all three:</p><ul><li><strong>Front names</strong> → Nginx's IP: plex, frigate, sonarr, radarr, bazarr, prowlarr.</li><li><strong>Backend names</strong> → the container's own IP: <code class=\"inline\">plex-lxc.home</code>, <code class=\"inline\">frigate-lxc.home</code>, <code class=\"inline\">media-pipeline.home</code>.</li><li><strong>Hosts and cameras</strong> → their own IPs: four <code class=\"inline\">cam-*.home</code>, plus nuc1, nuc2, pbs, and <code class=\"inline\">pi.home</code>.</li></ul>"
           },
           {
             "callout": "note",
-            "title": "Better: don't type them at all",
-            "html": "<p><code class=\"inline\">configs/pi/adguard-rewrites.py</code> reads the address register out of <code class=\"inline\">network.md</code> and pushes every rewrite over AdGuard's API. Eighteen entries typed into a web form is how one ends up wrong in a way you find out about weeks later.</p><p><code class=\"inline\">--check</code> fails if a name documented in network.md isn't being pushed — run it on a schedule and the resolver can't quietly drift from the doc.</p>"
-          },
-          {
-            "cmd": "# @where: Pi · shell\ncd /opt/pi-stack\npython3 adguard-rewrites.py            # dry run, from network.md\npython3 adguard-rewrites.py --apply\npython3 adguard-rewrites.py --check    # fails if a documented name isn't pushed"
-          },
-          {
-            "callout": "note",
-            "title": "Doing it by hand instead",
-            "html": "The <a href=\"#stage-INV\">address register</a> on this page builds all three groups too — fill nginx first, then <strong>Copy AdGuard rewrites</strong>, and tick each device's <em>Rewrite</em> box as you add it."
-          },
-          {
-            "p": "Now point the Pi at its own resolver, so the host-networked containers can resolve <code class=\"inline\">*.home</code>:"
-          },
-          {
-            "cmd": "# @where: Pi · shell\nCON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.dns 127.0.0.1 && nmcli con up \"$CON\""
+            "title": "Why push from network.md instead of typing them",
+            "html": "<p><code class=\"inline\">adguard-rewrites.py</code> reads the address register out of <code class=\"inline\">network.md</code> and pushes every rewrite over AdGuard's API — eighteen entries typed into a web form is how one ends up wrong in a way you find out weeks later. <code class=\"inline\">--check</code> (run on a schedule) fails if a documented name isn't pushed, so the resolver can't quietly drift from the doc.</p>"
           },
           {
             "callout": "gotcha",
             "title": "Only 127.0.0.1 — not 127.0.0.1 plus 1.1.1.1",
-            "html": "The same split-horizon trap as the router's secondary DNS, and here it would leave Prometheus intermittently unable to find its own scrape targets. AdGuard's upstream setting is where <code class=\"inline\">1.1.1.1</code> belongs."
+            "html": "The same split-horizon trap as the router's secondary DNS; here it would leave Prometheus intermittently unable to find its own scrape targets. AdGuard's upstream setting is where <code class=\"inline\">1.1.1.1</code> belongs."
           },
           {
             "callout": "note",
@@ -1363,7 +1352,13 @@ var STAGES = [
             "html": "Its <code class=\"inline\">AdGuardHome.yaml</code> holds the admin password hash and migrates schema between versions, so it is gitignored rather than committed. The part that matters — the rewrite list — lives in network.md, which is what a rebuild reads."
           }
         ],
-        "verify": "On the Pi, <code class=\"inline\">getent hosts nuc1.home</code> resolves. From the Nginx LXC, <code class=\"inline\">getent hosts plex-lxc.home</code> returns the <em>container's</em> IP, not Nginx's — if it returns Nginx's, the proxy loop is still there."
+        "verify": [
+          {
+            "cmd": "# @where: Pi · shell\n./configs/verify.sh D3"
+          },
+          "Expect PASS: AdGuard running, resolver 127.0.0.1, pi.home resolves."
+        ],
+        "device": "Pi"
       }
     ]
   },
@@ -1728,7 +1723,8 @@ var STAGES = [
             "title": "Manual",
             "html": "Datacenter → Backup → add a daily scheduled job targeting <code class=\"inline\">pbs-backup</code> — <strong>all guests except Frigate's recording volume</strong> (260G of 14-day churn would overrun the 2TB datastore; back up Frigate's config, not its clips). Then back up the PBS VM's own config and keep a copy with the offsite sync (G6), not only on the DAS, so PBS is rebuildable even if NUC-1 is gone."
           }
-        ]
+        ],
+        "device": "Each NUC"
       },
       {
         "id": "G5",
@@ -1761,7 +1757,8 @@ var STAGES = [
             "html": "A same-box restore from the local PBS, seconds after the backup, is the easy case. The real bar is a restore from the <em>offsite</em> copy (G6) and, at least once, onto different hardware — fold that into the I3 relocation test."
           }
         ],
-        "verify": "The restored 8210 starts and runs. Then write the “service is dead → restore it” runbook from what you just did — an untested restore is a hypothesis, and an unwritten one is tribal knowledge."
+        "verify": "The restored 8210 starts and runs. Then write the “service is dead → restore it” runbook from what you just did — an untested restore is a hypothesis, and an unwritten one is tribal knowledge.",
+        "device": "NUC-1"
       },
       {
         "id": "G6",
@@ -1795,7 +1792,8 @@ var STAGES = [
             "html": "Without it the only backup is the single USB HDD in the same room as everything it protects — fire or theft loses the lot, and R4 and R17 are unmet. The cloud copy is the disaster copy and the second access path at once."
           }
         ],
-        "verify": "A sync completes to the cloud remote, and a test restore pulls one container <em>from the cloud copy</em> (not the local USB HDD) and starts. <span class=save>Record it — this is the offsite half of R12</span>."
+        "verify": "A sync completes to the cloud remote, and a test restore pulls one container <em>from the cloud copy</em> (not the local USB HDD) and starts. <span class=save>Record it — this is the offsite half of R12</span>.",
+        "device": "PBS VM"
       }
     ]
   },
@@ -1833,7 +1831,8 @@ var STAGES = [
             "html": "Per-LXC disk usage. node_exporter runs on the hosts, and a container's root disk is an LVM volume the host never mounts — so the thin-pool panels are the proxy for Frigate's 260G and everything else on local-lvm."
           }
         ],
-        "verify": "Prometheus → Status → Targets shows prometheus, alertmanager, grafana and the pi node target UP. <strong>nuc1 and nuc2 stay DOWN until H2</strong> installs node_exporter on them — expected here, not a fault. Probes for services you haven't built yet will also be DOWN; comment those targets out of prometheus.yml rather than leaving alerts firing about a container that doesn't exist."
+        "verify": "Prometheus → Status → Targets shows prometheus, alertmanager, grafana and the pi node target UP. <strong>nuc1 and nuc2 stay DOWN until H2</strong> installs node_exporter on them — expected here, not a fault. Probes for services you haven't built yet will also be DOWN; comment those targets out of prometheus.yml rather than leaving alerts firing about a container that doesn't exist.",
+        "device": "Pi"
       },
       {
         "id": "H2",
@@ -1863,7 +1862,8 @@ var STAGES = [
             "cmd": "# @where: Each NUC · host shell\n./configs/verify.sh H2"
           },
           "Expect every line PASS."
-        ]
+        ],
+        "device": "Each NUC"
       },
       {
         "id": "H3",
@@ -1904,7 +1904,8 @@ var STAGES = [
             "html": "R15 is on hold. Running it alongside the ISP router's DHCP causes address conflicts. It stays off until a dedicated router replaces the ISP box, or that box's DHCP is disabled."
           }
         ],
-        "verify": "A phone on the Wi-Fi resolves <code class=\"inline\">plex.home</code>. If it doesn't, the AP is handing out its own DNS rather than the router's."
+        "verify": "A phone on the Wi-Fi resolves <code class=\"inline\">plex.home</code>. If it doesn't, the AP is handing out its own DNS rather than the router's.",
+        "device": "Each NUC + PBS VM"
       },
       {
         "id": "H4",
@@ -1933,7 +1934,8 @@ var STAGES = [
             "html": "Alertmanager validates the URL per-notification, not at startup, so the container comes up fine either way. If nothing arrives, read <code class=\"inline\">docker compose logs alertmanager</code> — the failure is in there, not in the container's state."
           }
         ],
-        "verify": "The message reaches Discord within ~30s, and a resolved notice follows when it expires. Then check Prometheus → Alerts lists DiskUsageHigh, ThinPoolMetadataHigh, ServiceDown, ProbeFailed and InternalDNSBroken."
+        "verify": "The message reaches Discord within ~30s, and a resolved notice follows when it expires. Then check Prometheus → Alerts lists DiskUsageHigh, ThinPoolMetadataHigh, ServiceDown, ProbeFailed and InternalDNSBroken.",
+        "device": "Pi"
       }
     ]
   },
@@ -1970,7 +1972,8 @@ var STAGES = [
             "title": "For any future custom-app LXC",
             "html": "If it's unprivileged and runs Tailscale directly (as <code class=\"inline\">plex.sh</code> already does), it needs <code class=\"inline\">configs/lxc/_tailscale-tun.sh</code>'s <code class=\"inline\">apply_tailscale_tun</code> too. Unprivileged containers have no <code class=\"inline\">/dev/net/tun</code> by default, and Tailscale without it either fails outright or falls back to a mode only the <code class=\"inline\">tailscale</code> CLI itself can reach."
           }
-        ]
+        ],
+        "device": "Each host/container you expose"
       },
       {
         "id": "I2",
@@ -2003,7 +2006,8 @@ var STAGES = [
             "cmd": "# @where: Each NUC · host shell\n# R8: reserved-blocks actually set (don't assume) — root + container storage + DAS + USB HDD\ntune2fs -l $(findmnt -no SOURCE /) | grep -i 'reserved block count'\nlsblk -f    # then tune2fs -l each data filesystem to confirm its -m"
           }
         ],
-        "verify": "Every line prints OK, and the IP grep returns only the Pi and the gateway."
+        "verify": "Every line prints OK, and the IP grep returns only the Pi and the gateway.",
+        "device": "Each NUC"
       },
       {
         "id": "I3",
@@ -2089,7 +2093,8 @@ var STAGES = [
             "html": "The Pi is a separate box and the DNS everything resolves through, so power it up first — or Frigate, PBS and Nginx may start before names resolve. Give PBS (900) and Frigate (111) <code class=\"inline\">--onboot 1</code> with a <code class=\"inline\">--startup</code> delay, set Frigate's compose to <code class=\"inline\">restart: unless-stopped</code>, and keep NUT's shutdown order the same as I3's manual reverse order: services, then storage, then DNS last."
           }
         ],
-        "verify": "Pull mains: every box — the Pi included — shuts down cleanly before the UPS dies; a full cold power-on brings the stack back unattended with no fsck repairs and no AdGuard/DNS loss on the Pi."
+        "verify": "Pull mains: every box — the Pi included — shuts down cleanly before the UPS dies; a full cold power-on brings the stack back unattended with no fsck repairs and no AdGuard/DNS loss on the Pi.",
+        "device": "Each box"
       },
       {
         "id": "J2",
@@ -2165,7 +2170,8 @@ var STAGES = [
             "cmd": "# @where: Each NUC · host shell\n./configs/verify.sh J3"
           },
           "Expect every line PASS."
-        ]
+        ],
+        "device": "Each NUC"
       },
       {
         "id": "J4",
@@ -2200,7 +2206,8 @@ var STAGES = [
             "cmd": "# @where: Each host + container\n./configs/verify.sh J4"
           },
           "Expect every line PASS."
-        ]
+        ],
+        "device": "Each box"
       },
       {
         "id": "J5",
@@ -2320,7 +2327,8 @@ var STAGES = [
             "html": "Model files are large and re-downloadable. Put them on the media pool or a dedicated dataset and <strong>exclude them from PBS</strong> — never version GBs of weights."
           }
         ],
-        "verify": "Open WebUI answers at <code class=\"inline\">llm.home</code> and <code class=\"inline\">ollama ls</code> shows the model. Expect slow generation on CPU — that's the point at which you decide on a GPU."
+        "verify": "Open WebUI answers at <code class=\"inline\">llm.home</code> and <code class=\"inline\">ollama ls</code> shows the model. Expect slow generation on CPU — that's the point at which you decide on a GPU.",
+        "device": "Inside the LLM LXC"
       },
       {
         "id": "K2",
@@ -2483,6 +2491,7 @@ function renderStep(stage, step) {
     '<div class="step-top"><div class="step-ident">' +
       '<span class="sid">' + esc(step.id) + "</span>" +
       '<span class="badge">' + t.label + "</span>" +
+      (step.device || stage.where ? '<span class="badge device" title="Run this on">' + esc(step.device || stage.where) + "</span>" : "") +
       ruleChips(step.rules) +
       "<h4>" + esc(step.title) + "</h4>" +
     "</div>" +

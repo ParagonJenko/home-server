@@ -46,6 +46,14 @@ case "$STEP" in
     pveam list local 2>/dev/null | grep -q 'debian-13' \
       && yes_ "Debian 13 template present in local" || no_ "Debian 13 template in local"
     ;;
+  D3)
+    docker ps --format '{{.Names}}' 2>/dev/null | grep -qi adguard \
+      && yes_ "AdGuard container running" || no_ "AdGuard container running"
+    grep -q '127.0.0.1' /etc/resolv.conf 2>/dev/null \
+      && yes_ "Pi resolver is 127.0.0.1" || no_ "Pi resolver = 127.0.0.1 (nmcli ipv4.dns)"
+    getent hosts pi.home >/dev/null 2>&1 \
+      && yes_ "pi.home resolves — internal DNS works" || no_ "pi.home resolves via AdGuard"
+    ;;
   D2)
     docker run --rm hello-world >/dev/null 2>&1 \
       && yes_ "docker runs (hello-world)" || no_ "docker runs (hello-world)"

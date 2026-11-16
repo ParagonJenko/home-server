@@ -54,3 +54,7 @@ __pycache__/
 mcp/proxmox/proxmox.env
 mcp/proxmox/proxmox-*.env
 mcp/proxmox/.venv/
+
+# AdGuard API creds (D3)
+configs/pi/adguard.creds
+*.creds
