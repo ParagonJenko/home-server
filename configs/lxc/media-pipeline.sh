@@ -42,6 +42,7 @@ pct exec "$CTID" -- mkdir -p /opt/media-pipeline
 pct push "$CTID" ../media-pipeline/docker-compose.yaml /opt/media-pipeline/docker-compose.yaml
 pct push "$CTID" ../media-pipeline/arr-setup.py /opt/media-pipeline/arr-setup.py          # phase 2
 pct push "$CTID" ../media-pipeline/fill-arr-keys.sh /opt/media-pipeline/fill-arr-keys.sh  # phase 2
+pct push "$CTID" ../media-pipeline/verify-media.sh /opt/media-pipeline/verify-media.sh    # health check
 # set-qbit-pass.sh runs on the HOST (it prompts), so it stays in the repo, not the CT.
 if [ -f ../media-pipeline/.env ]; then
   pct push "$CTID" ../media-pipeline/.env /opt/media-pipeline/.env

@@ -1436,6 +1436,9 @@ var STAGES = [
           },
           {
             "cmd": "# Step 6 — wire the Arrs over their APIs (drop --apply to preview first):\npct exec 210 -- bash -c 'cd /opt/media-pipeline && python3 arr-setup.py --apply'"
+          },
+          {
+            "cmd": "# Step 7 — verify the whole stage is wired and healthy (read-only; green PASS / red FAIL per check):\npct exec 210 -- bash /opt/media-pipeline/verify-media.sh"
           }
         ],
         "subs": [
@@ -1445,7 +1448,7 @@ var STAGES = [
           },
           {
             "name": "Prowlarr — your indexers",
-            "html": "<ol><li>Open <code class=\"inline\">http://prowlarr.home</code> (or the LXC IP :9696).</li><li>Indexers → <strong>Add Indexer</strong> → search the tracker's name → select it.</li><li>Private tracker: paste your API key or cookie. Public: nothing to enter.</li><li>Cloudflare-protected only: open the <strong>Tags</strong> field → type <code class=\"inline\">flaresolverr</code> → Enter. (Do the same once under Settings → Indexers → FlareSolverr so the proxy carries that tag.)</li><li>Click <strong>Test</strong> → <strong>Save</strong>.</li><li>Settings → Apps → <strong>Sync App Indexers</strong> to push it to Sonarr/Radarr now (they're already linked, so this is just to skip the wait).</li></ol>"
+            "html": "<ol><li>Open <code class=\"inline\">http://prowlarr.home</code> (or the LXC IP :9696).</li><li>Indexers → <strong>Add Indexer</strong> → search the tracker's name → select it.</li><li>Private tracker: paste your API key or cookie. Public: nothing to enter.</li><li>Cloudflare-protected only: in the <strong>Tags</strong> field, pick the existing <code class=\"inline\">flaresolverr</code> tag — arr-setup already created it and put it on the FlareSolverr proxy.</li><li>Click <strong>Test</strong> → <strong>Save</strong>.</li><li>Settings → Apps → <strong>Sync App Indexers</strong> to push it to Sonarr/Radarr now (they're already linked, so this is just to skip the wait).</li></ol>"
           }
         ],
         "after": [
@@ -1456,8 +1459,8 @@ var STAGES = [
           },
           {
             "callout": "note",
-            "title": "Verify hardlinks actually work",
-            "html": "mergerfs unions two filesystems — if its create policy lands <code class=\"inline\">torrents/</code> on disk1 and <code class=\"inline\">library/</code> on disk2, every import silently becomes a copy (double space, breaks R6). Test once: <code class=\"inline\">touch /mnt/media/torrents/.hl && ln /mnt/media/torrents/.hl /mnt/media/library/.hl</code> must succeed. “Invalid cross-device link” means the mergerfs policy in fstab-snippet needs fixing before you import anything."
+            "title": "Why the hardlink check matters",
+            "html": "mergerfs unions two filesystems — if its create policy lands <code class=\"inline\">torrents/</code> on disk1 and <code class=\"inline\">library/</code> on disk2, every import silently becomes a copy (double space, breaks R6). Step 7's verify script tests this for you; if it reports the hardlink <strong>FAILED</strong>, the mergerfs policy in fstab-snippet needs fixing before you import anything."
           },
           {
             "callout": "gotcha",

@@ -171,23 +171,43 @@ def configure_qbittorrent(env, apply):
     print(f"    qBittorrent: ATM on, save path /data/torrents, categories {', '.join(cats)}")
 
 
+def ensure_tag(base, apiver, key, label):
+    """Return the id of the tag with this label, creating it if missing. Prowlarr stores
+    labels lowercased, so match and create with the lowercase form."""
+    label = label.lower()
+    for t in http("GET", f"{base}/api/{apiver}/tag", key):
+        if t.get("label") == label:
+            return t["id"]
+    return http("POST", f"{base}/api/{apiver}/tag", key, {"label": label})["id"]
+
+
 def ensure_prowlarr_proxy(base, key, flare_url, apply):
+    # The proxy only applies to indexers carrying its tag, so the 'flaresolverr' tag must
+    # exist and be on the proxy first — then adding a Cloudflare indexer is just picking it.
     proxies = http("GET", f"{base}/api/v1/indexerProxy", key)
-    if any(p.get("implementation") == "FlareSolverr" for p in proxies):
-        print("    FlareSolverr proxy: present")
-        return
+    existing = next((p for p in proxies if p.get("implementation") == "FlareSolverr"), None)
     if not apply:
-        print(f"    FlareSolverr proxy -> {flare_url}: WOULD add")
+        where = "present" if existing else f"-> {flare_url}: WOULD add"
+        print(f"    FlareSolverr proxy: {where} (ensuring 'flaresolverr' tag)")
+        return
+    tag_id = ensure_tag(base, "v1", key, "flaresolverr")
+    if existing:  # already there (maybe untagged from an earlier run) — ensure the tag is on it
+        if tag_id not in (existing.get("tags") or []):
+            existing["tags"] = (existing.get("tags") or []) + [tag_id]
+            http("PUT", f"{base}/api/v1/indexerProxy/{existing['id']}", key, existing)
+            print("    FlareSolverr proxy: present — added the 'flaresolverr' tag")
+        else:
+            print("    FlareSolverr proxy: present, 'flaresolverr' tag already set")
         return
     schema = http("GET", f"{base}/api/v1/indexerProxy/schema", key)
     tmpl = next(s for s in schema if s.get("implementation") == "FlareSolverr")
     tmpl["name"] = "FlareSolverr"
+    tmpl["tags"] = [tag_id]
     for f in tmpl.get("fields", []):
         if f.get("name", "").lower() == "host":
             f["value"] = flare_url
-    # tag it so indexers can opt in; Prowlarr needs at least one tag on the proxy
     http("POST", f"{base}/api/v1/indexerProxy", key, tmpl)
-    print(f"    FlareSolverr proxy -> {flare_url}: added (tag it onto Cloudflare indexers)")
+    print(f"    FlareSolverr proxy -> {flare_url}: added, tagged 'flaresolverr'")
 
 
 def ensure_prowlarr_app(base, key, impl, app_url, app_key, prowlarr_url, apply):
