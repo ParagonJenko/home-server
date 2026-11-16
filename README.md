@@ -21,7 +21,7 @@ The full rule set (R1–R27) is in [`rules.md`](rules.md).
 Each box has a bootstrap script that runs its stages in order, **prompts for what it needs** (disks, the Pi's IP, secrets), remembers your answers in a gitignored `~/.homelab.env`, and pauses at the few genuinely manual steps. Every terminal command is shown and confirmed before it runs.
 
 ```sh
-apt -y install git           # fresh Proxmox / Pi OS ship without git (on the Pi: sudo apt …)
+command -v git >/dev/null || apt -y install git   # fresh box has no git (Pi: sudo apt; NUCs may need the repo switch — see runbook A2)
 git clone https://github.com/ParagonJenko/home-server && cd home-server
 sudo ./bootstrap-nuc1.sh     # NUC-1: host base, storage, media stack
 sudo ./bootstrap-pi.sh       # Pi: DNS now, monitoring later
