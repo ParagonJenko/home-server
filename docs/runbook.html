@@ -778,7 +778,7 @@ var STAGES = [
             "html": "<p>Every 📄 SCRIPT step runs a file from the repo, so it has to be on that machine, <strong>after</strong> that box has an OS: the NUCs after A1, the Pi after D1. The repo is public (<a href=\"https://github.com/ParagonJenko/home-server\">github.com/ParagonJenko/home-server</a>), so a fresh box clones it directly — no credentials, no SSH key, no scp dance. Each box gets its own copy:</p>"
           },
           {
-            "cmd": "# @where: Each box · shell\ngit clone https://github.com/ParagonJenko/home-server   # on each NUC and the Pi\ncd home-server"
+            "cmd": "# @where: Each box · shell\napt -y install git      # fresh Proxmox / Pi OS ship without git (on the Pi: sudo apt …)\ngit clone https://github.com/ParagonJenko/home-server   # on each NUC and the Pi\ncd home-server"
           },
           {
             "callout": "danger",
@@ -852,7 +852,12 @@ var STAGES = [
             "p": "On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then clone the public repo and run the script:"
           },
           {
-            "cmd": "# @where: NUC-1 · host shell\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
+            "cmd": "# @where: NUC-1 · host shell\napt -y install git      # a fresh Proxmox install has no git yet\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
+          },
+          {
+            "callout": "gotcha",
+            "title": "If apt can't find git on a fresh box",
+            "html": "A brand-new Proxmox has the enterprise apt repo enabled, which returns 401 without a subscription — so <code class=\"inline\">apt update</code> warns and <code class=\"inline\">apt -y install git</code> may fail. Switch to the no-subscription repo first: remove <code class=\"inline\">/etc/apt/sources.list.d/pve-enterprise.sources</code>, add a file with <code class=\"inline\">deb http://download.proxmox.com/debian/pve trixie pve-no-subscription</code>, then <code class=\"inline\">apt update &amp;&amp; apt -y install git</code>. (<code class=\"inline\">stage-a-host-setup.sh</code> does this repo switch properly once it can run.)"
           },
           {
             "callout": "note",
@@ -1180,7 +1185,7 @@ var STAGES = [
             "html": "Installs base packages, timezone, Docker, the SD-card write reductions and stack directories. It stops short of bringing the stack up — that needs secrets — and prints the remaining steps when it finishes."
           },
           {
-            "cmd": "# @where: Pi · shell\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server && sudo ./configs/pi/setup-pi.sh"
+            "cmd": "# @where: Pi · shell\nsudo apt -y install git\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server && sudo ./configs/pi/setup-pi.sh"
           },
           {
             "callout": "gotcha",
