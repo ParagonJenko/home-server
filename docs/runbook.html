@@ -1410,7 +1410,20 @@ var STAGES = [
             "html": "<p>LXC 210 runs the whole stack — qBittorrent, Sonarr, Radarr, Bazarr, Prowlarr, FlareSolverr, Recyclarr, Decluttarr, qbit_manage — from one compose file, resolving each other by Docker service name. The script installs Docker, publishes each web UI's port, and starts the <strong>core apps only</strong>: Recyclarr, Decluttarr and qbit_manage read <code class=\"inline\">.env</code> keys that don't exist until the apps boot once, so they wait for phase 2 (starting them early just crash-loops them).</p><p><strong>Reaching the UIs:</strong> fronted by Nginx (LXC 240) as <code class=\"inline\">qbittorrent.home</code>, <code class=\"inline\">sonarr.home</code>, <code class=\"inline\">radarr.home</code>, <code class=\"inline\">bazarr.home</code>, <code class=\"inline\">prowlarr.home</code> once that stage and the AdGuard rewrites are in — add names later and re-run <code class=\"inline\">adguard-rewrites.py --apply</code> on the Pi. Until DNS resolves them, use the LXC IP on the ports the script prints.</p><p><strong>Limits:</strong> <code class=\"inline\">mem_limit</code> caps memory; disk is bounded by the rootfs cap, mergerfs <code class=\"inline\">minfreespace</code> and the Arr Minimum Free Space (qBittorrent has no disk setting). In phase 2, <code class=\"inline\">arr-setup.py</code> (idempotent, schema-driven) and <code class=\"inline\">fill-arr-keys.sh</code> do the wiring; what's left by hand needs <em>your</em> accounts.</p>"
           },
           {
-            "cmd": "# @where: NUC-1 · host shell\n# PHASE 2 — run once the core apps have booted.\n\n# Step 1 — read qBittorrent's first-boot temp password:\npct exec 210 -- docker logs qbittorrent 2>&1 | grep -i password\n\n# Step 2 — in a BROWSER (not a command): set a permanent qBittorrent password.\n#   open http://<LXC-IP>:8080   (the script printed the IP; or qbittorrent.home once DNS is up)\n#   log in as 'admin' with the temp password from step 1\n#   Tools -> Options -> Web UI -> set a new password -> Save\n\n# Step 3 — pull the Arr API keys into .env and set the qBit password when prompted.\n#   Run this line ON ITS OWN (not pasted with the rest) so the prompt can appear:\npct exec 210 -- bash /opt/media-pipeline/fill-arr-keys.sh\n\n# Step 4 — recreate the three env-driven services so they read the new keys:\npct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose up -d --force-recreate recyclarr decluttarr qbit_manage'\n\n# Step 5 — wire the Arrs over their APIs (drop --apply to preview first):\npct exec 210 -- bash -c 'cd /opt/media-pipeline && python3 arr-setup.py --apply'"
+            "cmd": "# @where: NUC-1 · host shell\n# PHASE 2 — run once the core apps have booted.\n# Step 1 — read qBittorrent's first-boot temp password:\npct exec 210 -- docker logs qbittorrent 2>&1 | grep -i password"
+          },
+          {
+            "p": "<strong>Step 2 — set a permanent qBittorrent password</strong> (in a browser — this one isn't a command):"
+          },
+          {
+            "list": [
+              "Open <code class=\"inline\">http://&lt;LXC-IP&gt;:8080</code> — the IP the script printed (or <code class=\"inline\">qbittorrent.home</code> once DNS resolves).",
+              "Log in as <code class=\"inline\">admin</code> with the temp password from step 1.",
+              "<strong>Tools → Options → Web UI</strong> → set a new password → <strong>Save</strong>."
+            ]
+          },
+          {
+            "cmd": "# @where: NUC-1 · host shell\n# Step 3 — pull the Arr API keys into .env; enter the qBit password when prompted.\n#   Run this line ON ITS OWN (not pasted with the rest) so the prompt can appear:\npct exec 210 -- bash /opt/media-pipeline/fill-arr-keys.sh\n\n# Step 4 — recreate the three env-driven services so they read the new keys:\npct exec 210 -- bash -c 'cd /opt/media-pipeline && docker compose up -d --force-recreate recyclarr decluttarr qbit_manage'\n\n# Step 5 — wire the Arrs over their APIs (drop --apply to preview first):\npct exec 210 -- bash -c 'cd /opt/media-pipeline && python3 arr-setup.py --apply'"
           }
         ],
         "subs": [
