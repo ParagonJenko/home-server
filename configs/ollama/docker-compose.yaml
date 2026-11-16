@@ -4,7 +4,7 @@
 # dedicated volume and EXCLUDE from PBS.
 services:
   ollama:
-    image: ollama/ollama:latest          # TODO pin
+    image: ollama/ollama:latest          # ENTER: pin a version tag (don't leave :latest)
     volumes: [ ollama-models:/root/.ollama ]   # weights here — exclude from backups
     ports: [ "11434:11434" ]
     # For an NVIDIA GPU node, add the nvidia runtime / device reservations.

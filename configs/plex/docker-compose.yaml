@@ -2,7 +2,7 @@
 # Path is /library/movies and /library/tv all the way through — do not remap.
 services:
   plex:
-    image: lscr.io/linuxserver/plex:latest   # TODO pin a tag
+    image: lscr.io/linuxserver/plex:latest   # ENTER: pin a version tag (don't leave :latest)
     network_mode: host
     environment:
       PUID: "1000"

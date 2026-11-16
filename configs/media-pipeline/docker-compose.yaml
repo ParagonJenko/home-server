@@ -4,7 +4,7 @@
 # This is a scaffold — pin image tags and fill volumes/ports per services.md.
 services:
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest   # TODO pin a tag
+    image: lscr.io/linuxserver/qbittorrent:latest   # ENTER: pin a version tag (don't leave :latest)
     environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }
     volumes:
       - /opt/qbittorrent/config:/config

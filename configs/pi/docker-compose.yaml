@@ -5,7 +5,7 @@
 # (both gitignored, both chmod 600).
 services:
   adguardhome:
-    image: adguard/adguardhome:latest    # TODO pin
+    image: adguard/adguardhome:latest    # ENTER: pin a version tag (don't leave :latest)
     network_mode: host                    # move admin UI to :8081 in the wizard (Grafana owns 3000)
     volumes: [ ./adguard/work:/opt/adguardhome/work, ./adguard/conf:/opt/adguardhome/conf ]
     restart: unless-stopped

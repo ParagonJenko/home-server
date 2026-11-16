@@ -24,7 +24,7 @@ cameras:
       inputs:
         - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-living-room.home:554/live0
           roles: [detect, record]
-  # TODO: cam-kitchen, cam-bedroom, cam-basement (same shape, by name).
+  # ENTER: add cam-kitchen, cam-bedroom, cam-basement (same shape, by name).
   # NOTE: no HomeBase — confirm each Eufy model exposes standalone RTSP (many need a base).
 
 # Optional (Stage K): genai descriptions via local Ollama instead of OpenAI.

@@ -74,6 +74,14 @@ cd home-server
 ./configs/lxc/stage-a-host-setup.sh
 ```
 
+## Markers in the scripts
+
+Three in-code labels, so an unfinished script is never confused with a step that just needs a human:
+
+- `TODO:` — unimplemented code. The script won't do the thing until it's written.
+- `ENTER:` — a value **you type in** (a path, an IP, a version tag to pin, a secret you set). The code around it works; it needs your input.
+- `SAVE:` — a value the step **prints out that you copy to your vault or the runbook** (an API token, an encryption key). Nothing stores it for you. In the scripts these print through the bright `save` highlighter.
+
 ## Status
 
-Scaffold. The `.md` docs carry the plan; the `configs/` scripts are starting points to fill in as each stage is built and verified. Record what you actually did in the doc that owns that fact — the test is whether the stack rebuilds from this repo plus PBS on hardware that has never seen it.
+Scaffold, with Stage A and B implemented. The `.md` docs carry the plan; the `configs/` scripts are starting points — `TODO:`-marked ones still need code, `ENTER:`/`SAVE:` ones are ready to run. Record what you actually did in the doc that owns that fact — the test is whether the stack rebuilds from this repo plus PBS on hardware that has never seen it.

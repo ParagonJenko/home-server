@@ -2,7 +2,7 @@
 # UI on 8971 (authenticated). Port 5000 is UNAUTHENTICATED — never proxy or expose it.
 services:
   frigate:
-    image: ghcr.io/blakeblackshear/frigate:stable   # TODO pin a version
+    image: ghcr.io/blakeblackshear/frigate:stable   # ENTER: pin a version tag (don't leave :stable)
     privileged: true
     shm_size: "256mb"
     devices:

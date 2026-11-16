@@ -11,4 +11,5 @@
 #   category.create=epmff,minfreespace=250G,fsname=mergerfs,\
 #   x-systemd.requires=/mnt/pool/disk1,x-systemd.requires=/mnt/pool/disk2  0 0
 #
-# TODO: set the real branch paths and tune minfreespace to storage.md.
+# ENTER: tune minfreespace to match storage.md (branch paths are fixed: /mnt/pool/disk1,2).
+# Note: stage-b-storage.sh already writes this exact line to /etc/fstab — this snippet is the reference.
