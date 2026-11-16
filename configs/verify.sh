@@ -51,6 +51,17 @@ case "$STEP" in
       && yes_ "docker runs (hello-world)" || no_ "docker runs (hello-world)"
     [ -z "$(swapon --show 2>/dev/null)" ] \
       && yes_ "swap is off" || no_ "swap is off"
+    grep -q '^GF_SECURITY_ADMIN_PASSWORD=..*' /opt/pi-stack/.env 2>/dev/null \
+      && yes_ "Grafana admin password set in .env" || no_ "Grafana password in /opt/pi-stack/.env"
+    HOOK="$(head -n1 /opt/pi-stack/alertmanager/discord-webhook-url 2>/dev/null)"
+    if printf '%s' "$HOOK" | grep -qi 'discord.com/api/webhooks'; then
+      code="$(curl -s -o /dev/null -w '%{http_code}' "$HOOK" 2>/dev/null)"
+      [ "$code" = "200" ] \
+        && yes_ "Discord webhook is live (GET returned 200 — no message sent)" \
+        || no_ "Discord webhook present but GET returned ${code:-none} — check the URL is valid"
+    else
+      no_ "Discord webhook not set — paste it into /opt/pi-stack/alertmanager/discord-webhook-url before H1"
+    fi
     ;;
   H2)
     curl -s localhost:9100/metrics 2>/dev/null | grep -q lvm_thinpool \
