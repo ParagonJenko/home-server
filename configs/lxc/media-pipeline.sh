@@ -40,7 +40,8 @@ pct exec "$CTID" -- bash -c 'command -v python3 >/dev/null || { apt-get update -
 say "deploy the compose stack"
 pct exec "$CTID" -- mkdir -p /opt/media-pipeline
 pct push "$CTID" ../media-pipeline/docker-compose.yaml /opt/media-pipeline/docker-compose.yaml
-pct push "$CTID" ../media-pipeline/arr-setup.py /opt/media-pipeline/arr-setup.py   # for phase 2
+pct push "$CTID" ../media-pipeline/arr-setup.py /opt/media-pipeline/arr-setup.py        # phase 2
+pct push "$CTID" ../media-pipeline/fill-arr-keys.sh /opt/media-pipeline/fill-arr-keys.sh # phase 2
 if [ -f ../media-pipeline/.env ]; then
   pct push "$CTID" ../media-pipeline/.env /opt/media-pipeline/.env
 else
@@ -63,10 +64,13 @@ pct exec "$CTID" -- bash -c 'cd /opt/media-pipeline && docker compose up -d \
   qbittorrent sonarr radarr bazarr prowlarr flaresolverr'
 
 IP="$(pct exec "$CTID" -- hostname -I | awk '{print $1}')"
-ok "Core stack up. Reach the web UIs at (replace with the LXC IP if the name doesn't resolve):"
-echo "     qBittorrent  http://${IP}:8080     Prowlarr  http://${IP}:9696"
-echo "     Sonarr       http://${IP}:8989     Radarr    http://${IP}:7878"
-echo "     Bazarr       http://${IP}:6767"
-echo "   Phase 2 (after the apps have booted once): fill keys, then"
+ok "Core stack up. Once nginx (LXC 240) + AdGuard rewrites are in, reach them by name:"
+echo "     qbittorrent.home  sonarr.home  radarr.home  bazarr.home  prowlarr.home"
+echo "   Until DNS resolves, use this LXC's IP directly:"
+echo "     qBittorrent http://${IP}:8080   Sonarr http://${IP}:8989   Radarr http://${IP}:7878"
+echo "     Prowlarr    http://${IP}:9696   Bazarr http://${IP}:6767"
+echo "   Phase 2 — after the apps have booted once:"
+echo "     pct exec ${CTID} -- bash /opt/media-pipeline/fill-arr-keys.sh   # keys -> .env"
+echo "     # then set QBIT_PASS in /opt/media-pipeline/.env, and:"
 echo "     pct exec ${CTID} -- bash -c 'cd /opt/media-pipeline && docker compose up -d'  # the rest"
-echo "     then run arr-setup.py --apply"
+echo "     pct exec ${CTID} -- bash -c 'cd /opt/media-pipeline && python3 arr-setup.py --apply'"

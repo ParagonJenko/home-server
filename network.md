@@ -28,7 +28,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | switch — managed | static | `192.168.1.6` | TBD | — | Management address only |
 | ap — access point(s) | static | `192.168.1.7` | TBD | — | DHCP-issued DNS must also be the Pi (R14) |
 | nginx — LXC 240 | reserved | `192.168.1.20` | TBD | — | **Every front name resolves to this IP.** Fill first |
-| media-pipeline — LXC 210 | reserved | `192.168.1.21` | TBD | media-pipeline.home (sonarr/radarr/bazarr/prowlarr.home) | Never proxied under its own name; it is Nginx's backend target |
+| media-pipeline — LXC 210 | reserved | `192.168.1.21` | TBD | media-pipeline.home (sonarr/radarr/bazarr/prowlarr/qbittorrent.home) | Never proxied under its own name; it is Nginx's backend target |
 | plex — LXC 220 | reserved | `192.168.1.22` | TBD | plex-lxc.home (front: plex.home) | Backend name points here; front points at Nginx |
 | amp — LXC 230 | reserved | `192.168.1.23` | TBD | amp.home (add when installed) | |
 | frigate — LXC 111 (nuc2, privileged) | reserved | `192.168.1.24` | TBD | frigate-lxc.home (front: frigate.home) | Port 5000 is unauthenticated — never proxy/expose |
@@ -41,7 +41,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 
 Three groups — nothing resolves without all three. `configs/pi/adguard-rewrites.py` reads this table and pushes them over the API.
 
-1. **Front names → Nginx's IP** (`.20`): `plex.home`, `frigate.home`, `sonarr.home`, `radarr.home`, `bazarr.home`, `prowlarr.home`.
+1. **Front names → Nginx's IP** (`.20`): `plex.home`, `frigate.home`, `sonarr.home`, `radarr.home`, `bazarr.home`, `prowlarr.home`, `qbittorrent.home`.
 2. **Backend names → the container's own IP**: `plex-lxc.home`, `frigate-lxc.home`, `media-pipeline.home`.
 3. **Hosts & cameras → their own IP**: `cam-*.home`, `nuc1`, `nuc2`, `pbs`, `pi.home`.
 
