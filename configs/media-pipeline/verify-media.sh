@@ -58,15 +58,16 @@ if [ -f "$bz" ]; then
 else fail "Bazarr config.yaml not found — booted once?"; fi
 
 echo "== hardlinks (R6) =="
-# Test AS the import user (PUID 1000), not LXC-root — root (mapped to host 100000) has no
-# write on the media-owned pool dirs, which would false-fail. Run it inside sonarr (1000).
+# Test AS the import user (uid 1000), not root. `docker compose exec` defaults to root,
+# which maps to host 100000 and has no write on the media-owned (1000) pool dirs — so
+# touch fails and it false-reports a hardlink error. --user 1000 is how Sonarr imports.
 hl='touch /data/torrents/.hltest && ln /data/torrents/.hltest /data/library/.hltest'
-if docker compose exec -T sonarr sh -c "$hl" 2>/dev/null; then
-  pass "hardlink /data/torrents -> /data/library (as the import user; imports link, don't copy)"
+if docker compose exec -T --user 1000 sonarr sh -c "$hl" 2>/dev/null; then
+  pass "hardlink /data/torrents -> /data/library (as uid 1000; imports link, don't copy)"
 else
   fail "hardlink FAILED — torrents and library on different branches; imports would COPY"
 fi
-docker compose exec -T sonarr sh -c 'rm -f /data/torrents/.hltest /data/library/.hltest' 2>/dev/null
+docker compose exec -T --user 1000 sonarr sh -c 'rm -f /data/torrents/.hltest /data/library/.hltest' 2>/dev/null
 
 echo
 if [ "$fails" = 0 ]; then
