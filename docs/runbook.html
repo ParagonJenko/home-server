@@ -1285,18 +1285,12 @@ var STAGES = [
           {
             "callout": "note",
             "title": "What it does",
-            "html": "Installs base packages + Docker, applies the SD-card write reductions (journald volatile, swap off), deploys <code class=\"inline\">configs/pi</code> → <code class=\"inline\">/opt/pi-stack</code> and <code class=\"inline\">configs/monitoring</code> → <code class=\"inline\">/opt/monitoring</code>, and creates the two secret files from their templates. It ends on a green <strong>PASS</strong>. The only thing left to you is filling those secrets:"
-          },
-          {
-            "cmd": "# @where: Pi · shell — .env: GENERATE a Grafana admin password, then save it to your vault\nPW=$(openssl rand -base64 24)\nprintf 'GF_SECURITY_ADMIN_PASSWORD=%s\\n' \"$PW\" | sudo tee /opt/pi-stack/.env >/dev/null\nsudo chmod 600 /opt/pi-stack/.env\necho \"Grafana admin password (SAVE to vault): $PW\""
+            "html": "Installs base packages + Docker, applies the SD-card write reductions (journald volatile, swap off), deploys <code class=\"inline\">configs/pi</code> → <code class=\"inline\">/opt/pi-stack</code> and <code class=\"inline\">configs/monitoring</code> → <code class=\"inline\">/opt/monitoring</code>, <strong>generates the Grafana admin password</strong> (prints it once — save it to your vault) and <strong>prompts you to paste the Discord webhook</strong>. Ends on a green <strong>PASS</strong>."
           },
           {
             "callout": "note",
-            "title": "The Discord webhook — create it, then paste it",
-            "html": "<p>In Discord: <strong>Server Settings → Integrations → Webhooks → New Webhook</strong>, pick the channel for alerts, name it, then <strong>Copy Webhook URL</strong>. Paste that URL into the command below (it's the only line in the file). You don't generate this one — Discord gives it to you.</p>"
-          },
-          {
-            "cmd": "# @where: Pi · shell — paste YOUR real webhook URL in place of the placeholder\necho 'https://discord.com/api/webhooks/XXXX/YYYY' | sudo tee /opt/pi-stack/alertmanager/discord-webhook-url >/dev/null\nsudo chmod 600 /opt/pi-stack/alertmanager/discord-webhook-url"
+            "title": "Have your Discord webhook ready",
+            "html": "<p>The script prompts for it, so make it first: Discord → <strong>Server Settings → Integrations → Webhooks → New Webhook</strong> → pick the alerts channel → <strong>Copy Webhook URL</strong>. Paste it when asked, or press Enter to skip and fill it before H1. You don't generate this one — Discord hands it to you; the Grafana password the script makes for you.</p>"
           },
           {
             "callout": "gotcha",

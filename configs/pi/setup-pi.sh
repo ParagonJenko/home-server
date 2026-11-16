@@ -37,20 +37,43 @@ if cp -r ./. /opt/pi-stack/ && cp -r ../monitoring/. /opt/monitoring/; then
   ok "  configs/pi -> /opt/pi-stack ; configs/monitoring -> /opt/monitoring"
 else warn "  copy into /opt failed"; FAIL=1; fi
 
-say "create the secret files from templates (chmod 600, gitignored)"
-( cd /opt/pi-stack
-  [ -f .env ] || cp .env.example .env 2>/dev/null
-  chmod 600 .env 2>/dev/null
-  [ -f alertmanager/discord-webhook-url ] || cp alertmanager/discord-webhook-url.example alertmanager/discord-webhook-url 2>/dev/null
-  chmod 600 alertmanager/discord-webhook-url 2>/dev/null )
-save "Fill these before D3/H1:"
-save "  .env  ->  GENERATE a Grafana password:  openssl rand -base64 24   (then save it to your vault, R21)"
-save "  alertmanager/discord-webhook-url  ->  PASTE the URL from Discord (Server Settings > Integrations > Webhooks)"
+say "secrets — Grafana password (generated here) + Discord webhook (pasted here)"
+(
+  cd /opt/pi-stack || exit 1
+  # Grafana admin password: generate once, keep it across re-runs (changing it would
+  # break an existing Grafana login).
+  if grep -q '^GF_SECURITY_ADMIN_PASSWORD=..*' .env 2>/dev/null; then
+    ok "  Grafana password already set in .env — kept"
+  else
+    PW=$(openssl rand -base64 24 2>/dev/null || head -c 18 /dev/urandom | base64)
+    printf 'GF_SECURITY_ADMIN_PASSWORD=%s\n' "$PW" > .env; chmod 600 .env
+    hdr "============ Grafana admin login — shown once ============"
+    echo  "  user: admin"
+    printf '  password: '; save "$PW"
+    echo  "========================================================="
+    ok "  generated — SAVE this to your vault (R21)"
+  fi
+  # Discord webhook: paste it now, or skip and fill before H1.
+  mkdir -p alertmanager
+  if [ -s alertmanager/discord-webhook-url ] && grep -qi 'discord.com/api/webhooks' alertmanager/discord-webhook-url; then
+    ok "  Discord webhook already set — kept"
+  else
+    warn "  Make one in Discord: Server Settings > Integrations > Webhooks > New Webhook > Copy URL"
+    read -rp "$(printf '%s  Paste the Discord webhook URL (or Enter to skip for now):%s ' "$C_WARN" "$C_RST")" HOOK
+    if [ -n "${HOOK:-}" ]; then
+      printf '%s\n' "$HOOK" > alertmanager/discord-webhook-url; chmod 600 alertmanager/discord-webhook-url
+      ok "  webhook saved — also store it in your vault (R21)"
+    else
+      : > alertmanager/discord-webhook-url; chmod 600 alertmanager/discord-webhook-url   # must exist as a FILE
+      warn "  skipped — paste it into /opt/pi-stack/alertmanager/discord-webhook-url before H1"
+    fi
+  fi
+) || FAIL=1
 
 echo
 if [ "$FAIL" -eq 0 ]; then
   ok "================  setup-pi PASS — it all worked  ================"
-  ok "Next: fill the two secret files above, then D3 (bring AdGuard up)."
+  ok "Grafana password generated, webhook saved (or skip-and-fill noted). Next: D3 (bring AdGuard up)."
   exit 0
 else
   warn "================  setup-pi FAILED — see the red lines above  ================"
