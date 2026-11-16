@@ -43,9 +43,9 @@ say "create the secret files from templates (chmod 600, gitignored)"
   chmod 600 .env 2>/dev/null
   [ -f alertmanager/discord-webhook-url ] || cp alertmanager/discord-webhook-url.example alertmanager/discord-webhook-url 2>/dev/null
   chmod 600 alertmanager/discord-webhook-url 2>/dev/null )
-save "EDIT these with your real values before D3/H1:"
-save "  /opt/pi-stack/.env                              (Grafana admin password)"
-save "  /opt/pi-stack/alertmanager/discord-webhook-url  (the Discord webhook URL)"
+save "Fill these before D3/H1:"
+save "  .env  ->  GENERATE a Grafana password:  openssl rand -base64 24   (then save it to your vault, R21)"
+save "  alertmanager/discord-webhook-url  ->  PASTE the URL from Discord (Server Settings > Integrations > Webhooks)"
 
 echo
 if [ "$FAIL" -eq 0 ]; then
