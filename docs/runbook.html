@@ -311,6 +311,12 @@ details.callout > summary.ctitle:hover::after { opacity: 1; }
   font-family: "IBM Plex Mono", monospace; font-size: 12.5px; line-height: 1.7;
   color: var(--ink);
 }
+.cmd-where {
+  display: block; padding: 7px 46px 0 13px;
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--run);
+}
+.cmd-where ~ pre { padding-top: 4px; }
 .cmd .copy {
   position: absolute; top: 6px; right: 6px; cursor: pointer;
   background: var(--surface); border: 1px solid var(--line); border-radius: 2px;
@@ -525,7 +531,7 @@ table.inv td.narrow { width: 1%; text-align: center; }
       <p><strong>Kit:</strong> two Beelink NUCs, a Raspberry Pi, a 2×4TB DAS, and a 2TB USB HDD (PBS backup datastore, Stage E).</p>
       <p>Work top to bottom. Every step is <strong>yours by hand</strong>, a <strong>script</strong> from <code class="inline">configs/</code>, or a <strong>check</strong> — don't retype script commands, run the file. Start at <a href="#stage-A">A0</a>.</p>
       <details class="callout note"><summary class="ctitle">What each stage does</summary><ul><li><strong>A</strong> — host base (NUC-1).</li><li><strong>B</strong> — storage: build the media pool, break it on purpose.</li><li><strong>C</strong> — container template.</li><li><strong>D</strong> — internal DNS on the Pi (early — everything resolves through it).</li><li><strong>E</strong> — media stack (NUC-1).</li><li><strong>F</strong> — host base (NUC-2).</li><li><strong>G</strong> — Frigate + PBS backups (NUC-2).</li><li><strong>H</strong> — monitoring &amp; alerting on the Pi (late — needs the containers).</li><li><strong>I</strong> — remote access &amp; final proof.</li><li><strong>J</strong> — resilience &amp; lifecycle.</li><li><strong>K</strong> — local inference (future, optional).</li></ul></details>
-      <details class="callout note"><summary class="ctitle">How this page works</summary><ul><li><strong>Fast path:</strong> on each box, run its bootstrap script — <code class="inline">sudo ./bootstrap-nuc1.sh</code>, then <code class="inline">./bootstrap-pi.sh</code>, then <code class="inline">./bootstrap-nuc2.sh</code>. Each prompts for what it needs (disks, the Pi's IP, secrets) and pauses at the manual bits. The stages below are the detail behind them.</li><li>Fill your values once in <em>Your values</em> — they appear in every command on the page.</li><li>Record every MAC and IP in the address register below as you go — it exports straight into <code class="inline">network.md</code>.</li><li>A script's real commands live in <code class="inline">configs/</code>; this page says which file and what it does.</li></ul></details>
+      <details class="callout note"><summary class="ctitle">How this page works</summary><ul><li><strong>Fast path:</strong> on each box, run its bootstrap script — <code class="inline">sudo ./bootstrap-nuc1.sh</code>, then <code class="inline">./bootstrap-pi.sh</code>, then <code class="inline">./bootstrap-nuc2.sh</code>. Each prompts for what it needs (disks, the Pi's IP, secrets) and pauses at the manual bits. The stages below are the detail behind them.</li><li><strong>Where to run it:</strong> every command block carries a small label — the NUC host shell, inside a container, the PBS VM, the Pi, or a config edit. Steps done in a web UI or by hand are callouts, not command blocks.</li><li>Fill your values once in <em>Your values</em> — they appear in every command on the page.</li><li>Record every MAC and IP in the address register below as you go — it exports straight into <code class="inline">network.md</code>.</li><li>A script's real commands live in <code class="inline">configs/</code>; this page says which file and what it does.</li></ul></details>
       <div class="principle">
         <p><strong>A single workload filling up is normal, and must be handled gracefully.</strong></p>
         <p>The shared system filling up is catastrophic, and must be impossible. An alert saying “Frigate is pruning old video” is a success. A filesystem aborting at 100% is the only real failure, and it is designed out.</p>
@@ -772,7 +778,7 @@ var STAGES = [
             "html": "<p>Every 📄 SCRIPT step runs a file from the repo, so it has to be on that machine, <strong>after</strong> that box has an OS: the NUCs after A1, the Pi after D1. The repo is public (<a href=\"https://github.com/ParagonJenko/home-server\">github.com/ParagonJenko/home-server</a>), so a fresh box clones it directly — no credentials, no SSH key, no scp dance. Each box gets its own copy:</p>"
           },
           {
-            "cmd": "git clone https://github.com/ParagonJenko/home-server   # on each NUC and the Pi\ncd home-server"
+            "cmd": "# @where: Each box · shell\ngit clone https://github.com/ParagonJenko/home-server   # on each NUC and the Pi\ncd home-server"
           },
           {
             "callout": "danger",
@@ -846,7 +852,7 @@ var STAGES = [
             "p": "On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then clone the public repo and run the script:"
           },
           {
-            "cmd": "git clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
+            "cmd": "# @where: NUC-1 · host shell\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
           },
           {
             "callout": "note",
@@ -888,7 +894,7 @@ var STAGES = [
             "p": "Confirm autoextend is on — Proxmox sets it by default, but check:"
           },
           {
-            "cmd": "grep -E 'thin_pool_autoextend' /etc/lvm/lvm.conf"
+            "cmd": "# @where: NUC-1 · host shell\ngrep -E 'thin_pool_autoextend' /etc/lvm/lvm.conf"
           },
           {
             "callout": "note",
@@ -916,7 +922,7 @@ var STAGES = [
             "p": "Plug the 2×4TB DAS into NUC-1, confirm both disks appear, and note the <code class=\"inline\">/dev/sdX</code> letters:"
           },
           {
-            "cmd": "lsblk -o NAME,SIZE,TYPE,FSTYPE,MODEL"
+            "cmd": "# @where: NUC-1 · host shell\nlsblk -o NAME,SIZE,TYPE,FSTYPE,MODEL"
           }
         ],
         "verify": "Two ~4TB disks are listed. Put them into <em>Your values</em> now, and check them against the internal SSD. Record each disk's model, serial and <code class=\"inline\">by-id</code> path in the disk register at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">/dev/sdX</code> letters reorder across reboots, so that is the only durable way to know which physical disk is disk1."
@@ -940,7 +946,7 @@ var STAGES = [
             "p": "Set your disks in the script, then run it as root:"
           },
           {
-            "cmd": "SDX=\"{{DAS_1}}\"\nSDY=\"{{DAS_2}}\""
+            "cmd": "# @where: NUC-1 · host shell\nSDX=\"{{DAS_1}}\"\nSDY=\"{{DAS_2}}\""
           },
           {
             "callout": "note",
@@ -987,7 +993,7 @@ var STAGES = [
             "p": "With the pool built and before any container exists, pull a branch and confirm the pool refuses to mount:"
           },
           {
-            "cmd": "umount /mnt/media && umount /mnt/pool/disk1\nsystemctl start mnt-media.mount ; echo \"exit=$?\"   # must FAIL\nfindmnt /mnt/media || echo \"OK: pool refused to mount without its branch\"\nmount -a && mount /mnt/media                        # put it back"
+            "cmd": "# @where: NUC-1 · host shell\numount /mnt/media && umount /mnt/pool/disk1\nsystemctl start mnt-media.mount ; echo \"exit=$?\"   # must FAIL\nfindmnt /mnt/media || echo \"OK: pool refused to mount without its branch\"\nmount -a && mount /mnt/media                        # put it back"
           },
           {
             "callout": "note",
@@ -1011,10 +1017,10 @@ var STAGES = [
             "p": "The media pool is proven (B3), but Frigate, Plex and every container rootfs live on the host SSD's <code class=\"inline\">local-lvm</code>. Prove a full capped LV goes read-only without taking the host down, and that the caps can't oversubscribe the SSD. Run on each NUC."
           },
           {
-            "cmd": "# throwaway capped LV, fill it, confirm the host stays up\nlvcreate -V 5G --thinpool pve/data -n filltest pve\nmkfs.ext4 /dev/pve/filltest && mount /dev/pve/filltest /mnt/ft\ncat /dev/zero > /mnt/ft/blob 2>/dev/null ; echo \"LV full, host still up: $?\"\numount /mnt/ft && lvremove -y pve/filltest"
+            "cmd": "# @where: Each NUC · host shell\n# throwaway capped LV, fill it, confirm the host stays up\nlvcreate -V 5G --thinpool pve/data -n filltest pve\nmkfs.ext4 /dev/pve/filltest && mount /dev/pve/filltest /mnt/ft\ncat /dev/zero > /mnt/ft/blob 2>/dev/null ; echo \"LV full, host still up: $?\"\numount /mnt/ft && lvremove -y pve/filltest"
           },
           {
-            "cmd": "# ceiling sum: total of every LV cap must be under SSD size minus headroom\nlvs --units g -o lv_name,lv_size pve"
+            "cmd": "# @where: Each NUC · host shell\n# ceiling sum: total of every LV cap must be under SSD size minus headroom\nlvs --units g -o lv_name,lv_size pve"
           },
           {
             "callout": "note",
@@ -1145,7 +1151,7 @@ var STAGES = [
             "p": "Set the static address <code class=\"inline\">192.168.1.4</code> (outside the DHCP pool), via NetworkManager on Bookworm+:"
           },
           {
-            "cmd": "CON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.method manual \\\n  ipv4.addresses 192.168.1.4/24 ipv4.gateway 192.168.1.1 ipv4.dns 1.1.1.1\nnmcli con up \"$CON\""
+            "cmd": "# @where: Pi · shell\nCON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.method manual \\\n  ipv4.addresses 192.168.1.4/24 ipv4.gateway 192.168.1.1 ipv4.dns 1.1.1.1\nnmcli con up \"$CON\""
           },
           {
             "callout": "note",
@@ -1174,7 +1180,7 @@ var STAGES = [
             "html": "Installs base packages, timezone, Docker, the SD-card write reductions and stack directories. It stops short of bringing the stack up — that needs secrets — and prints the remaining steps when it finishes."
           },
           {
-            "cmd": "git clone https://github.com/ParagonJenko/home-server\ncd home-server && sudo ./configs/pi/setup-pi.sh"
+            "cmd": "# @where: Pi · shell\ngit clone https://github.com/ParagonJenko/home-server\ncd home-server && sudo ./configs/pi/setup-pi.sh"
           },
           {
             "callout": "gotcha",
@@ -1198,7 +1204,7 @@ var STAGES = [
             "p": "Copy <code class=\"inline\">configs/pi/</code> → <code class=\"inline\">/opt/pi-stack/</code> and <code class=\"inline\">configs/monitoring/</code> → <code class=\"inline\">/opt/monitoring/</code>, then bring up AdGuard alone:"
           },
           {
-            "cmd": "cd /opt/pi-stack\ncp .env.example .env                                                          # Grafana admin password\ncp alertmanager/discord-webhook-url.example alertmanager/discord-webhook-url   # paste the real webhook\nchmod 600 .env alertmanager/discord-webhook-url\ndocker compose up -d adguardhome"
+            "cmd": "# @where: Pi · shell\ncd /opt/pi-stack\ncp .env.example .env                                                          # Grafana admin password\ncp alertmanager/discord-webhook-url.example alertmanager/discord-webhook-url   # paste the real webhook\nchmod 600 .env alertmanager/discord-webhook-url\ndocker compose up -d adguardhome"
           },
           {
             "callout": "gotcha",
@@ -1216,7 +1222,7 @@ var STAGES = [
             "html": "<p><code class=\"inline\">configs/pi/adguard-rewrites.py</code> reads the address register out of <code class=\"inline\">network.md</code> and pushes every rewrite over AdGuard's API. Eighteen entries typed into a web form is how one ends up wrong in a way you find out about weeks later.</p><p><code class=\"inline\">--check</code> fails if a name documented in network.md isn't being pushed — run it on a schedule and the resolver can't quietly drift from the doc.</p>"
           },
           {
-            "cmd": "cd /opt/pi-stack\npython3 adguard-rewrites.py            # dry run, from network.md\npython3 adguard-rewrites.py --apply\npython3 adguard-rewrites.py --check    # fails if a documented name isn't pushed"
+            "cmd": "# @where: Pi · shell\ncd /opt/pi-stack\npython3 adguard-rewrites.py            # dry run, from network.md\npython3 adguard-rewrites.py --apply\npython3 adguard-rewrites.py --check    # fails if a documented name isn't pushed"
           },
           {
             "callout": "note",
@@ -1227,7 +1233,7 @@ var STAGES = [
             "p": "Now point the Pi at its own resolver, so the host-networked containers can resolve <code class=\"inline\">*.home</code>:"
           },
           {
-            "cmd": "CON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.dns 127.0.0.1 && nmcli con up \"$CON\""
+            "cmd": "# @where: Pi · shell\nCON=$(nmcli -g NAME,DEVICE con show | awk -F: '$2==\"eth0\"{print $1; exit}')\nnmcli con mod \"$CON\" ipv4.dns 127.0.0.1 && nmcli con up \"$CON\""
           },
           {
             "callout": "gotcha",
@@ -1297,7 +1303,7 @@ var STAGES = [
             "html": "<p><code class=\"inline\">configs/media-pipeline/arr-setup.py</code> sets the root folders, the qBittorrent client and category on Sonarr and Radarr, links both into Prowlarr and adds the FlareSolverr proxy — over the APIs. Dry run by default, idempotent, and it asks each app for its own schema rather than hardcoding field names, so it survives Arr releases.</p><p>Indexers stay manual: they need your accounts. Quality profiles are Recyclarr's job.</p>"
           },
           {
-            "cmd": "cp .env.example .env      # add PROWLARR_API_KEY alongside the others\npython3 arr-setup.py      # shows the plan; --apply writes it"
+            "cmd": "# @where: Inside LXC 210\ncp .env.example .env      # add PROWLARR_API_KEY alongside the others\npython3 arr-setup.py      # shows the plan; --apply writes it"
           }
         ],
         "subs": [
@@ -1384,7 +1390,7 @@ var STAGES = [
             ]
           },
           {
-            "cmd": "resolver {{PI_IP}} valid=10s;"
+            "cmd": "# @where: Edit — nginx config (LXC 240)\nresolver {{PI_IP}} valid=10s;"
           },
           {
             "callout": "note",
@@ -1499,7 +1505,7 @@ var STAGES = [
             "p": "Plug the 2TB USB HDD into NUC-2 and find it. Note the <code class=\"inline\">/dev/sdX</code>, then get the stable by-id path for the next step."
           },
           {
-            "cmd": "lsblk -o NAME,SIZE,TYPE,MODEL\nls -l /dev/disk/by-id/ | grep -i <usb-model>"
+            "cmd": "# @where: NUC-2 · host shell\nlsblk -o NAME,SIZE,TYPE,MODEL\nls -l /dev/disk/by-id/ | grep -i <usb-model>"
           }
         ],
         "verify": "You have a <code class=\"inline\">/dev/disk/by-id/…</code> path for the HDD. Put it in <em>Your values</em> and in the disk register at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">by-id</code> is stable across reboots, <code class=\"inline\">/dev/sdX</code> is not."
@@ -1517,7 +1523,7 @@ var STAGES = [
             "p": "Download the PBS ISO to <code class=\"inline\">local:iso</code>, set both placeholders, then run <code class=\"inline\">pbs-vm.sh</code>:"
           },
           {
-            "cmd": "ISO_FILENAME=\"{{ISO}}\"\nUSB_BY_ID=\"{{USB_ID}}\""
+            "cmd": "# @where: NUC-2 · host shell\nISO_FILENAME=\"{{ISO}}\"\nUSB_BY_ID=\"{{USB_ID}}\""
           },
           {
             "callout": "note",
@@ -1535,7 +1541,7 @@ var STAGES = [
             "html": "<p>The script sets <code class=\"inline\">--boot order=ide2</code> so the VM boots the installer the first time. Leave it, and every subsequent reboot lands back in the installer instead of PBS.</p>"
           },
           {
-            "cmd": "qm set 900 --boot order=scsi0\nqm set 900 --ide2 none"
+            "cmd": "# @where: NUC-2 · host shell\nqm set 900 --boot order=scsi0\nqm set 900 --ide2 none"
           },
           {
             "callout": "manual",
@@ -1562,7 +1568,7 @@ var STAGES = [
             "html": "Needs Stage D done, or a temporary <code class=\"inline\">/etc/hosts</code> line on each NUC (<code class=\"inline\">192.168.1.5 pbs.home</code>) removed once AdGuard has the rewrite. Adding the storage by IP is <em>not</em> the workaround — it breaks R13 and quietly fails the next time PBS moves."
           },
           {
-            "cmd": "pvesm add pbs pbs-backup --server pbs.home --datastore backups \\\n  --username root@pam --password --fingerprint {{PBS_FP}}"
+            "cmd": "# @where: Each NUC · host shell\npvesm add pbs pbs-backup --server pbs.home --datastore backups \\\n  --username root@pam --password --fingerprint {{PBS_FP}}"
           },
           {
             "callout": "manual",
@@ -1589,10 +1595,10 @@ var STAGES = [
             "html": "Take one backup by hand first, or <code class=\"inline\">pvesm list</code> comes back empty and the restore has no source."
           },
           {
-            "cmd": "vzdump 210 --storage pbs-backup --mode snapshot"
+            "cmd": "# @where: NUC-1 · host shell\nvzdump 210 --storage pbs-backup --mode snapshot"
           },
           {
-            "cmd": "pvesm list pbs-backup                       # copy the volid of a ct/210 backup\npct restore 8210 <volid-from-above> --storage local-lvm\npct start 8210 && pct status 8210\npct stop 8210 && pct destroy 8210           # remove the test once it's proven"
+            "cmd": "# @where: NUC-1 · host shell\npvesm list pbs-backup                       # copy the volid of a ct/210 backup\npct restore 8210 <volid-from-above> --storage local-lvm\npct start 8210 && pct status 8210\npct stop 8210 && pct destroy 8210           # remove the test once it's proven"
           },
           {
             "callout": "note",
@@ -1616,7 +1622,7 @@ var STAGES = [
             "p": "Push the datastore to encrypted cloud object storage (Backblaze B2 or S3 via rclone, or a remote PBS), scheduled daily after the backup window:"
           },
           {
-            "cmd": "# in the PBS VM\nrclone config            # add the cloud remote, with a crypt layer over it\n# schedule: datastore -> crypt:remote, daily after the backup window\nsystemctl list-timers | grep offsite   # or the sync-job in configs/pbs/"
+            "cmd": "# @where: PBS VM · shell\n# in the PBS VM\nrclone config            # add the cloud remote, with a crypt layer over it\n# schedule: datastore -> crypt:remote, daily after the backup window\nsystemctl list-timers | grep offsite   # or the sync-job in configs/pbs/"
           },
           {
             "callout": "danger",
@@ -1649,7 +1655,7 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "cd /opt/pi-stack && docker compose up -d"
+            "cmd": "# @where: Pi · shell\ncd /opt/pi-stack && docker compose up -d"
           },
           {
             "p": "Grafana <code class=\"inline\">pi.home:3000</code>, Prometheus <code class=\"inline\">:9090</code>, Alertmanager <code class=\"inline\">:9093</code>."
@@ -1680,7 +1686,7 @@ var STAGES = [
             "p": "On each NUC (native on the host, not a container) install node_exporter + the thin-pool check:"
           },
           {
-            "cmd": "apt -y install prometheus-node-exporter\nmkdir -p /var/lib/node_exporter/textfile_collector\n\n# Debian's package takes its flags from /etc/default/ and ships with none.\n# This is the line that turns the textfile collector on:\necho 'ARGS=\"--collector.textfile.directory=/var/lib/node_exporter/textfile_collector\"' \\\n  > /etc/default/prometheus-node-exporter\nsystemctl restart prometheus-node-exporter\n\n# LVM thin-pool metadata, every 15 min\ncp configs/monitoring/check-thinpool.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/check-thinpool.sh\" ) | crontab -"
+            "cmd": "# @where: Each NUC · host shell\napt -y install prometheus-node-exporter\nmkdir -p /var/lib/node_exporter/textfile_collector\n\n# Debian's package takes its flags from /etc/default/ and ships with none.\n# This is the line that turns the textfile collector on:\necho 'ARGS=\"--collector.textfile.directory=/var/lib/node_exporter/textfile_collector\"' \\\n  > /etc/default/prometheus-node-exporter\nsystemctl restart prometheus-node-exporter\n\n# LVM thin-pool metadata, every 15 min\ncp configs/monitoring/check-thinpool.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/check-thinpool.sh\" ) | crontab -"
           },
           {
             "callout": "gotcha",
@@ -1706,7 +1712,7 @@ var STAGES = [
             "p": "Then switch the infrastructure boxes off <code class=\"inline\">1.1.1.1</code> onto the Pi — the step A1 and G3 deferred. On <strong>each NUC and the PBS VM</strong>, set the resolver to the Pi, or <code class=\"inline\">pbs.home</code> stops resolving from the hosts (G4):"
           },
           {
-            "cmd": "# Proxmox hosts + PBS VM: GUI DNS field, or /etc/resolv.conf\nnameserver {{PI_IP}}\ngetent hosts pbs.home        # must resolve from each NUC now"
+            "cmd": "# @where: Each NUC + PBS VM\n# Proxmox hosts + PBS VM: GUI DNS field, or /etc/resolv.conf\nnameserver {{PI_IP}}\ngetent hosts pbs.home        # must resolve from each NUC now"
           },
           {
             "callout": "danger",
@@ -1748,7 +1754,7 @@ var STAGES = [
             "html": "Alerts inform, they never protect — an untested notification channel is the same class of claim as an untested restore."
           },
           {
-            "cmd": "docker compose exec alertmanager amtool alert add \\\n  alertname=TestAlert severity=warning instance=pi \\\n  --alertmanager.url=http://localhost:9093"
+            "cmd": "# @where: Pi · shell\ndocker compose exec alertmanager amtool alert add \\\n  alertname=TestAlert severity=warning instance=pi \\\n  --alertmanager.url=http://localhost:9093"
           },
           {
             "callout": "gotcha",
@@ -1779,7 +1785,7 @@ var STAGES = [
             "p": "Install on the hosts or containers you want reachable remotely (Plex, custom apps):"
           },
           {
-            "cmd": "curl -fsSL https://tailscale.com/install.sh | sh\ntailscale up"
+            "cmd": "# @where: Each host/container you expose\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up"
           },
           {
             "callout": "manual",
@@ -1805,7 +1811,7 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# No container rootfs on the DAS/media pool [R9]\ngrep -r \"rootfs\" /etc/pve/lxc/*.conf | grep -i media && echo \"!! rootfs on media — FIX\" || echo \"OK: no rootfs on media\"\n\n# Every container has a rootfs size cap [R6]\ngrep -H \"rootfs\" /etc/pve/lxc/*.conf\n\n# mergerfs headroom present [R8]\ngrep mergerfs /etc/fstab | grep minfreespace && echo \"OK: minfreespace set\"\n\n# A missing branch must stop the pool, not be unioned from the root device [R9]\ngrep mergerfs /etc/fstab | grep -q \"x-systemd.requires\" \\\n  && echo \"OK: pool requires its branches\" \\\n  || echo \"!! only ordering, not a dependency — FIX (see configs/mergerfs/fstab-snippet)\"\n\n# Media containers must refuse to start without the pool [R9]\nfor id in 210 220; do\n  systemctl cat \"pve-container@${id}\" 2>/dev/null | grep -q RequiresMountsFor \\\n    && echo \"OK: ${id} requires its mount\" \\\n    || echo \"!! ${id} would start against an empty directory — run apply_requires_mount\"\ndone"
+            "cmd": "# @where: Each NUC · host shell\n# No container rootfs on the DAS/media pool [R9]\ngrep -r \"rootfs\" /etc/pve/lxc/*.conf | grep -i media && echo \"!! rootfs on media — FIX\" || echo \"OK: no rootfs on media\"\n\n# Every container has a rootfs size cap [R6]\ngrep -H \"rootfs\" /etc/pve/lxc/*.conf\n\n# mergerfs headroom present [R8]\ngrep mergerfs /etc/fstab | grep minfreespace && echo \"OK: minfreespace set\"\n\n# A missing branch must stop the pool, not be unioned from the root device [R9]\ngrep mergerfs /etc/fstab | grep -q \"x-systemd.requires\" \\\n  && echo \"OK: pool requires its branches\" \\\n  || echo \"!! only ordering, not a dependency — FIX (see configs/mergerfs/fstab-snippet)\"\n\n# Media containers must refuse to start without the pool [R9]\nfor id in 210 220; do\n  systemctl cat \"pve-container@${id}\" 2>/dev/null | grep -q RequiresMountsFor \\\n    && echo \"OK: ${id} requires its mount\" \\\n    || echo \"!! ${id} would start against an empty directory — run apply_requires_mount\"\ndone"
           },
           {
             "p": "Then the no-literal-IPs check, from the repo root:"
@@ -1816,10 +1822,10 @@ var STAGES = [
             "html": "In <code class=\"inline\">configs/</code> (service configs): only the Pi (nginx resolver, <code class=\"inline\">--nameserver</code>) and the gateway; <code class=\"inline\">127.0.0.1</code> is fine (go2rtc's local restream). The static infra IPs — NUC <code class=\"inline\">.2</code>/<code class=\"inline\">.3</code>, PBS <code class=\"inline\">.5</code> — are device/install config, not service config: expected in <code class=\"inline\">/etc/network/interfaces</code> or the installer, but a literal to remove if the grep finds one inside <code class=\"inline\">configs/</code>."
           },
           {
-            "cmd": "grep -rnE '\\b([0-9]{1,3}\\.){3}[0-9]{1,3}\\b' configs/ | grep -v '127\\.0\\.0\\.1'"
+            "cmd": "# @where: Each NUC · host shell\ngrep -rnE '\\b([0-9]{1,3}\\.){3}[0-9]{1,3}\\b' configs/ | grep -v '127\\.0\\.0\\.1'"
           },
           {
-            "cmd": "# R8: reserved-blocks actually set (don't assume) — root + container storage + DAS + USB HDD\ntune2fs -l $(findmnt -no SOURCE /) | grep -i 'reserved block count'\nlsblk -f    # then tune2fs -l each data filesystem to confirm its -m"
+            "cmd": "# @where: Each NUC · host shell\n# R8: reserved-blocks actually set (don't assume) — root + container storage + DAS + USB HDD\ntune2fs -l $(findmnt -no SOURCE /) | grep -i 'reserved block count'\nlsblk -f    # then tune2fs -l each data filesystem to confirm its -m"
           }
         ],
         "verify": "Every line prints OK, and the IP grep returns only the Pi and the gateway."
@@ -1893,7 +1899,7 @@ var STAGES = [
             "p": "Put <strong>everything that writes</strong> on the UPS: both NUCs, the DAS, the Pi, and the USB HDD (PBS writes to it mid-backup). Install NUT — the host the UPS USB plugs into is master; the other NUC, the Pi and the PBS VM are netclients, so each shuts down gracefully:"
           },
           {
-            "cmd": "apt -y install nut\n# configure /etc/nut/ups.conf, upsmon.conf, upssched.conf — see configs/nut/\nupsc <ups-name>        # confirm the UPS is readable"
+            "cmd": "# @where: Each box · shell\napt -y install nut\n# configure /etc/nut/ups.conf, upsmon.conf, upssched.conf — see configs/nut/\nupsc <ups-name>        # confirm the UPS is readable"
           },
           {
             "callout": "note",
@@ -1957,7 +1963,7 @@ var STAGES = [
             "p": "On both NUCs: enable smartd self-tests and export SMART to Prometheus via the textfile collector from H2:"
           },
           {
-            "cmd": "apt -y install smartmontools\n# smartd.conf: schedule short + long self-tests on every disk\n# cron: write smartmon metrics into the collector dir from H2\ncp configs/monitoring/smartmon.sh /usr/local/bin/"
+            "cmd": "# @where: Each NUC · host shell\napt -y install smartmontools\n# smartd.conf: schedule short + long self-tests on every disk\n# cron: write smartmon metrics into the collector dir from H2\ncp configs/monitoring/smartmon.sh /usr/local/bin/"
           },
           {
             "callout": "note",
@@ -1990,7 +1996,7 @@ var STAGES = [
             "p": "Enable automatic security updates on the hosts and inside each container:"
           },
           {
-            "cmd": "apt -y install unattended-upgrades\ndpkg-reconfigure -plow unattended-upgrades   # security origins only"
+            "cmd": "# @where: Each box · shell\napt -y install unattended-upgrades\ndpkg-reconfigure -plow unattended-upgrades   # security origins only"
           },
           {
             "callout": "note",
@@ -2108,7 +2114,7 @@ var STAGES = [
             "p": "Stand up an LXC (pattern from C2), install Docker, run Ollama + Open WebUI, pull an 8B model. No GPU needed — CPU/iGPU inference:"
           },
           {
-            "cmd": "# in the LXC\ndocker compose up -d        # ollama + open-webui, see configs/ollama/\ndocker exec -it ollama ollama pull llama3.3:8b"
+            "cmd": "# @where: Inside the LLM LXC\n# in the LXC\ndocker compose up -d        # ollama + open-webui, see configs/ollama/\ndocker exec -it ollama ollama pull llama3.3:8b"
           },
           {
             "callout": "note",
@@ -2232,7 +2238,11 @@ function blocks(list) {
 }
 
 function cmdBlock(text) {
-  return '<div class="cmd"><button class="copy" type="button">Copy</button><pre>' + subst(text) + "</pre></div>";
+  var where = "";
+  var m = text.match(/^# @where: (.*)\n/);
+  if (m) { where = m[1]; text = text.slice(m[0].length); }
+  var chip = where ? '<span class="cmd-where">' + esc(where) + '</span>' : "";
+  return '<div class="cmd">' + chip + '<button class="copy" type="button">Copy</button><pre>' + subst(text) + "</pre></div>";
 }
 
 function stepKey(stageId, stepId, subIdx) {
