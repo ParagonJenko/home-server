@@ -18,9 +18,10 @@ upsert() {  # upsert KEY VALUE into ENV_FILE (replace in place, or append)
   fi
 }
 
-get_key() {  # get_key <container> -> prints the ApiKey from its config.xml, or nothing
-  docker exec "$1" cat /config/config.xml 2>/dev/null \
-    | grep -oP '(?<=<ApiKey>)[^<]+' || true
+get_key() {  # get_key <service> -> ApiKey from the config.xml on the host bind-mount
+  # /opt/<service>/config is bind-mounted into the container as /config, so the file
+  # is right here on the LXC filesystem — no need to guess the compose container name.
+  grep -oP '(?<=<ApiKey>)[^<]+' "/opt/$1/config/config.xml" 2>/dev/null | head -1 || true
 }
 
 fail=0
@@ -29,9 +30,9 @@ for pair in "sonarr:SONARR_API_KEY" "radarr:RADARR_API_KEY" "prowlarr:PROWLARR_A
   key="$(get_key "$app")"
   if [ -n "$key" ]; then
     upsert "$var" "$key"
-    echo "${G}OK${Z}   ${var} <- ${app}/config.xml"
+    echo "${G}OK${Z}   ${var} <- /opt/${app}/config/config.xml"
   else
-    echo "${R}MISS${Z} ${app}: no ApiKey yet — started and booted once? (docker logs ${app})"
+    echo "${R}MISS${Z} ${app}: no ApiKey in /opt/${app}/config/config.xml — booted once yet?"
     fail=1
   fi
 done
@@ -40,16 +41,17 @@ done
 # for it here. Only ask if it's not already set and we have a terminal to read from.
 cur_pass="$(sed -n 's/^QBIT_PASS=//p' "$ENV_FILE" 2>/dev/null | head -1)"
 if [ -z "$cur_pass" ]; then
-  if [ -t 0 ]; then
-    echo
-    read -rsp "qBittorrent password for user 'admin' (blank to skip): " qp; echo
-    if [ -n "$qp" ]; then
-      upsert QBIT_PASS "$qp"
-      echo "${G}OK${Z}   QBIT_PASS set"
-    fi
+  qp=""
+  if { exec 3</dev/tty; } 2>/dev/null; then        # a real terminal, even if stdin is a pipe
+    echo; read -rsp "qBittorrent password for user 'admin' (blank to skip): " qp <&3; echo
+    exec 3<&-
+  elif [ -t 0 ]; then
+    echo; read -rsp "qBittorrent password for user 'admin' (blank to skip): " qp; echo
   else
-    echo "${Y}NOTE${Z} QBIT_PASS is empty and there's no terminal to prompt — set it in ${ENV_FILE} by hand."
+    echo "${Y}NOTE${Z} QBIT_PASS is empty and no terminal to prompt — set it in ${ENV_FILE} by hand,"
+    echo "     or re-run this script on its own line (not pasted with others)."
   fi
+  if [ -n "$qp" ]; then upsert QBIT_PASS "$qp"; echo "${G}OK${Z}   QBIT_PASS set"; fi
 fi
 
 echo
