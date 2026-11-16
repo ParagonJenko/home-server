@@ -41,7 +41,7 @@ The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headr
 | Filesystem | Date | Result | Notes |
 |---|---|---|---|
 | mergerfs pool (`/mnt/media`) | 2026-11-16 | PASS | B3 `--quick` (minfreespace raised then restored): refused at ~70G with graceful ENOSPC, pool stayed mounted, zero corruption, floor restored to 250G |
-| local-lvm (throwaway LV) | TBD | TBD | B5 — full LV goes read-only, host stays up |
+| local-lvm (throwaway LV) | 2026-11-16 | PASS | B5 `./configs/verify.sh B5`: full 5G LV refused writes (ENOSPC), host root stayed writable. Ceiling sum ~0 (no container LVs yet) — re-check after Stage G |
 
 ## Data classification (R26)
 
