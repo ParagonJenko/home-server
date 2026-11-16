@@ -816,13 +816,13 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Flash the <a href=\"https://www.proxmox.com/en/downloads\">Proxmox VE 9.2 ISO</a> to USB, boot the NUC, and set at the installer:"
+            "p": "<strong>NUC-1 only here</strong> — you repeat this on NUC-2 at Stage F. Flash the <a href=\"https://www.proxmox.com/en/downloads\">Proxmox VE 9.2 ISO</a> to USB, boot NUC-1 (the S13), and set at the installer. The NUC-2 values are in brackets, for Stage F:"
           },
           {
             "list": [
               "<strong>Disk:</strong> internal 500GB SSD, <strong>ext4</strong>. Never the DAS.",
-              "<strong>Hostname:</strong> <code class=\"inline\">nuc1.home</code> (NUC-1) / <code class=\"inline\">nuc2.home</code> (NUC-2).",
-              "<strong>IP (static):</strong> <code class=\"inline\">192.168.1.2</code> (NUC-1) / <code class=\"inline\">192.168.1.3</code> (NUC-2) · gw <code class=\"inline\">192.168.1.1</code> · mask <code class=\"inline\">255.255.255.0</code>.",
+              "<strong>Hostname:</strong> <code class=\"inline\">nuc1.home</code> now — <em>(NUC-2 at Stage F: <code class=\"inline\">nuc2.home</code>)</em>.",
+              "<strong>IP (static):</strong> <code class=\"inline\">192.168.1.2</code> now — <em>(NUC-2: <code class=\"inline\">192.168.1.3</code>)</em> · gw <code class=\"inline\">192.168.1.1</code> · mask <code class=\"inline\">255.255.255.0</code>.",
               "<strong>DNS:</strong> <code class=\"inline\">1.1.1.1</code> for now; switch to the Pi after Stage D."
             ]
           },
