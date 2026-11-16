@@ -1,0 +1,26 @@
+# decluttarr config — removes stalled/failed/orphaned downloads from Sonarr/Radarr so the
+# queue self-heals. Deployed to /config/config.yaml inside LXC 210. Secrets are pulled from
+# .env at runtime via !ENV (the same keys the rest of the stack uses), so nothing secret
+# lives here. TEST_RUN comes from .env too (env overrides config) — starts True (dry run).
+log_level: INFO
+timer: 10                 # minutes between queue checks
+
+instances:
+  sonarr:
+    - base_url: http://sonarr:8989
+      api_key: !ENV SONARR_API_KEY
+  radarr:
+    - base_url: http://radarr:7878
+      api_key: !ENV RADARR_API_KEY
+  qbittorrent:
+    - base_url: http://qbittorrent:8080
+      username: !ENV QBIT_USER
+      password: !ENV QBIT_PASS
+
+jobs:
+  remove_failed_downloads: True   # download failed
+  remove_failed_imports: True     # grabbed but wouldn't import
+  remove_metadata_missing: True   # stuck fetching metadata
+  remove_stalled: True            # no connections / no progress
+  remove_orphans: True            # media was deleted from the Arr
+  # remove_slow / remove_unmonitored left off — they can bin downloads you still want.
