@@ -1211,7 +1211,12 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Your desktop AND laptop — do this FIRST, so you can paste the keys into the imager\nssh-keygen -t ed25519        # skip if you already have a key\ncat ~/.ssh/id_ed25519.pub    # copy this whole line"
+            "cmd": "# @where: Your desktop AND laptop — do this FIRST, so you can paste the keys into the imager\nssh-keygen -t ed25519        # skip if you already have a key\ncat ~/.ssh/id_ed25519.pub    # macOS/Linux: copy this whole line"
+          },
+          {
+            "callout": "note",
+            "title": "On Windows (both PCs)",
+            "html": "<p>Windows 10/11 has OpenSSH built in — open <strong>PowerShell</strong>. (If <code class=\"inline\">ssh-keygen</code> is missing: Settings → Apps → Optional Features → Add → OpenSSH Client.)</p><ul><li>Generate a key (press Enter through the prompts): <code class=\"inline\">ssh-keygen -t ed25519</code></li><li>Copy the public key to the clipboard: <code class=\"inline\">Get-Content $env:USERPROFILE\\.ssh\\id_ed25519.pub | clip</code></li></ul><p>Paste it into the imager's SSH box. Do this on <em>both</em> the desktop and the laptop — two keys, one per line.</p>"
           },
           {
             "callout": "note",
