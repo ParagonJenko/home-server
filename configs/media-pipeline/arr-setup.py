@@ -199,6 +199,13 @@ def step(label, fn):
     print(f"  {label}:")
     try:
         fn()
+    except urllib.error.HTTPError as e:  # subclass of URLError — catch first, show the body
+        body = ""
+        try:
+            body = e.read().decode()[:500]
+        except Exception:
+            pass
+        print(f"    !! skipped — HTTP {e.code} {e.reason}: {body}")
     except urllib.error.URLError as e:
         print(f"    !! skipped — API error: {e}")
     except StopIteration:
@@ -214,12 +221,16 @@ def main() -> None:
     env = load_env()
     print("arr-setup:", "APPLY" if args.apply else "DRY RUN")
 
-    # Defaults assume this runs INSIDE LXC 210, reaching the apps on their published
-    # ports via localhost. FlareSolverr stays a Docker service name because Prowlarr
-    # (a compose service) is what calls it, over the compose network.
+    # Two kinds of URL. These are how THIS script reaches each app's API — it runs on
+    # the LXC host, so localhost + the published ports.
     sonarr = env.get("SONARR_URL", "http://localhost:8989")
     radarr = env.get("RADARR_URL", "http://localhost:7878")
     prowlarr = env.get("PROWLARR_URL", "http://localhost:9696")
+    # These are how one CONTAINER reaches another (Prowlarr->Sonarr, Sonarr->FlareSolverr):
+    # over the compose network by service name. localhost there means the container itself.
+    sonarr_svc = env.get("SONARR_SVC", "http://sonarr:8989")
+    radarr_svc = env.get("RADARR_SVC", "http://radarr:7878")
+    prowlarr_svc = env.get("PROWLARR_SVC", "http://prowlarr:9696")
     flare = env.get("FLARESOLVERR_URL", "http://flaresolverr:8191/")
     sk, rk, pk = env.get("SONARR_API_KEY"), env.get("RADARR_API_KEY"), env.get("PROWLARR_API_KEY")
     min_free = int(env.get("ARR_MIN_FREE_MB", "10240"))  # 10 GB default; override in .env
@@ -240,8 +251,8 @@ def main() -> None:
     if pk:
         step("Prowlarr", lambda: (
             ensure_prowlarr_proxy(prowlarr, pk, flare, args.apply),
-            ensure_prowlarr_app(prowlarr, pk, "Sonarr", sonarr, sk, prowlarr, args.apply),
-            ensure_prowlarr_app(prowlarr, pk, "Radarr", radarr, rk, prowlarr, args.apply)))
+            ensure_prowlarr_app(prowlarr, pk, "Sonarr", sonarr_svc, sk, prowlarr_svc, args.apply),
+            ensure_prowlarr_app(prowlarr, pk, "Radarr", radarr_svc, rk, prowlarr_svc, args.apply)))
     if env.get("QBIT_USER"):
         step("qBittorrent", lambda: configure_qbittorrent(env, args.apply))
 
