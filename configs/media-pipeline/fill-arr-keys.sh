@@ -36,12 +36,30 @@ for pair in "sonarr:SONARR_API_KEY" "radarr:RADARR_API_KEY" "prowlarr:PROWLARR_A
   fi
 done
 
+# qBittorrent password — it lives in no config file (you set it in the WebUI), so prompt
+# for it here. Only ask if it's not already set and we have a terminal to read from.
+cur_pass="$(sed -n 's/^QBIT_PASS=//p' "$ENV_FILE" 2>/dev/null | head -1)"
+if [ -z "$cur_pass" ]; then
+  if [ -t 0 ]; then
+    echo
+    read -rsp "qBittorrent password for user 'admin' (blank to skip): " qp; echo
+    if [ -n "$qp" ]; then
+      upsert QBIT_PASS "$qp"
+      echo "${G}OK${Z}   QBIT_PASS set"
+    fi
+  else
+    echo "${Y}NOTE${Z} QBIT_PASS is empty and there's no terminal to prompt — set it in ${ENV_FILE} by hand."
+  fi
+fi
+
 echo
 if [ "$fail" = 0 ]; then
-  echo "${G}All three API keys written to ${ENV_FILE}.${Z}"
-  echo "Only ${Y}QBIT_PASS${Z} is left by hand — the WebUI password you set for user 'admin'."
+  echo "${G}API keys written to ${ENV_FILE}.${Z}"
+  [ -z "$(sed -n 's/^QBIT_PASS=//p' "$ENV_FILE" | head -1)" ] \
+    && echo "${Y}QBIT_PASS still empty${Z} — arr-setup can't log into qBittorrent until it's set."
   exit 0
 else
-  echo "${Y}Some keys missing. Bring the core apps up, let them boot, then re-run.${Z}"
+  echo "${Y}Some API keys missing.${Z} Make sure the core apps are running (docker ps) and have"
+  echo "booted once (they write config.xml a few seconds in), then re-run."
   exit 1
 fi

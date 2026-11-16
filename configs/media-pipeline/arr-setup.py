@@ -21,7 +21,8 @@ Reads config from .env (gitignored) next to this file, e.g.:
   FLARESOLVERR_URL=http://flaresolverr:8191/
 Stdlib only — runs anywhere that can reach the Arr APIs.
 """
-import argparse, json, os, sys, urllib.request, urllib.error, urllib.parse, http.cookiejar
+import argparse, json, os, sys, urllib.request, urllib.error, urllib.parse
+from http.cookiejar import CookieJar  # imported by name: the http() func below shadows the module
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -128,7 +129,7 @@ def configure_qbittorrent(env, apply):
         print(f"    qBittorrent @ {base}: WOULD set ATM on, save path /data/torrents, "
               f"categories {', '.join(cats)}")
         return
-    cj = http.cookiejar.CookieJar()
+    cj = CookieJar()
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 
     def post(path, fields):
