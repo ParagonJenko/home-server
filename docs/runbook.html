@@ -843,7 +843,15 @@ var STAGES = [
         ],
         "body": [
           {
-            "p": "Run as root on the Proxmox host."
+            "p": "On NUC-1, open a root shell — Proxmox UI → <em>Datacenter → node → Shell</em>, or SSH in as <code class=\"inline\">root</code> — then clone the public repo and run the script:"
+          },
+          {
+            "cmd": "git clone https://github.com/ParagonJenko/home-server\ncd home-server\n./configs/lxc/stage-a-host-setup.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Or just run the box's bootstrap",
+            "html": "<code class=\"inline\">sudo ./bootstrap-nuc1.sh</code> runs this step and the rest of NUC-1 in order, prompting as it goes — the fast path from the intro. Either way you clone the repo onto the box first, as above."
           },
           {
             "callout": "note",
