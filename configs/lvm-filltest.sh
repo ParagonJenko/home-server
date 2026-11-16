@@ -30,6 +30,8 @@ else
   if echo ok > /root/.b5-alive 2>/dev/null; then rm -f /root/.b5-alive; yes_ "host root still writable — host survived a full container LV"
   else no_ "host root not writable"; fi
 fi
+# remove the throwaway BEFORE the ceiling sum so it isn't counted (trap is the fallback)
+umount "$MP" >/dev/null 2>&1; lvremove -y "${VG}/${LV}" >/dev/null 2>&1
 
 say "2/2  ceiling sum (informational — re-run after Stage G, when the container LVs exist)"
 lvs --units g -o lv_name,lv_size "$VG" 2>/dev/null
