@@ -782,7 +782,12 @@ var STAGES = [
             "p": "<strong>Access you'll need:</strong> admin login for the ISP router (DHCP reservations and its DNS setting both change), the Eufy account for the cameras' RTSP credentials, a Discord server you can make a webhook in (H4 proves alerts arrive), and a Tailscale account for I1 — free tier is enough."
           },
           {
-            "p": "<strong>Time:</strong> A–D is an evening. B3's fill test writes until a 7.2TB pool refuses to take more, so start it and leave it."
+            "p": "<strong>Time:</strong> NUC-1's build is an evening. B3's fill test writes until a 7.2TB pool refuses to take more, so start it and leave it."
+          },
+          {
+            "callout": "note",
+            "title": "What plugs into what, and when",
+            "html": "<ul><li><strong>NUC-1</strong> ← the 2×4TB <strong>DAS</strong> (its media pool). Attach before Stage B.</li><li><strong>NUC-2</strong> ← the 2TB <strong>USB HDD</strong> (the PBS datastore). Attach before Stage G.</li><li><strong>The Pi</strong> ← its <strong>microSD</strong> (imaged on your laptop). Stage D.</li><li><strong>Everything</strong> — both NUCs, the Pi, the cameras and the APs — plugs into the <strong>managed switch</strong>, with one WAN cable from the switch to your router.</li><li>The <strong>4 Eufy cameras</strong> just need to be powered and on the network (reachable by name) before Stage G, when Frigate starts pulling them.</li></ul>"
           },
           {
             "callout": "note",
@@ -923,7 +928,7 @@ var STAGES = [
     "name": "Storage",
     "where": "NUC-1",
     "title": "Storage foundation",
-    "intro": "NUC-1 is the media host. Finish B before creating any media container — the pool has to exist, and has to have failed loudly in a test, before anything writes to it.",
+    "intro": "NUC-1 is the media host, so <strong>the 2×4TB DAS attaches here</strong> — these two disks become the media pool (mergerfs → /mnt/media, ~7.2TB) that Plex and the Arrs read and write. Finish B before creating any media container — the pool has to exist, and has to have failed loudly in a test, before anything writes to it.",
     "steps": [
       {
         "id": "B1",
