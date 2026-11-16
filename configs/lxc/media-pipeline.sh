@@ -57,6 +57,9 @@ fi
 pct exec "$CTID" -- mkdir -p /opt/recyclarr/config /opt/qbit_manage/config
 pct push "$CTID" ../media-pipeline/recyclarr.yml /opt/recyclarr/config/recyclarr.yml
 pct push "$CTID" ../media-pipeline/qbit_manage.config.yml /opt/qbit_manage/config/config.yml
+# recyclarr + qbit_manage run as 1000:1000 (not LSIO, so they don't self-chown /config);
+# the dirs must be owned by 1000 or they can't write their logs/config (R6 idmap: host 1000).
+pct exec "$CTID" -- chown -R 1000:1000 /opt/recyclarr /opt/qbit_manage
 
 # Phase 1: bring up only the apps that need no secrets. recyclarr/decluttarr/qbit_manage
 # read .env (API keys + qBit creds) and have nothing to do until those exist, so they're
