@@ -5,10 +5,16 @@
 set -euo pipefail
 
 resolve_template() {
-  # prints the local template volid, downloading it if missing
-  local name
-  name="$(pveam available --section system | awk '/debian-13/{print $2}' | sort -V | tail -1)"
-  require_filled "template name" "$name"
+  # prints the local template volid, downloading it if missing.
+  # MUST match the host CPU arch: both _amd64 and _arm64 variants are listed for
+  # the same release, and a bare `sort -V | tail -1` picks arm64 (it sorts after
+  # amd64) — which boots fine on the ARM Pi but dies with "Exec format error" on
+  # the x86 NUCs. dpkg's arch name (amd64 / arm64) is exactly the filename token.
+  local arch name
+  arch="$(dpkg --print-architecture)"
+  name="$(pveam available --section system | awk '{print $2}' \
+            | grep -E "debian-13.*_${arch}\.tar" | sort -V | tail -1)"
+  require_filled "debian-13 template for ${arch}" "$name"
   pveam list local | grep -q "$name" || pveam download local "$name"
   echo "local:vztmpl/${name}"
 }
