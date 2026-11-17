@@ -608,7 +608,7 @@ var FIELDS = [
   { key: "DAS_1", label: "first-DAS-disk", hint: "First DAS disk device (e.g. /dev/sdb). stage-b-storage.sh prompts for this at runtime — no editing needed; this is just your note.", ph: "/dev/sdb" },
   { key: "DAS_2", label: "second-DAS-disk", hint: "Second DAS disk device. Check both against the internal SSD before running anything.", ph: "/dev/sdb" },
   { key: "ISO", label: "ISO_FILENAME", hint: "PBS ISO name as it appears in local:iso on NUC-2.", ph: "proxmox-backup-server_4.0-1.iso" },
-  { key: "USB_ID", label: "usb-hdd-by-id", hint: "Stable by-id path for the 2TB USB HDD: ls -l /dev/disk/by-id/ | grep <usb-model>", ph: "/dev/disk/by-id/usb-..." },
+  { key: "USB_ID", label: "usb-hdd-by-id", hint: "Stable by-id path for the 2TB USB HDD: ls -l /dev/disk/by-id/ | grep -- '-> ../../sda$' (swap sda for its NAME from lsblk)", ph: "/dev/disk/by-id/usb-..." },
   { key: "DATASTORE_PATH", label: "DATASTORE_PATH", hint: "Where the USB HDD mounts inside the PBS VM. Edited into configs/pbs/datastore-setup.sh.", ph: "/mnt/datastore/backups" },
   { key: "PBS_FP", label: "PBS_FINGERPRINT", hint: "PBS web UI → Certificates. The server itself is pbs.home.alexjenkinson.com, never an IP.", ph: "AA:BB:CC:..." }
 ];
@@ -1767,7 +1767,7 @@ var STAGES = [
             "p": "Plug the 2TB USB HDD into NUC-2 and find it. Note the <code class=\"inline\">/dev/sdX</code>, then get the stable by-id path for the next step."
           },
           {
-            "cmd": "# @where: NUC-2 · host shell\nlsblk -o NAME,SIZE,TYPE,MODEL\nls -l /dev/disk/by-id/ | grep -i <usb-model>"
+            "cmd": "# @where: NUC-2 · host shell\nlsblk -o NAME,SIZE,TYPE,MODEL          # find the USB disk's NAME (e.g. sda)\nls -l /dev/disk/by-id/ | grep -- '-> ../../sda$'   # its stable by-id (swap sda for your disk)"
           }
         ],
         "verify": "You have a <code class=\"inline\">/dev/disk/by-id/…</code> path for the HDD. <span class=save>Put it in <em>Your values</em> and in the disk register</span> at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">by-id</code> is stable across reboots, <code class=\"inline\">/dev/sdX</code> is not."
