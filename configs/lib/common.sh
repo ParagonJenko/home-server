@@ -73,11 +73,37 @@ pick_disk() { # pick_disk KEY "Prompt" — show disks, validate, confirm by iden
   printf -v "$1" '%s' "$dev"; _hl_save "$1" "$dev"
 }
 
-pick_by_id() { # pick_by_id KEY "Prompt" — stable /dev/disk/by-id path
-  echo; ls -l /dev/disk/by-id/ | grep -v -- '-part'; echo
-  local p; read -rp "$C_WARN$2 (/dev/disk/by-id/...):$C_RST " p
-  [ -b "$p" ] || { warn "  !! not a block device."; pick_by_id "$1" "$2"; return; }
-  printf -v "$1" '%s' "$p"; _hl_save "$1" "$p"
+pick_by_id() { # pick_by_id KEY "Prompt" — pick a whole-disk /dev/disk/by-id path from a menu
+  local key="$1" prompt="$2"
+  local -a labels=() paths=()
+  local dev best prio pr name size model flag
+  # one canonical by-id per physical disk (prefer ata- > nvme- > wwn- > scsi- > usb-)
+  for dev in $(lsblk -dn -e 1,7 -o NAME 2>/dev/null | sed 's#^#/dev/#'); do
+    best=""; prio=99
+    for name in $(ls /dev/disk/by-id/ 2>/dev/null); do
+      case "$name" in *-part*|dm-*|lvm-pv-*) continue;; esac
+      [ "$(readlink -f "/dev/disk/by-id/$name" 2>/dev/null)" = "$dev" ] || continue
+      case "$name" in ata-*) pr=1;; nvme-[0-9A-Za-z]*) pr=2;; wwn-*) pr=3;; scsi-*) pr=4;; usb-*) pr=5;; *) pr=6;; esac
+      [ "$pr" -lt "$prio" ] && { prio="$pr"; best="$name"; }
+    done
+    [ -n "$best" ] || continue
+    size="$(lsblk -dno SIZE "$dev" 2>/dev/null)"; model="$(lsblk -dno MODEL "$dev" 2>/dev/null)"
+    flag=""; if lsblk -no TYPE,MOUNTPOINT "$dev" 2>/dev/null | grep -qE 'lvm|[[:space:]]/'; then flag="  [in use — system disk]"; fi
+    labels+=("${best}  (${size} ${model})${flag}"); paths+=("/dev/disk/by-id/${best}")
+  done
+
+  if [ "${#paths[@]}" -gt 0 ]; then
+    echo; echo "${C_HEAD}${prompt}:${C_RST}"
+    local i; for i in "${!paths[@]}"; do printf "  %2d) %s\n" "$((i+1))" "${labels[$i]}"; done
+    echo "   0) type a path manually"
+    local n; read -rp "${C_WARN}  number:${C_RST} " n
+    if [[ "$n" =~ ^[0-9]+$ ]] && [ "$n" -ge 1 ] && [ "$n" -le "${#paths[@]}" ]; then
+      printf -v "$key" '%s' "${paths[$((n-1))]}"; _hl_save "$key" "${paths[$((n-1))]}"; return
+    fi
+  fi
+  local p; read -rp "${C_WARN}  ${prompt} (/dev/disk/by-id/...):${C_RST} " p
+  [ -b "$p" ] || { warn "  !! not a block device."; pick_by_id "$key" "$prompt"; return; }
+  printf -v "$key" '%s' "$p"; _hl_save "$key" "$p"
 }
 
 run() { # run CMD ... — show it, confirm, then run (terminal commands stay gated)
