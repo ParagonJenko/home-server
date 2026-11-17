@@ -6,8 +6,25 @@ set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 need_root
 
-echo "ISOs available in local:iso:"; ls /var/lib/vz/template/iso/ 2>/dev/null || echo "  (none — upload the PBS ISO first)"
-ask ISO_FILENAME "PBS ISO filename"
+ISO_DIR="/var/lib/vz/template/iso"
+PBS_ISO="proxmox-backup-server_4.2-1.iso"           # pinned; bump from https://www.proxmox.com/en/downloads
+PBS_ISO_URL="https://enterprise.proxmox.com/iso/${PBS_ISO}"
+mkdir -p "$ISO_DIR"
+
+# Use an existing PBS ISO if one's already here; otherwise offer to fetch the pinned one.
+existing="$(ls "${ISO_DIR}"/proxmox-backup-server_*.iso 2>/dev/null | head -1 || true)"
+if [ -n "$existing" ]; then
+  ISO_FILENAME="$(basename "$existing")"
+  say "found PBS ISO: ${ISO_FILENAME}"
+elif confirm "No PBS ISO in local:iso. Download ${PBS_ISO} (~1.2G) now?"; then
+  say "downloading ${PBS_ISO} ..."
+  curl -fL --progress-bar "$PBS_ISO_URL" -o "${ISO_DIR}/${PBS_ISO}.part"
+  mv "${ISO_DIR}/${PBS_ISO}.part" "${ISO_DIR}/${PBS_ISO}"
+  ISO_FILENAME="$PBS_ISO"
+  ok "downloaded ${PBS_ISO}"
+else
+  echo "Upload a PBS ISO to local:iso (or re-run and say yes), then try again."; exit 1
+fi
 pick_by_id USB_BY_ID "2TB USB HDD by-id path (the PBS datastore disk)"
 confirm "Create PBS VM 900 — installer ISO $ISO_FILENAME, datastore disk $USB_BY_ID?" || exit 1
 
