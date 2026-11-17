@@ -1,0 +1,12 @@
+# configs/pi/grafana/datasources/prometheus.yml — Grafana datasource provisioning.
+# Mounted under /etc/grafana/provisioning; Grafana reads it on boot, so a rebuilt Pi comes
+# back with the datasource already wired. Prometheus is on the same host (host networking).
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://localhost:9090
+    uid: prometheus
+    isDefault: true
+    editable: false

@@ -1,0 +1,19 @@
+# configs/pi/alertmanager/alertmanager.yml — routes every alert to one Discord channel.
+# The webhook is read from a SEPARATE gitignored file (webhook_url_file) so no secret ever
+# lands in this committed config. That file must exist (setup-pi.sh creates it, empty if you
+# skipped it); until it holds a real URL, Alertmanager runs fine but can't deliver. [R21]
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: discord
+  group_by: ['alertname', 'instance']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: discord
+    discord_configs:
+      - webhook_url_file: /etc/alertmanager/discord-webhook-url
+        send_resolved: true

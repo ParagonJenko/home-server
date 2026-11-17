@@ -1,0 +1,75 @@
+# configs/pi/prometheus/prometheus.yml — scrape + alerting config for the Pi stack.
+# Mounted at /etc/prometheus/prometheus.yml by docker-compose.yaml; alerts.yml is mounted
+# alongside from ../monitoring/ (one canonical copy of the rules). Every service uses host
+# networking, so targets are host:port. [R11 — alerts inform, they never protect]
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: alertmanager
+    static_configs:
+      - targets: ['localhost:9093']
+
+  # node_exporter on every host (:9100). node_*, lvm_thinpool_* and smartmon_* all arrive
+  # here (the last two via node_exporter's textfile collector on the NUCs).
+  # nuc1/nuc2 show DOWN until H2 installs node_exporter on them — expected, not a fault.
+  - job_name: node
+    static_configs:
+      - targets: ['localhost:9100']
+        labels: { instance: pi }
+      - targets: ['192.168.1.2:9100']
+        labels: { instance: nuc1 }
+      - targets: ['192.168.1.3:9100']
+        labels: { instance: nuc2 }
+
+  # HTTP up/down probes via the blackbox exporter (:9115). Add service URLs as you build
+  # them; a target for a service that doesn't exist yet shows DOWN — comment it out rather
+  # than leave ServiceDown firing about a container that isn't there.
+  - job_name: blackbox-http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://localhost:3000            # grafana (itself)
+          # - https://plex.home.alexjenkinson.com
+          # - https://frigate.home.alexjenkinson.com
+          # - https://sonarr.home.alexjenkinson.com
+          # - https://radarr.home.alexjenkinson.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: localhost:9115
+
+  # Internal DNS health: ask AdGuard (:53 on the Pi) to resolve a *.home name. job="dns"
+  # feeds the InternalDNSBroken alert — probe_success == 0 means AdGuard is up but not
+  # resolving internal names.
+  - job_name: dns
+    metrics_path: /probe
+    params:
+      module: [dns_home]
+    static_configs:
+      - targets: ['127.0.0.1:53']            # AdGuard on the Pi
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: localhost:9115

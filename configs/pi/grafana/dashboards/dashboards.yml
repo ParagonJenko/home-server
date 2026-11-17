@@ -1,0 +1,15 @@
+# configs/pi/grafana/dashboards/dashboards.yml — dashboard provider. Grafana loads every
+# *.json in the path below on boot and keeps it in sync, so the Homelab overview is
+# provisioned from the repo (edits in the UI don't persist — change the JSON and redeploy).
+apiVersion: 1
+providers:
+  - name: homelab
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

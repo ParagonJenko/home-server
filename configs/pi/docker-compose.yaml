@@ -30,6 +30,7 @@ services:
   blackbox:
     image: prom/blackbox-exporter:latest
     network_mode: host
+    volumes: [ ./blackbox:/etc/blackbox_exporter ]    # http_2xx + dns_home modules (prometheus dns job)
     restart: unless-stopped
   node_exporter:
     image: prom/node-exporter:latest
