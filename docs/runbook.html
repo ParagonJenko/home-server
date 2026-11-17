@@ -1991,20 +1991,31 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: PBS VM · shell\n./configs/pbs/offsite-sync.sh --install-timer"
+            "manual": {
+              "where": "Backblaze B2 console",
+              "lead": "Create the bucket + key first; have them ready for the setup script. Skip if you already made them.",
+              "steps": [
+                "<strong>Create a Bucket</strong> → <em>Private</em>. Note the exact name (B2 bucket names are globally unique, so yours may have a suffix).",
+                "<strong>Lifecycle Settings → \"Keep only the last version of the file\".</strong> <code class=\"inline\">rclone sync</code> mirrors deletes as <em>hidden</em> versions; without this, every pruned chunk lingers as a hidden copy and quietly grows the bill. This keeps B2 ≈ the datastore size.",
+                "<strong>Application Keys → Add a New Application Key</strong>, restricted to <em>that bucket</em> (least privilege). Copy the <strong>keyID</strong> and <strong>applicationKey</strong> — the applicationKey is shown only once."
+              ]
+            }
           },
           {
             "callout": "note",
-            "title": "Context",
-            "html": "<p>Push the datastore to encrypted cloud object storage (Backblaze B2 or S3 via rclone, or a remote PBS), scheduled daily after the backup window:</p>"
+            "title": "Context — this runs on the PBS VM",
+            "html": "<p>The datastore lives inside the PBS VM, so the sync runs there (not on a NUC). <code class=\"inline\">offsite-setup.sh</code> takes the B2 creds, writes the rclone remote and tests it; <code class=\"inline\">offsite-sync.sh</code> mirrors the datastore up daily after the backup window.</p>"
           },
           {
-            "cmd": "# @where: PBS VM · shell\n# in the PBS VM\nrclone config            # add the cloud remote, with a crypt layer over it\n# schedule: datastore -> crypt:remote, daily after the backup window\nsystemctl list-timers | grep offsite   # or the sync-job in configs/pbs/"
+            "cmd": "# @where: PBS VM · shell — get the repo + configure the remote from your B2 creds:\napt update && apt install -y rclone git\ngit clone https://github.com/ParagonJenko/home-server && cd home-server\n./configs/pbs/offsite-setup.sh"
+          },
+          {
+            "cmd": "# @where: PBS VM · shell — first real sync, then schedule it daily (05:00):\n./configs/pbs/offsite-sync.sh --run\n./configs/pbs/offsite-sync.sh --install-timer"
           },
           {
             "callout": "danger",
-            "title": "Encrypt before it leaves the building",
-            "html": "The datastore holds everything. Use client-side encryption (PBS datastore encryption or rclone crypt) so the provider never sees plaintext. That key is a secret — it goes in the vault (J2); lose it and the offsite copy is unrecoverable."
+            "title": "It's already encrypted — the job is to keep the key",
+            "html": "<p>The datastore is client-side encrypted from G5, so B2 only ever sees ciphertext — PBS encryption already satisfies \"encrypt before it leaves.\" <code class=\"inline\">offsite-setup.sh</code> offers an optional rclone <em>crypt</em> layer that also hides filenames and structure, at the cost of a second key to keep.</p><p>The keys are what make the offsite copy readable. <span class=save>Vault the G5 datastore key AND (if you add it) the rclone crypt password (R21/J2)</span> — lose them and the cloud copy is unrecoverable.</p>"
           },
           {
             "callout": "note",

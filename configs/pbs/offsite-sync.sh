@@ -3,6 +3,7 @@
 # (Backblaze B2 / S3 via rclone, or a remote PBS). Scheduled daily after the backup
 # window. Without this the only copy is the single USB HDD in the same room (R4 R17). [R3]
 set -euo pipefail
+source "$(dirname "$0")/../lib/common.sh"   # loads ~/.homelab.env -> OFFSITE_REMOTE set by offsite-setup.sh
 
 # rclone config lives in ~/.config/rclone/rclone.conf (GITIGNORED — holds the remote creds).
 # Use a crypt remote over the cloud remote so the provider never sees plaintext.
