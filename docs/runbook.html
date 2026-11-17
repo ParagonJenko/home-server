@@ -1701,13 +1701,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: NUC-2 · host shell — BEFORE you run it, check local-lvm headroom:\nlvs"
+            "cmd": "# @where: NUC-2 · host shell — run from the repo (does host + container checks):\n./configs/frigate/verify-frigate.sh"
           },
-          "local-lvm on NUC-2 needs room for 260G (Frigate) + 16G (PBS) + 32G (Home Assistant), with headroom left.",
-          {
-            "cmd": "# @where: NUC-2 · host shell — AFTER it's up, health-check Frigate:\npct exec 111 -- bash /opt/frigate/verify-frigate.sh"
-          },
-          "verify-frigate checks the container's up, all four cameras are in the loaded config, :5000 is NOT exposed (R13), the iGPU decode + recordings path work, and each camera's live stream. A camera you haven't set up yet shows a WARN, not a fail."
+          "One command, run on the host: first the local-lvm thin pool (260G Frigate + 16G PBS + 32G HA fit, and data/metadata % aren't near full — R6/R8/R9), then it reaches into CT 111 for the container — up, :8971 UI, :5000 NOT exposed (R13), all four cameras in the loaded config, each camera's live stream, iGPU decode, recordings writable. Run it before the build too (the pool check still applies; it just notes the container isn't there yet). A camera you haven't set up shows a WARN, not a fail."
         ]
       },
       {

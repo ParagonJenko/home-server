@@ -49,7 +49,6 @@ say "deploy Frigate compose + config"
 pct exec "$CTID" -- mkdir -p /opt/frigate/config
 pct push "$CTID" ../frigate/docker-compose.yaml /opt/frigate/docker-compose.yaml
 pct push "$CTID" ../frigate/config.yaml /opt/frigate/config/config.yaml    # compose mounts /opt/frigate/config -> /config
-pct push "$CTID" ../frigate/verify-frigate.sh /opt/frigate/verify-frigate.sh
 
 # Eufy RTSP creds -> gitignored .env (one user/pass, shared by all four cameras). Prompt once.
 if ! grep -q '^FRIGATE_RTSP_PASSWORD=.' ../frigate/.env 2>/dev/null; then
