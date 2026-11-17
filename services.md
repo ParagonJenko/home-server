@@ -13,6 +13,7 @@ The service map and the Nginx routing table. Every proxied service has two DNS n
 | Plex | nuc1 | LXC 220 | 32400 | via front name |
 | AMP | nuc1 | LXC 230 | TBD | — |
 | Frigate | nuc2 | LXC 111 | 8971 (auth UI), 5000 (**unauth — never expose**) | via front name |
+| Home Assistant | nuc2 | VM 910 | 8123 | — (direct; proxy needs HA's `trusted_proxies`) |
 | PBS | nuc2 | VM 900 | 8007 | — |
 | AdGuard | pi | — | 53 (DNS), 8081 (admin) | — |
 | Grafana | pi | — | 3000 | — |

@@ -32,6 +32,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | plex — LXC 220 | reserved | `192.168.1.22` | TBD | plex-lxc.home (front: plex.home) | Backend name points here; front points at Nginx |
 | amp — LXC 230 | reserved | `192.168.1.23` | TBD | amp.home (add when installed) | |
 | frigate — LXC 111 (nuc2, privileged) | reserved | `192.168.1.24` | TBD | frigate-lxc.home (front: frigate.home) | Port 5000 is unauthenticated — never proxy/expose |
+| homeassistant — VM 910 (nuc2) | reserved | `192.168.1.25` | TBD | homeassistant.home | Accessed directly on :8123 (not proxied). Proxying needs `use_x_forwarded_for` + `trusted_proxies` in HA's config |
 | cam-living-room | reserved | `192.168.1.30` | TBD | cam-living-room.home | Frigate opens RTSP by name — a lost reservation breaks recording |
 | cam-kitchen | reserved | `192.168.1.31` | TBD | cam-kitchen.home | |
 | cam-bedroom | reserved | `192.168.1.32` | TBD | cam-bedroom.home | |
@@ -43,7 +44,7 @@ Three groups — nothing resolves without all three. `configs/pi/adguard-rewrite
 
 1. **Front names → Nginx's IP** (`.20`): `plex.home`, `frigate.home`, `sonarr.home`, `radarr.home`, `bazarr.home`, `prowlarr.home`, `qbittorrent.home`.
 2. **Backend names → the container's own IP**: `plex-lxc.home`, `frigate-lxc.home`, `media-pipeline.home`.
-3. **Hosts & cameras → their own IP**: `cam-*.home`, `nuc1`, `nuc2`, `pbs`, `pi.home`.
+3. **Hosts & cameras → their own IP**: `cam-*.home`, `homeassistant.home`, `nuc1`, `nuc2`, `pbs`, `pi.home`.
 
 ## Resolver policy
 

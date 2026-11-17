@@ -1594,10 +1594,10 @@ var STAGES = [
   },
   {
     "id": "G",
-    "name": "Frigate + PBS",
+    "name": "Frigate · HA · PBS",
     "where": "NUC-2",
-    "title": "Frigate and backups",
-    "intro": "NUC-2 (S12 Pro) carries the cameras and the backup server. Nothing here depends on NUC-1 — but do G5's test restore before you consider the build finished.",
+    "title": "Frigate, Home Assistant and backups",
+    "intro": "NUC-2 (S12 Pro) carries the cameras, home automation and the backup server. Nothing here depends on NUC-1 — but do G6's test restore before you consider the build finished.",
     "steps": [
       {
         "id": "G1",
@@ -1648,11 +1648,53 @@ var STAGES = [
           {
             "cmd": "# @where: NUC-2 · host shell\nlvs"
           },
-          "Before running Frigate: local-lvm on NUC-2 has room for 260G plus the PBS VM's 16G, with headroom left."
+          "Before running Frigate: local-lvm on NUC-2 has room for 260G (Frigate) + 16G (PBS) + 32G (Home Assistant), with headroom left."
         ]
       },
       {
         "id": "G2",
+        "type": "script",
+        "title": "configs/homeassistant/haos-vm.sh (VMID 910) — Home Assistant OS",
+        "rules": [
+          "R6",
+          "R13",
+          "R4"
+        ],
+        "body": [
+          {
+            "cmd": "# @where: NUC-2 · host shell\n./configs/homeassistant/haos-vm.sh"
+          },
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>HAOS ships a prebuilt UEFI qcow2 image — the script downloads <code class=\"inline\">haos_ova-18.3.qcow2.xz</code>, imports it as the boot disk and starts VM 910. No installer ISO, unlike PBS. Bump <code class=\"inline\">HAOS_VER</code> at the top of the script to the latest <a href=\"https://github.com/home-assistant/operating-system/releases\">release</a> before running.</p>"
+          },
+          {
+            "callout": "manual",
+            "title": "Manual — onboarding + address",
+            "html": "<p>Open <code class=\"inline\">http://homeassistant.home:8123</code> (or the VM's IP until DNS is set) and create the owner account. <span class=save>Save the HA admin login and a long-lived access token to the vault (R21).</span></p><p><strong>Address by name, not IP (R13):</strong> add a DHCP reservation for VM 910 → <code class=\"inline\">192.168.1.25</code> and the matching AdGuard rewrite at <a href=\"#stage-D\">Stage D</a>. <code class=\"inline\">homeassistant.home</code> is a group-3 (own-IP) name, already in network.md.</p>"
+          },
+          {
+            "callout": "note",
+            "title": "No USB radio in this build",
+            "html": "<p>There's no Zigbee/Z-Wave dongle, so the VM needs no device passthrough and isn't pinned to the host. Matter and Zigbee here are network-attached (a LAN coordinator, or cloud integrations). To add a dongle later: <code class=\"inline\">qm set 910 --usb0 host=&lt;vendor:product&gt;</code> — the VM then pins to whichever NUC it's plugged into, so keep it on nuc2.</p>"
+          },
+          {
+            "callout": "note",
+            "title": "Why nuc2, and why direct (not proxied)",
+            "html": "<p>HA sits beside Frigate because the Frigate integration consumes its events over the LAN; keeping both on nuc2 means a nuc1 media-stack reboot never touches home automation. HA is reached directly on <code class=\"inline\">:8123</code> — fronting it through Nginx works but needs <code class=\"inline\">http: use_x_forwarded_for</code> + <code class=\"inline\">trusted_proxies</code> in HA's <code class=\"inline\">configuration.yaml</code>, or every login is rejected as proxied. Left direct by choice; Tailscale is the path from outside (R20).</p>"
+          }
+        ],
+        "verify": [
+          {
+            "cmd": "# @where: NUC-2 · host shell\n./configs/homeassistant/verify-ha.sh"
+          },
+          "VM 910 runs, onboots, the guest agent answers, :8123 serves, and a backup job covers it. Then take one backup of VM 910 by hand and confirm it lands in PBS (R4)."
+        ],
+        "device": "NUC-2"
+      },
+      {
+        "id": "G3",
         "type": "manual",
         "title": "Attach the USB HDD for PBS",
         "body": [
@@ -1666,7 +1708,7 @@ var STAGES = [
         "verify": "You have a <code class=\"inline\">/dev/disk/by-id/…</code> path for the HDD. <span class=save>Put it in <em>Your values</em> and in the disk register</span> at <a href=\"#stage-INV\">Stage 0</a> — <code class=\"inline\">by-id</code> is stable across reboots, <code class=\"inline\">/dev/sdX</code> is not."
       },
       {
-        "id": "G3",
+        "id": "G4",
         "type": "script",
         "title": "configs/pbs/pbs-vm.sh (VMID 900) — USB HDD passed through as a block device",
         "rules": [
@@ -1708,7 +1750,7 @@ var STAGES = [
         ]
       },
       {
-        "id": "G4",
+        "id": "G5",
         "type": "run",
         "title": "Point both NUCs' backups at PBS",
         "rules": [
@@ -1738,7 +1780,7 @@ var STAGES = [
         "device": "Each NUC"
       },
       {
-        "id": "G5",
+        "id": "G6",
         "type": "verify",
         "title": "Test restore",
         "rules": [
@@ -1772,7 +1814,7 @@ var STAGES = [
         "device": "NUC-1"
       },
       {
-        "id": "G6",
+        "id": "G7",
         "type": "script",
         "title": "configs/pbs/offsite-sync.sh — PBS datastore synced offsite to cloud",
         "rules": [

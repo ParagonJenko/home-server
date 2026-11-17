@@ -26,6 +26,7 @@ The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headr
 | nginx (LXC 240) rootfs | nuc1 local-lvm | TBD G | — |
 | frigate (LXC 111) rootfs | nuc2 local-lvm | 260 G | Prunes oldest (14-day motion retention) |
 | pbs (VM 900) system disk | nuc2 local-lvm | 16 G | — |
+| homeassistant (VM 910) system disk | nuc2 local-lvm | 32 G | — |
 | Downloads (`/data/torrents`) | mergerfs pool | mergerfs `minfreespace` | qBittorrent pauses; Arrs stop grabbing (Min Free Space) |
 | Media library (`/data/library`) | mergerfs pool (~7.2T) | mergerfs `minfreespace` | — |
 | PBS datastore | USB HDD (2T) | retention: keep-daily 7, keep-weekly 4, keep-monthly 6 + prune/GC | Oldest pruned |
