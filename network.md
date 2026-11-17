@@ -4,7 +4,7 @@ Owns every MAC and IP, and the DNS rewrite groups. Update in the same change as 
 
 ## Addressing plan
 
-Router `192.168.1.1`, /24, DHCP pool `.20`–`.253`. That leaves `.2`–`.19` outside the pool for the static block.
+Router `192.168.1.1`, /24, DHCP **dynamic pool `.40`–`.253`**. The reserved blocks sit *outside* the dynamic pool on purpose — `.2`–`.19` for static infra and `.20`–`.39` for container/camera reservations — so the router can never hand a dynamic lease to an address something is reserved at. (If the pool starts at `.20`, dynamic clients land on the reservation band and reservations fight the pool — set Pool Start to `.40`.) Router's handed-out **DNS = the Pi (`192.168.1.4`), secondary empty** (R14).
 
 | Band | Use |
 |---|---|
