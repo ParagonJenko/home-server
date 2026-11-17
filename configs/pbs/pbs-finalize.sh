@@ -34,6 +34,14 @@ need_ssh(){ ssh_ok || { err "Can't SSH to ${PBS_USER}@${PBS_HOST} — run: $0 se
 # -- 1. boot order (host-side) ------------------------------------------------
 boot_switch() {
   need_vm
+  # Guard: never eject the ISO unless PBS is actually installed and answering. Otherwise we'd
+  # point boot at a blank disk and the VM lands in "unknown filesystem" at the next reboot.
+  if ! curl -sk -o /dev/null --max-time 5 "https://${PBS_HOST}:8007/" 2>/dev/null; then
+    err "PBS isn't answering on ${PBS_HOST}:8007 — the install hasn't finished."
+    warn "Run the PBS installer in the VM console first (target the 16G disk), then re-run this."
+    warn "Ejecting the ISO now would leave the VM booting a blank disk ('unknown filesystem')."
+    return 1
+  fi
   hdr "boot order: switch off the installer ISO"
   local boot; boot="$(qm config "$VMID" 2>/dev/null | awk -F': ' '/^boot:/{print $2}')"
   if echo "$boot" | grep -q ide2; then
@@ -118,6 +126,6 @@ EOF
     ;;
   boot-switch) boot_switch ;;
   datastore)   datastore ;;
-  finalize)    boot_switch; datastore ;;
+  finalize)    boot_switch && datastore ;;
   *) echo "usage: $0 [setup-ssh | finalize | boot-switch | datastore]"; exit 1 ;;
 esac
