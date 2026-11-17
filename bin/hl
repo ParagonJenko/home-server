@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# hl — homelab CLI. Day-2 operations wrapper. Run it on whichever box; the box-specific
+# commands check where they are. Install once per box:  ln -s "$PWD/bin/hl" /usr/local/bin/hl
+# Full procedures (adding guests, DNS/DHCP changes, recovery) are in runbooks/operations.md.
+set -uo pipefail
+REPO="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+
+G=$'\e[1;92m'; Y=$'\e[1;93m'; C=$'\e[1;96m'; R=$'\e[1;91m'; B=$'\e[1m'; Z=$'\e[0m'
+say(){ echo "${C}==>${Z} $*"; }
+warn(){ echo "${Y}$*${Z}"; }
+err(){ echo "${R}$*${Z}" >&2; }
+confirm(){ local a; read -rp "${Y}$1 [y/N]:${Z} " a; [[ "$a" == [yY]* ]]; }
+
+# Static infra addresses (stable; work even when DNS is down — that's when you need this most).
+box_addr(){ case "$1" in
+  pi) echo 192.168.1.4;; nuc1) echo 192.168.1.2;; nuc2) echo 192.168.1.3;;
+  pbs) echo 192.168.1.5;; ha) echo 192.168.1.25;; *) return 1;; esac; }
+
+is_pve(){ command -v pct >/dev/null 2>&1; }
+is_pi(){ [ -d /opt/pi-stack ]; }
+is_pbs(){ command -v proxmox-backup-manager >/dev/null 2>&1; }
+
+usage(){ cat <<EOF
+${B}hl${Z} — homelab ops CLI   (repo: ${REPO})
+
+  ${B}hl status${Z}              what's running here + reachability of the other boxes
+  ${B}hl ssh <box> [cmd]${Z}     ssh to pi|nuc1|nuc2|pbs|ha  (optionally run a command)
+  ${B}hl enter <id>${Z}          pct enter a container        (PVE host)
+  ${B}hl start|stop|restart <id>${Z}   control a guest        (PVE host)
+  ${B}hl logs <id|service>${Z}   guest console log, or a Pi docker service's logs
+  ${B}hl update${Z}              update this box (apt / docker), with confirm
+  ${B}hl backup <id>${Z}         back a guest up to PBS right now   (PVE host)
+  ${B}hl dns${Z}                 re-apply AdGuard rewrites from network.md   (Pi)
+  ${B}hl verify <STEP>${Z}       run ./configs/verify.sh <STEP>
+  ${B}hl help${Z}                this
+
+Adding a VM/container, DNS/DHCP changes, recovery: ${B}runbooks/operations.md${Z}.
+EOF
+}
+
+cmd_status(){
+  say "this box: $(hostname)  ${B}$(is_pbs && echo PBS; is_pi && echo 'Pi (pi-stack)'; is_pve && echo 'Proxmox host')${Z}"
+  if is_pve; then
+    echo "${B}containers:${Z}"; pct list 2>/dev/null
+    echo "${B}VMs:${Z}";        qm  list 2>/dev/null
+    echo "${B}thin pool:${Z}";  lvs --noheadings -o lv_name,data_percent,metadata_percent pve/data 2>/dev/null | sed 's/^/  /'
+  fi
+  if is_pi; then
+    echo "${B}pi-stack:${Z}"; (cd /opt/pi-stack && docker compose ps 2>/dev/null)
+  fi
+  if is_pbs; then
+    echo "${B}datastores:${Z}"; proxmox-backup-manager datastore list 2>/dev/null
+  fi
+  echo "${B}reachability:${Z}"
+  for b in pi nuc1 nuc2 pbs ha; do
+    a="$(box_addr "$b")"
+    if ping -c1 -W1 "$a" >/dev/null 2>&1; then echo "  ${G}up${Z}   ${b} (${a})"; else echo "  ${R}down${Z} ${b} (${a})"; fi
+  done
+}
+
+cmd_ssh(){
+  local box="${1:-}"; shift || true
+  local a; a="$(box_addr "$box")" || { err "unknown box '${box}' (pi|nuc1|nuc2|pbs|ha)"; exit 1; }
+  if [ "$box" = ha ]; then set -- ssh -p 22222 "root@${a}" "$@"; else set -- ssh "root@${a}" "$@"; fi
+  say "${*}"; "$@"
+}
+
+need_pve(){ is_pve || { err "this command runs on a Proxmox host (nuc1/nuc2)."; exit 1; }; }
+
+cmd_enter(){ need_pve; pct enter "${1:?usage: hl enter <ctid>}"; }
+
+cmd_ctl(){ # start|stop|restart <id>
+  need_pve; local act="$1" id="${2:?usage: hl ${1} <id>}"
+  local kind; if pct status "$id" >/dev/null 2>&1; then kind=pct; elif qm status "$id" >/dev/null 2>&1; then kind=qm; else err "no guest ${id} here"; exit 1; fi
+  case "$act" in
+    start)   $kind start "$id";;
+    stop)    confirm "stop ${kind} ${id}?" && $kind shutdown "$id";;
+    restart) confirm "restart ${kind} ${id}?" && $kind reboot "$id";;
+  esac
+}
+
+cmd_logs(){ # container console, or Pi docker service
+  local t="${1:?usage: hl logs <ctid|vmid|service>}"
+  if is_pve && [[ "$t" =~ ^[0-9]+$ ]]; then
+    if pct status "$t" >/dev/null 2>&1; then pct exec "$t" -- journalctl -n 100 --no-pager 2>/dev/null || journalctl -u "pve-container@${t}" -n 100 --no-pager
+    else qm terminal "$t"; fi
+  elif is_pi; then (cd /opt/pi-stack && docker compose logs --tail 100 "$t")
+  else err "give a container/VM id on a PVE host, or a docker service name on the Pi."; exit 1; fi
+}
+
+cmd_update(){
+  if is_pi; then
+    confirm "update the Pi (apt upgrade + docker pull + recreate the stack)?" || exit 0
+    apt update && apt -y upgrade
+    (cd /opt/pi-stack && docker compose pull && docker compose up -d)
+  elif is_pve || is_pbs; then
+    confirm "apt dist-upgrade this host?" || exit 0
+    apt update && apt -y dist-upgrade
+    warn "reboot if the kernel changed:  reboot"
+  else
+    confirm "apt upgrade here?" || exit 0; apt update && apt -y upgrade
+  fi
+}
+
+cmd_backup(){ need_pve; local id="${1:?usage: hl backup <id>}"
+  confirm "vzdump ${id} to pbs-backup now?" || exit 0
+  vzdump "$id" --storage pbs-backup --mode snapshot
+}
+
+cmd_dns(){ is_pi || { err "run this on the Pi (it holds AdGuard)."; exit 1; }
+  say "re-applying AdGuard rewrites from network.md"
+  "${REPO}/configs/pi/adguard-rewrites.py" --apply
+}
+
+cmd_verify(){ "${REPO}/configs/verify.sh" "${1:?usage: hl verify <STEP>}"; }
+
+case "${1:-help}" in
+  status)  cmd_status;;
+  ssh)     shift; cmd_ssh "$@";;
+  enter)   shift; cmd_enter "$@";;
+  start|stop|restart) cmd_ctl "$1" "${2:-}";;
+  logs)    shift; cmd_logs "$@";;
+  update)  cmd_update;;
+  backup)  shift; cmd_backup "$@";;
+  dns)     cmd_dns;;
+  verify)  shift; cmd_verify "$@";;
+  help|-h|--help) usage;;
+  *) err "unknown command '${1}'"; echo; usage; exit 1;;
+esac
