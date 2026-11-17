@@ -1160,7 +1160,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Two scripts deviate, on purpose",
-            "html": "<ul><li><code class=\"inline\">frigate.sh</code> is <strong>privileged</strong> (<code class=\"inline\">--unprivileged 0 --features nesting=1</code>) for direct iGPU access — the render-node GID mapping in an unprivileged container is a recurring source of silent decode failures. A deliberate security tradeoff on a container running nothing but Frigate. <code class=\"inline\">keyctl</code> is omitted because privileged containers don't need it for Docker.</li><li><code class=\"inline\">amp-nginx.sh</code> sets <strong>no <code class=\"inline\">--features</code> at all</strong> — AMP and Nginx are native installs, no Docker, so neither flag applies.</li></ul>"
+            "html": "<ul><li><code class=\"inline\">frigate.sh</code> is <strong>privileged</strong> (<code class=\"inline\">--unprivileged 0 --features nesting=1</code>) for direct iGPU access — the render-node GID mapping in an unprivileged container is a recurring source of silent decode failures. A deliberate security tradeoff on a container running nothing but Frigate. <code class=\"inline\">keyctl</code> is omitted because privileged containers don't need it for Docker.</li><li><code class=\"inline\">nginx.sh</code> and <code class=\"inline\">amp.sh</code> set <strong>no <code class=\"inline\">--features</code> at all</strong> — Nginx and AMP are native installs, no Docker, so neither flag applies.</li></ul>"
           }
         ]
       }
@@ -1509,7 +1509,7 @@ var STAGES = [
       {
         "id": "E3",
         "type": "script",
-        "title": "configs/lxc/amp-nginx.sh — AMP (230) and Nginx (240)",
+        "title": "configs/lxc/nginx.sh (VMID 240) — reverse proxy + wildcard TLS",
         "rules": [
           "R13",
           "R19",
@@ -1517,32 +1517,16 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/amp-nginx.sh"
+            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/nginx.sh"
           },
           {
             "callout": "note",
             "title": "What this does",
-            "html": "<p>Creates Nginx (240) and AMP (230) — native installs, no Docker, neither needs the media mount. Nginx comes up serving its default page; it does <strong>not</strong> switch to HTTPS here, because the wildcard cert needs your Cloudflare token (step 2). AMP is installed by hand (step 1) — its installer is interactive and vendor-managed, which is also why it isn't pinned.</p>"
+            "html": "<p>Creates Nginx (240) — native, no Docker, no media mount. It comes up serving its default page; it does <strong>not</strong> switch to HTTPS here, because the wildcard cert needs your Cloudflare token (next). The proxy config + TLS tooling are staged in <code class=\"inline\">/opt/nginx</code>.</p>"
           },
           {
             "callout": "note",
-            "title": "1 · Install AMP (CubeCoders)",
-            "html": "<p>AMP is a web control panel for running game servers (Minecraft, etc.). Enter the container and run CubeCoders' installer. <code class=\"inline\">amp-nginx.sh</code> installs <code class=\"inline\">curl</code> in the container for this; if you built it earlier, run <code class=\"inline\">apt-get update &amp;&amp; apt-get install -y curl ca-certificates</code> inside it first.</p>"
-          },
-          {
-            "cmd": "# @where: NUC-1 · host shell\npct enter 230"
-          },
-          {
-            "cmd": "# inside the container — CubeCoders' installer (interactive):\nbash <(curl -fsSL https://cubecoders.com/getamp.sh)"
-          },
-          {
-            "callout": "manual",
-            "title": "At the installer's prompts",
-            "html": "<p>Let it create the <code class=\"inline\">amp</code> user and install the <strong>ADS</strong> (AMP's controller). When it asks for a licence, paste your AMP key — the free tier covers one instance (sign up at <a href=\"https://cubecoders.com/AMP\">cubecoders.com/AMP</a>). Finish, <code class=\"inline\">exit</code> the container, and note the panel URL it prints (default <code class=\"inline\">http://&lt;amp-ip&gt;:8080</code>). Give AMP a DHCP reservation + AdGuard rewrite and add it to network.md (R13).</p><p><strong>Answer the installer's prompts:</strong> <code class=\"inline\">N</code> to <em>install Docker</em> (LXC 230 is unprivileged with no nesting — Docker won't run; AMP runs instances natively, fine for a single user); <code class=\"inline\">N</code> to <em>Enable HTTPS</em> (it would install its own nginx and want public ports 80/443 against your external IP — that breaks R23; your nginx 240 fronts AMP with the wildcard cert instead). Java / SteamCMD prompts are harmless flexibility — <code class=\"inline\">y</code> is fine.</p>"
-          },
-          {
-            "callout": "note",
-            "title": "2 · Turn on HTTPS (wildcard cert)",
+            "title": "Turn on HTTPS (wildcard cert)",
             "html": "<p>Nginx is staged but still plain HTTP. One Cloudflare token issues a Let's Encrypt wildcard for <code class=\"inline\">*.home.alexjenkinson.com</code> and flips the proxy to 443 (80 redirects up); acme.sh then auto-renews and reloads nginx.</p><p><strong>Create the Cloudflare token</strong> — it needs permission to edit DNS on your zone so acme.sh can prove you own the domain:</p><ol><li>Go to <code class=\"inline\">dash.cloudflare.com</code>, click the profile icon (top-right) → <strong>My Profile</strong>.</li><li>Left menu → <strong>API Tokens</strong> → <strong>Create Token</strong>.</li><li>Find the <strong>Edit zone DNS</strong> template → <strong>Use template</strong>.</li><li>Leave <strong>Permissions</strong> as <code class=\"inline\">Zone · DNS · Edit</code>.</li><li>Set <strong>Zone Resources</strong> to <code class=\"inline\">Include · Specific zone · alexjenkinson.com</code>.</li><li><strong>Continue to summary</strong> → <strong>Create Token</strong> → copy it (shown once).</li></ol><p>Then run the command below with that token. The challenge adds a temporary <code class=\"inline\">_acme-challenge.home</code> TXT record and deletes it straight after — your blog's DNS isn't touched.</p>"
           },
           {
@@ -1568,10 +1552,48 @@ var STAGES = [
           {
             "cmd": "# @where: NUC-1 · host shell — proxy + TLS health:\npct exec 240 -- bash /opt/nginx/verify-nginx.sh"
           },
-          {
-            "cmd": "# AMP health:\npct exec 230 -- bash /opt/amp/verify-amp.sh"
-          },
           "verify-nginx confirms the cert covers the wildcard and every front name redirects 80→443 and serves valid TLS; a 502 there means TLS is fine but that service's container is down. A passing <code class=\"inline\">nginx -t</code> alone only means syntax — routing still needs the Pi resolving the names."
+        ]
+      },
+      {
+        "id": "E4",
+        "type": "script",
+        "title": "configs/lxc/amp.sh (VMID 230) — AMP game-server panel",
+        "rules": [
+          "R13",
+          "R19"
+        ],
+        "body": [
+          {
+            "cmd": "# @where: NUC-1 · host shell\n./configs/lxc/amp.sh"
+          },
+          {
+            "callout": "note",
+            "title": "What this does",
+            "html": "<p>Creates AMP's container (230) — native, no Docker, no media mount — and pushes its verify script. AMP itself is installed by hand: its installer is interactive and vendor-managed (which is why it isn't pinned). <code class=\"inline\">amp.sh</code> installs <code class=\"inline\">curl</code> for the installer; if you built the container earlier, run <code class=\"inline\">apt-get update &amp;&amp; apt-get install -y curl ca-certificates</code> inside it first.</p>"
+          },
+          {
+            "callout": "note",
+            "title": "Install AMP (CubeCoders)",
+            "html": "<p>AMP is a web control panel for running game servers (Minecraft, etc.). Enter the container and run CubeCoders' installer:</p>"
+          },
+          {
+            "cmd": "# @where: NUC-1 · host shell\npct enter 230"
+          },
+          {
+            "cmd": "# inside the container — CubeCoders' installer (interactive):\nbash <(curl -fsSL https://cubecoders.com/getamp.sh)"
+          },
+          {
+            "callout": "manual",
+            "title": "At the installer's prompts",
+            "html": "<p>Let it create the <code class=\"inline\">amp</code> user and install the <strong>ADS</strong> (AMP's controller). When it asks for a licence, paste your AMP key — the free tier covers one instance (sign up at <a href=\"https://cubecoders.com/AMP\">cubecoders.com/AMP</a>). Finish, <code class=\"inline\">exit</code> the container, and note the panel URL it prints (default <code class=\"inline\">http://&lt;amp-ip&gt;:8080</code>). Give AMP a DHCP reservation + AdGuard rewrite and add it to network.md (R13).</p><p><strong>Key answers:</strong> <code class=\"inline\">N</code> to <em>install Docker</em> (LXC 230 is unprivileged with no nesting — Docker won't run; AMP runs instances natively, fine for a single user); <code class=\"inline\">N</code> to <em>Enable HTTPS</em> (it would install its own nginx and want public ports 80/443 against your external IP — that breaks R23; nginx 240 fronts AMP with the wildcard cert instead). Java / SteamCMD prompts are harmless flexibility — <code class=\"inline\">y</code> is fine.</p>"
+          }
+        ],
+        "verify": [
+          {
+            "cmd": "# @where: NUC-1 · host shell — AMP health:\npct exec 230 -- bash /opt/amp/verify-amp.sh"
+          },
+          "verify-amp confirms the amp user, ampinstmgr, a running instance, and the ADS panel answering on :8080."
         ]
       }
     ]

@@ -27,6 +27,7 @@ run ./configs/lxc/media-pipeline.sh                # E1
 pause "Inside LXC 210: ./configs/lxc/_install-docker.sh, push the compose, up -d, then arr-setup.py"
 run ./configs/lxc/plex.sh                          # E2
 pause "Sign in to Plex; add libraries at /library/movies and /library/tv"
-run ./configs/lxc/amp-nginx.sh                     # E3
+run ./configs/lxc/nginx.sh                         # E3
+run ./configs/lxc/amp.sh                           # E4
 
 echo "=== NUC-1 done. Next: ./bootstrap-nuc2.sh, then the Pi's monitoring (Stage H). ==="
