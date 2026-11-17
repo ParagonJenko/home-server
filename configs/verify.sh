@@ -71,6 +71,21 @@ case "$STEP" in
       no_ "Discord webhook not set — paste it into /opt/pi-stack/alertmanager/discord-webhook-url before H1"
     fi
     ;;
+  H1)
+    for c in grafana prometheus alertmanager; do
+      docker ps --format '{{.Names}}' 2>/dev/null | grep -qi "$c" \
+        && yes_ "${c} container running" || no_ "${c} container running"
+    done
+    curl -fsS localhost:3000/api/health 2>/dev/null | grep -qiE '"database"[[:space:]]*:[[:space:]]*"ok"' \
+      && yes_ "Grafana health: database ok (:3000)" || no_ "Grafana health (:3000)"
+    curl -fsS localhost:9090/-/healthy 2>/dev/null | grep -qi healthy \
+      && yes_ "Prometheus healthy (:9090)" || no_ "Prometheus healthy (:9090)"
+    curl -fsS localhost:9093/-/healthy >/dev/null 2>&1 \
+      && yes_ "Alertmanager healthy (:9093)" || no_ "Alertmanager healthy (:9093)"
+    curl -fsS localhost:9090/api/v1/targets 2>/dev/null | grep -q '"health":"up"' \
+      && yes_ "Prometheus has a target UP (the pi node; nuc1/nuc2 stay DOWN until H2)" \
+      || no_ "Prometheus targets — none UP yet (datasource/scrape config?)"
+    ;;
   H2)
     curl -s localhost:9100/metrics 2>/dev/null | grep -q lvm_thinpool \
       && yes_ "node_exporter exposes lvm_thinpool" || no_ "lvm_thinpool metric (node_exporter + check-thinpool.sh)"

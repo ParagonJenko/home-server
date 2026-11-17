@@ -2062,7 +2062,12 @@ var STAGES = [
             "html": "Per-LXC disk usage. node_exporter runs on the hosts, and a container's root disk is an LVM volume the host never mounts — so the thin-pool panels are the proxy for Frigate's 260G and everything else on local-lvm."
           }
         ],
-        "verify": "Prometheus → Status → Targets shows prometheus, alertmanager, grafana and the pi node target UP. <strong>nuc1 and nuc2 stay DOWN until H2</strong> installs node_exporter on them — expected here, not a fault. Probes for services you haven't built yet will also be DOWN; comment those targets out of prometheus.yml rather than leaving alerts firing about a container that doesn't exist.",
+        "verify": [
+          {
+            "cmd": "# @where: Pi · shell\n./configs/verify.sh H1"
+          },
+          "Checks grafana / prometheus / alertmanager are running and healthy (<code class=\"inline\">:3000</code>/<code class=\"inline\">:9090</code>/<code class=\"inline\">:9093</code>) and that Prometheus has a target UP. Then by eye: Prometheus → Status → Targets shows prometheus, alertmanager, grafana and the pi node UP. <strong>nuc1 and nuc2 stay DOWN until H2</strong> installs node_exporter on them — expected here, not a fault. Probes for services you haven't built yet will also be DOWN; comment those targets out of prometheus.yml rather than leaving alerts firing about a container that doesn't exist."
+        ],
         "device": "Pi"
       },
       {
