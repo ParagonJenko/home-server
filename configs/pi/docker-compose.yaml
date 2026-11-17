@@ -50,6 +50,7 @@ services:
     # This image reads ONLY /etc/prometheus/pve.yml (NOT the PVE_* env vars). redeploy.sh renders
     # ./pve/pve.yml from the PVE_* values in .env before 'up'. Mount the DIRECTORY (not the single
     # file): a dir mount of an existing dir is stable and avoids Docker's missing-file->dir trap.
+    user: "0:0"   # run as root so it can read the root:root 600 pve.yml (keeps the token at 600, R21)
     volumes: [ ./pve:/etc/prometheus:ro ]
     restart: unless-stopped
 
