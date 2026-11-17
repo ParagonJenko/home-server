@@ -32,7 +32,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | plex — LXC 220 | reserved | `192.168.1.22` | BC:24:11:2B:4B:45 | plex-lxc.home.alexjenkinson.com (front: plex.home.alexjenkinson.com) | Backend name points here; front points at Nginx |
 | amp — LXC 230 | reserved | `192.168.1.23` | BC:24:11:07:4E:37 | amp.home.alexjenkinson.com | Reached directly on :8080 (not proxied). Proxy later via an nginx server block if you want it under the wildcard |
 | frigate — LXC 111 (nuc2, privileged) | reserved | `192.168.1.24` | BC:24:11:93:A9:FA | frigate-lxc.home.alexjenkinson.com (front: frigate.home.alexjenkinson.com) | Port 5000 is unauthenticated — never proxy/expose |
-| homeassistant — VM 910 (nuc2) | reserved | `192.168.1.25` | bc:24:11:27:42:ce | homeassistant.home.alexjenkinson.com | Accessed directly on :8123 (not proxied). Proxying needs `use_x_forwarded_for` + `trusted_proxies` in HA's config |
+| homeassistant — VM 910 (nuc2) | reserved | `192.168.1.25` | bc:24:11:27:42:ce | homeassistant.home.alexjenkinson.com | Accessed directly on :80 (restored config; HAOS default is 8123). Proxying needs `use_x_forwarded_for` + `trusted_proxies` in HA's config |
 | cam-living-room | reserved | `192.168.1.30` | TBD | cam-living-room.home.alexjenkinson.com | Frigate opens RTSP by name — a lost reservation breaks recording |
 | cam-kitchen | reserved | `192.168.1.31` | TBD | cam-kitchen.home.alexjenkinson.com | |
 | cam-bedroom | reserved | `192.168.1.32` | TBD | cam-bedroom.home.alexjenkinson.com | |
