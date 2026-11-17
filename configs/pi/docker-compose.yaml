@@ -30,11 +30,15 @@ services:
   blackbox:
     image: prom/blackbox-exporter:latest
     network_mode: host
-    volumes: [ ./blackbox:/etc/blackbox_exporter ]    # http_2xx + dns_home modules (prometheus dns job)
+    volumes: [ ./blackbox:/etc/blackbox_exporter ]    # http/https/icmp/dns probe modules
+    cap_add: [ NET_RAW ]                               # required for the icmp prober
     restart: unless-stopped
   node_exporter:
     image: prom/node-exporter:latest
     network_mode: host
+    # textfile collector: picks up smartmon.prom (SMART) written on the Pi host, like the NUCs.
+    command: [ '--collector.textfile.directory=/var/lib/node_exporter/textfile_collector' ]
+    volumes: [ /var/lib/node_exporter/textfile_collector:/var/lib/node_exporter/textfile_collector:ro ]
     restart: unless-stopped
 volumes:
   grafana-data:

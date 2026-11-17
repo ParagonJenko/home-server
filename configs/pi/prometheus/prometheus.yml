@@ -1,7 +1,6 @@
 # configs/pi/prometheus/prometheus.yml — scrape + alerting config for the Pi stack.
-# Mounted at /etc/prometheus/prometheus.yml by docker-compose.yaml; alerts.yml is mounted
-# alongside from ../monitoring/ (one canonical copy of the rules). Every service uses host
-# networking, so targets are host:port. [R11 — alerts inform, they never protect]
+# Mounted at /etc/prometheus/prometheus.yml; alerts.yml is mounted alongside from ../monitoring/.
+# All services use host networking, so targets are host:port. [R11 — alerts inform, never protect]
 global:
   scrape_interval: 30s
   evaluation_interval: 30s
@@ -16,60 +15,69 @@ alerting:
 
 scrape_configs:
   - job_name: prometheus
-    static_configs:
-      - targets: ['localhost:9090']
+    static_configs: [ { targets: ['localhost:9090'] } ]
 
   - job_name: alertmanager
-    static_configs:
-      - targets: ['localhost:9093']
+    static_configs: [ { targets: ['localhost:9093'] } ]
 
-  # node_exporter on every host (:9100). node_*, lvm_thinpool_* and smartmon_* all arrive
-  # here (the last two via node_exporter's textfile collector on the NUCs).
-  # nuc1/nuc2 show DOWN until H2 installs node_exporter on them — expected, not a fault.
+  # node_exporter on every host (:9100). node_*, lvm_thinpool_* and smartmon_* arrive here
+  # (the last two via the textfile collector). nuc1/nuc2 DOWN until H2; pbs DOWN until it runs
+  # node_exporter (L-roadmap). The network panels and SMART graphs come from these.
   - job_name: node
     static_configs:
-      - targets: ['localhost:9100']
-        labels: { instance: pi }
-      - targets: ['192.168.1.2:9100']
-        labels: { instance: nuc1 }
-      - targets: ['192.168.1.3:9100']
-        labels: { instance: nuc2 }
+      - { targets: ['localhost:9100'],     labels: { instance: pi } }
+      - { targets: ['192.168.1.2:9100'],   labels: { instance: nuc1 } }
+      - { targets: ['192.168.1.3:9100'],   labels: { instance: nuc2 } }
+      - { targets: ['192.168.1.5:9100'],   labels: { instance: pbs } }
 
-  # HTTP up/down probes via the blackbox exporter (:9115). Add service URLs as you build
-  # them; a target for a service that doesn't exist yet shows DOWN — comment it out rather
-  # than leave ServiceDown firing about a container that isn't there.
+  # ---- UPTIME: probe every service through the blackbox exporter (:9115) ----
+  # http_up treats a login/redirect/auth wall as "up" (service responding). probe_success==0
+  # for 5m fires ServiceDown. Add a new service's URL here when you build it.
   - job_name: blackbox-http
     metrics_path: /probe
-    params:
-      module: [http_2xx]
+    params: { module: [http_up] }
     static_configs:
-      - targets:
-          - http://localhost:3000            # grafana (itself)
-          # - https://plex.home.alexjenkinson.com
-          # - https://frigate.home.alexjenkinson.com
-          # - https://sonarr.home.alexjenkinson.com
-          # - https://radarr.home.alexjenkinson.com
+      - { targets: ['http://plex-lxc.home.alexjenkinson.com:32400/identity'], labels: { service: plex } }
+      - { targets: ['http://frigate-lxc.home.alexjenkinson.com:8971/'],       labels: { service: frigate } }
+      - { targets: ['http://homeassistant.home.alexjenkinson.com:80/'],       labels: { service: homeassistant } }
+      - { targets: ['http://amp.home.alexjenkinson.com:8080/'],               labels: { service: amp } }
+      - { targets: ['http://media-pipeline.home.alexjenkinson.com:8989/'],    labels: { service: sonarr } }
+      - { targets: ['http://media-pipeline.home.alexjenkinson.com:7878/'],    labels: { service: radarr } }
+      - { targets: ['http://media-pipeline.home.alexjenkinson.com:6767/'],    labels: { service: bazarr } }
+      - { targets: ['http://media-pipeline.home.alexjenkinson.com:9696/'],    labels: { service: prowlarr } }
+      - { targets: ['http://media-pipeline.home.alexjenkinson.com:8080/'],    labels: { service: qbittorrent } }
+      - { targets: ['http://pi.home.alexjenkinson.com:8081/'],                labels: { service: adguard } }
+      - { targets: ['http://localhost:3000/api/health'],                     labels: { service: grafana } }
+      - { targets: ['https://pbs.home.alexjenkinson.com:8007/'],              labels: { service: pbs } }
+      - { targets: ['https://plex.home.alexjenkinson.com/'],                  labels: { service: nginx-tls } }
     relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: localhost:9115
+      - { source_labels: [__address__], target_label: __param_target }
+      - { source_labels: [service],     target_label: instance }
+      - { target_label: __address__,    replacement: localhost:9115 }
 
-  # Internal DNS health: ask AdGuard (:53 on the Pi) to resolve a *.home name. job="dns"
-  # feeds the InternalDNSBroken alert — probe_success == 0 means AdGuard is up but not
-  # resolving internal names.
+  # ---- NETWORK: ICMP reachability + latency (gateway, internet, each box) ----
+  - job_name: blackbox-icmp
+    metrics_path: /probe
+    params: { module: [icmp] }
+    static_configs:
+      - { targets: ['192.168.1.1'], labels: { service: gateway } }
+      - { targets: ['1.1.1.1'],     labels: { service: internet } }
+      - { targets: ['192.168.1.2'], labels: { service: nuc1 } }
+      - { targets: ['192.168.1.3'], labels: { service: nuc2 } }
+      - { targets: ['192.168.1.4'], labels: { service: pi } }
+      - { targets: ['192.168.1.5'], labels: { service: pbs } }
+    relabel_configs:
+      - { source_labels: [__address__], target_label: __param_target }
+      - { source_labels: [service],     target_label: instance }
+      - { target_label: __address__,    replacement: localhost:9115 }
+
+  # Internal DNS health: ask AdGuard (:53) to resolve a *.home name. job=dns feeds InternalDNSBroken.
   - job_name: dns
     metrics_path: /probe
-    params:
-      module: [dns_home]
+    params: { module: [dns_home] }
     static_configs:
-      - targets: ['127.0.0.1:53']            # AdGuard on the Pi
+      - { targets: ['127.0.0.1:53'], labels: { service: adguard-dns } }
     relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: localhost:9115
+      - { source_labels: [__address__], target_label: __param_target }
+      - { source_labels: [service],     target_label: instance }
+      - { target_label: __address__,    replacement: localhost:9115 }

@@ -51,3 +51,27 @@ groups:
         for: 15m
         labels: { severity: warning }
         annotations: { summary: "{{ $labels.instance }} SMART metrics stale (smartmon.sh not running?)" }
+
+      - alert: InternetDown               # ICMP to 1.1.1.1 failing — WAN/upstream is gone
+        expr: probe_success{service="internet"} == 0
+        for: 3m
+        labels: { severity: critical }
+        annotations: { summary: "No internet — ICMP to 1.1.1.1 failing for 3m" }
+
+      - alert: GatewayDown                # the LAN gateway itself is unreachable
+        expr: probe_success{service="gateway"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: "LAN gateway 192.168.1.1 unreachable" }
+
+      - alert: HighLatency                # round-trip to a box/gateway degraded
+        expr: probe_duration_seconds{job="blackbox-icmp"} > 0.15
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "{{ $labels.instance }} ICMP RTT over 150ms for 10m" }
+
+      - alert: TLSCertExpiringSoon        # the wildcard cert nginx serves is close to expiry
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 14
+        for: 1h
+        labels: { severity: warning }
+        annotations: { summary: "{{ $labels.instance }} TLS cert expires in under 14 days" }
