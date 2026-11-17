@@ -59,7 +59,9 @@ services:
     image: ghcr.io/manimatter/decluttarr:latest      # ENTER: pin a version tag
     environment: { TZ: "Europe/London" }
     env_file: .env                                   # !ENV in config.yaml + TEST_RUN resolve from here
-    volumes: [ /opt/decluttarr/config:/config ]      # config.yaml holds instances + jobs
+    volumes:
+      # decluttarr reads /app/config/config.yaml — mount the file there, not a /config dir
+      - /opt/decluttarr/config/config.yaml:/app/config/config.yaml
     mem_limit: 256m
     restart: unless-stopped
   qbit_manage:
