@@ -132,8 +132,8 @@ scrape_configs:
     static_configs: [ { targets: ['localhost:9617'] } ]
 
   # ---- Frigate native Prometheus metrics (camera/detection FPS, inference, storage) ----
-  # Frigate serves /metrics on its internal API port (:5000). Scraped on the LAN only (never
-  # exposed per services.md). If it needs auth/enabling in your version, see monitoring-exporters.md.
+  # Frigate serves /metrics UNauthenticated on its main port :8971 (the internal :5000 is
+  # localhost-only by design; /api/metrics on :8971 is the authed one, 401). LAN scrape only.
   - job_name: frigate
     metrics_path: /metrics
-    static_configs: [ { targets: ['frigate-lxc.home.alexjenkinson.com:5000'] } ]
+    static_configs: [ { targets: ['frigate-lxc.home.alexjenkinson.com:8971'] } ]
