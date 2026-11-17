@@ -36,18 +36,22 @@ if ! getent hosts "$NAME" >/dev/null 2>&1; then
   ip="$(qm agent "$VMID" network-get-interfaces 2>/dev/null \
         | grep -oE '"ip-address" : "192\.168\.[0-9]+\.[0-9]+"' | grep -oE '192\.168[0-9.]+' | head -1)"
   if [ -n "${ip:-}" ]; then
-    target="$ip"; echo "${Y}note${Z} ${NAME} doesn't resolve yet — using agent IP ${ip} (add the DNS rewrite at Stage D)"
+    target="$ip"; echo "${Y}note${Z} ${NAME} doesn't resolve from THIS host (its resolver is still install-time DNS until H3) — testing the agent IP ${ip}. Clients using the Pi resolve the name fine."
   else
     echo "${Y}note${Z} ${NAME} doesn't resolve and no agent IP — skipping HTTP check"
   fi
 fi
 if [ "$target" != "$NAME" ] || getent hosts "$NAME" >/dev/null 2>&1; then
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://${target}:8123/" 2>/dev/null)"
-  # Any HTTP response means HA's web server is up; 307/302 is it redirecting to onboarding/login.
+  # Retry — HAOS can take a minute to answer after a (re)boot. -L follows the onboarding redirect.
+  code=000
+  for _ in 1 2 3 4 5; do
+    code="$(curl -sL -o /dev/null -w '%{http_code}' --max-time 8 "http://${target}:8123/" 2>/dev/null)"
+    case "$code" in 000|"") sleep 3;; *) break;; esac
+  done
   case "$code" in
     200|301|302|303|307|308|401|403) pass "Home Assistant answers on :8123 (HTTP ${code})";;
     5*) fail "Home Assistant :8123 returned ${code} — check the VM";;
-    000|"") fail "Home Assistant :8123 — no response (still booting? first boot ~2 min)";;
+    000|"") fail "Home Assistant :8123 — no response after ~25s of retries (still booting, or not listening)";;
     *) warn "Home Assistant :8123 returned HTTP ${code}";;
   esac
 fi
