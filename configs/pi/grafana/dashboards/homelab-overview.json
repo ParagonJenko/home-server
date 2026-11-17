@@ -108,7 +108,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 24 },
       "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
-      "targets": [ { "refId": "A", "expr": "qbittorrent_dl_info_speed" } ]
+      "targets": [ { "refId": "A", "expr": "rate(qbittorrent_dl_info_data_total[5m])" } ]
     },
 
     { "id": 17, "type": "row", "title": "🗄️ Backups & DNS", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 28 }, "panels": [] },

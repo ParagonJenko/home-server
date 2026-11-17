@@ -4,7 +4,7 @@
   "tags": ["homelab", "media"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "time": { "from": "now-6h", "to": "now" },
   "templating": { "list": [] },
@@ -12,120 +12,130 @@
   "panels": [
     { "id": 1, "type": "row", "title": "🎬 Plex", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
     {
-      "id": 2, "type": "stat", "title": "Active streams",
-      "description": "If this shows No data, check metric names: curl localhost:9000/metrics (Plex exporter names vary by version).",
+      "id": 2, "type": "stat", "title": "Streaming now (bandwidth)",
+      "description": "Current Plex streaming throughput. 0 when nobody is watching.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 8, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
-      "targets": [ { "refId": "A", "expr": "sum(plex_sessions_active_count) or sum(plex_sessions) or vector(0)" } ]
+      "targets": [ { "refId": "A", "expr": "sum(rate(estimated_transmit_bytes_total[5m]))" } ]
     },
     {
-      "id": 3, "type": "stat", "title": "Stream bandwidth",
+      "id": 3, "type": "stat", "title": "Library size (total)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 8, "x": 8, "y": 1 },
-      "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
-      "targets": [ { "refId": "A", "expr": "sum(plex_sessions_bandwidth) or sum(plex_bandwidth) or vector(0)" } ]
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "sum(library_storage_total)" } ]
     },
     {
-      "id": 4, "type": "stat", "title": "Library items",
+      "id": 4, "type": "bargauge", "title": "Storage by library",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
-      "targets": [ { "refId": "A", "expr": "sum(plex_library_items) or sum(plex_media_count) or vector(0)" } ]
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal", "displayMode": "gradient" },
+      "targets": [ { "refId": "A", "expr": "library_storage_total", "legendFormat": "{{library}}" } ]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Streaming bandwidth",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "sum(rate(estimated_transmit_bytes_total[5m]))", "legendFormat": "streaming" } ]
     },
 
-    { "id": 5, "type": "row", "title": "⬇️ Downloads (qBittorrent)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "panels": [] },
+    { "id": 6, "type": "row", "title": "⬇️ Downloads (qBittorrent)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 }, "panels": [] },
     {
-      "id": 6, "type": "stat", "title": "Download",
+      "id": 7, "type": "stat", "title": "Download",
+      "description": "Derived from the cumulative data counter (this exporter has no instantaneous-speed gauge).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 12 },
       "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
-      "targets": [ { "refId": "A", "expr": "qbittorrent_dl_info_speed" } ]
+      "targets": [ { "refId": "A", "expr": "rate(qbittorrent_dl_info_data_total[5m])" } ]
     },
     {
-      "id": 7, "type": "stat", "title": "Upload",
+      "id": 8, "type": "stat", "title": "Upload",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 12 },
       "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
-      "targets": [ { "refId": "A", "expr": "qbittorrent_up_info_speed" } ]
+      "targets": [ { "refId": "A", "expr": "rate(qbittorrent_up_info_data_total[5m])" } ]
     },
     {
-      "id": 8, "type": "stat", "title": "Global ratio",
+      "id": 9, "type": "stat", "title": "All-time ratio",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 12 },
       "fieldConfig": { "defaults": { "decimals": 2 }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
-      "targets": [ { "refId": "A", "expr": "qbittorrent_global_ratio" } ]
+      "targets": [ { "refId": "A", "expr": "qbittorrent_alltime_ul_total / qbittorrent_alltime_dl_total" } ]
     },
     {
-      "id": 9, "type": "stat", "title": "Torrents",
+      "id": 10, "type": "stat", "title": "Torrents",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 12 },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "sum(qbittorrent_torrents_count)" } ]
     },
     {
-      "id": 10, "type": "timeseries", "title": "Torrents by state",
+      "id": 11, "type": "timeseries", "title": "Torrents by state",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 10 },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 16 },
       "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "stacking": { "mode": "normal" } } }, "overrides": [] },
-      "targets": [ { "refId": "A", "expr": "qbittorrent_torrents_count", "legendFormat": "{{status}}" } ]
+      "targets": [ { "refId": "A", "expr": "sum by (status) (qbittorrent_torrents_count) > 0", "legendFormat": "{{status}}" } ]
     },
     {
-      "id": 11, "type": "timeseries", "title": "Transfer speed (MB/s)",
+      "id": 12, "type": "timeseries", "title": "Transfer speed (MB/s)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 10 },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 16 },
       "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
       "targets": [
-        { "refId": "A", "expr": "qbittorrent_dl_info_speed", "legendFormat": "download" },
-        { "refId": "B", "expr": "qbittorrent_up_info_speed", "legendFormat": "upload" }
+        { "refId": "A", "expr": "rate(qbittorrent_dl_info_data_total[5m])", "legendFormat": "download" },
+        { "refId": "B", "expr": "rate(qbittorrent_up_info_data_total[5m])", "legendFormat": "upload" }
       ]
     },
 
-    { "id": 12, "type": "row", "title": "📺 Library automation (Arrs)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 }, "panels": [] },
+    { "id": 13, "type": "row", "title": "📺 Library automation (Arrs)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 }, "panels": [] },
     {
-      "id": 13, "type": "stat", "title": "Sonarr queue",
+      "id": 14, "type": "stat", "title": "Sonarr queue",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 18 },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 24 },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "sum(sonarr_queue_total)" } ]
     },
     {
-      "id": 14, "type": "stat", "title": "Radarr queue",
+      "id": 15, "type": "stat", "title": "Radarr queue",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 18 },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 24 },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "sum(radarr_queue_total)" } ]
     },
     {
-      "id": 15, "type": "stat", "title": "Arr health issues",
+      "id": 16, "type": "stat", "title": "Arr health issues",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 18 },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 24 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "sum({__name__=~\"(sonarr|radarr|prowlarr)_system_health_issues\"}) or vector(0)" } ]
     },
     {
-      "id": 16, "type": "stat", "title": "Series",
+      "id": 17, "type": "stat", "title": "Series",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 18 },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 24 },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "sum(sonarr_series_total)" } ]
     },
     {
-      "id": 17, "type": "stat", "title": "Movies",
+      "id": 18, "type": "stat", "title": "Movies",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 18 },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 24 },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "sum(radarr_movie_total)" } ]
     },
     {
-      "id": 18, "type": "stat", "title": "Indexers",
+      "id": 19, "type": "stat", "title": "Indexers",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 18 },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 24 },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "sum(prowlarr_indexer_total)" } ]
     }
