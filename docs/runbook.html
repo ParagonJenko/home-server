@@ -1500,6 +1500,9 @@ var STAGES = [
             "callout": "note",
             "title": "Why 32G root, and why the path never changes",
             "html": "<p>Root disk is 32G not 12G — Plex's metadata, thumbnail DB and transcode scratch all live in <code class=\"inline\">/config</code> and grow with the library.</p><p>The library path is identical on host, in the LXC and inside the container, matching storage.md and what you type into Plex. Don't remap to <code class=\"inline\">/movies</code>/<code class=\"inline\">/tv</code> — three names for one directory is how the old paths drifted.</p>"
+          },
+          {
+            "cmd": "# Verify the stage is healthy (read-only; green PASS / red FAIL per check):\npct exec 220 -- bash /opt/plex/verify-plex.sh"
           }
         ]
       },
