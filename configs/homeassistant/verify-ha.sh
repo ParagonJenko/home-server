@@ -43,18 +43,24 @@ if ! getent hosts "$NAME" >/dev/null 2>&1; then
 fi
 if [ "$target" != "$NAME" ] || getent hosts "$NAME" >/dev/null 2>&1; then
   code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://${target}:8123/" 2>/dev/null)"
+  # Any HTTP response means HA's web server is up; 307/302 is it redirecting to onboarding/login.
   case "$code" in
-    200|302) pass "Home Assistant answers on :8123 (HTTP ${code})";;
-    *) fail "Home Assistant :8123 returned HTTP ${code:-none} — still starting? (first boot ~2 min)";;
+    200|301|302|303|307|308|401|403) pass "Home Assistant answers on :8123 (HTTP ${code})";;
+    5*) fail "Home Assistant :8123 returned ${code} — check the VM";;
+    000|"") fail "Home Assistant :8123 — no response (still booting? first boot ~2 min)";;
+    *) warn "Home Assistant :8123 returned HTTP ${code}";;
   esac
 fi
 
 echo "== backups (R4) =="
-# A guest is only protected if a backup job actually selects it.
-if grep -rsqE "(^|[:, ])${VMID}([,: ]|$)|all: 1|all:1" /etc/pve/jobs.cfg 2>/dev/null; then
+# A guest is only protected if a backup job selects it — but before PBS + the backup
+# job exist (Stage G), that's a 'not yet', not a failure.
+if [ ! -s /etc/pve/jobs.cfg ] || ! grep -q 'vzdump' /etc/pve/jobs.cfg 2>/dev/null; then
+  warn "no PBS backup job yet — add VM ${VMID} once PBS is up (Stage G, R4)"
+elif grep -rsqE "(^|[:, ])${VMID}([,: ]|$)|all: 1|all:1" /etc/pve/jobs.cfg 2>/dev/null; then
   pass "a backup job covers VM ${VMID} (or backs up all guests)"
 else
-  fail "no backup job selects VM ${VMID} — add it to the PBS job (Stage G) so R4 holds"
+  fail "a backup job exists but doesn't select VM ${VMID} — add it (R4)"
 fi
 
 echo
