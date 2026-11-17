@@ -9,29 +9,32 @@ one (R21). After editing `.env`: `cd /opt/pi-stack && docker compose up -d` to r
 Deploy pattern for all of them: fill the keys in `.env`, `git pull`, `./configs/pi/redeploy.sh`
 (starts new containers + reloads Prometheus + Grafana).
 
-## Gather every credential in one shot
+## Set up every credential — interactive wizard
 
-Instead of clicking through each app's UI, run the collector **on the Pi** — it SSHes to nuc1 and PBS,
-creates the PVE/PBS monitoring tokens, reads the Plex token and Arr API keys out of the app configs, and
-prints a ready-to-paste `.env` block:
+Run the wizard **on the Pi**. It walks each credential one at a time and writes it straight into
+`/opt/pi-stack/.env` as you go — no manual pasting:
 
 ```bash
 cd ~/home-server && git pull
-./configs/pi/gather-exporter-creds.sh          # add --rotate to recreate tokens that already exist
+./configs/pi/gather-exporter-creds.sh
 ```
 
-- Tokens that don't exist yet are **created** and their one-time value printed; existing ones are left
-  alone (re-run with `--rotate` to delete+recreate for a fresh value).
-- Plex token, the three Arr API keys, qBit + AdGuard **usernames** are read directly from the boxes.
-- The two WebUI **passwords** (qBittorrent, AdGuard) are hashed on disk and can't be extracted — the
-  script leaves `QBIT_PASS=`/`ADGUARD_PASS=` blank for you to fill with what you log in with.
+How it works per item:
+- It first reads what it can off the boxes (Plex token, the three Arr API keys, the qBit + AdGuard
+  **usernames**) and offers each as a `[suggestion]` — press **Enter** to accept, type to override, or
+  leave blank to skip.
+- **PVE and PBS tokens:** it asks whether to create/rotate the monitoring token now; on yes it creates it
+  on the box and saves the value. (Say no and it lets you paste an existing one.)
+- **qBittorrent + AdGuard passwords:** typed **hidden** (they're hashed on disk, can't be read back) —
+  enter the password you log in with.
+- At the end it offers to `docker compose up -d` for you.
 
-Secrets print to the terminal only — nothing is written or committed (R21). Paste the block into
-`/opt/pi-stack/.env`, then `cd /opt/pi-stack && docker compose up -d` (or `./configs/pi/redeploy.sh`).
+Nothing is committed; values only ever land in the gitignored `.env` (R21). Re-run it any time to change
+or add a credential — it replaces lines in place.
 
 Prefer passwordless qBittorrent? Whitelist the Pi in qBittorrent → Settings → Web UI → "Bypass
-authentication for clients in whitelisted IP subnets" → add `192.168.1.4/32`, then leave `QBIT_USER`/
-`QBIT_PASS` blank.
+authentication for clients in whitelisted IP subnets" → add `192.168.1.4/32`, then just skip the qBit
+prompts in the wizard.
 
 ---
 
