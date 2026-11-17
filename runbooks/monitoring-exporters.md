@@ -9,6 +9,30 @@ one (R21). After editing `.env`: `cd /opt/pi-stack && docker compose up -d` to r
 Deploy pattern for all of them: fill the keys in `.env`, `git pull`, `./configs/pi/redeploy.sh`
 (starts new containers + reloads Prometheus + Grafana).
 
+## Gather every credential in one shot
+
+Instead of clicking through each app's UI, run the collector **on the Pi** — it SSHes to nuc1 and PBS,
+creates the PVE/PBS monitoring tokens, reads the Plex token and Arr API keys out of the app configs, and
+prints a ready-to-paste `.env` block:
+
+```bash
+cd ~/home-server && git pull
+./configs/pi/gather-exporter-creds.sh          # add --rotate to recreate tokens that already exist
+```
+
+- Tokens that don't exist yet are **created** and their one-time value printed; existing ones are left
+  alone (re-run with `--rotate` to delete+recreate for a fresh value).
+- Plex token, the three Arr API keys, qBit + AdGuard **usernames** are read directly from the boxes.
+- The two WebUI **passwords** (qBittorrent, AdGuard) are hashed on disk and can't be extracted — the
+  script leaves `QBIT_PASS=`/`ADGUARD_PASS=` blank for you to fill with what you log in with.
+
+Secrets print to the terminal only — nothing is written or committed (R21). Paste the block into
+`/opt/pi-stack/.env`, then `cd /opt/pi-stack && docker compose up -d` (or `./configs/pi/redeploy.sh`).
+
+Prefer passwordless qBittorrent? Whitelist the Pi in qBittorrent → Settings → Web UI → "Bypass
+authentication for clients in whitelisted IP subnets" → add `192.168.1.4/32`, then leave `QBIT_USER`/
+`QBIT_PASS` blank.
+
 ---
 
 ## Proxmox — pve-exporter  ✅
