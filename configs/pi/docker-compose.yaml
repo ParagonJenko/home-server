@@ -47,7 +47,9 @@ services:
   pve-exporter:
     image: prompve/prometheus-pve-exporter:latest
     network_mode: host
-    env_file: .env
+    # This image reads ONLY /etc/prometheus/pve.yml (NOT the PVE_* env vars). redeploy.sh renders
+    # ./pve/pve.yml from the PVE_* values in .env before 'up'. The file holds the token → gitignored.
+    volumes: [ ./pve/pve.yml:/etc/prometheus/pve.yml:ro ]
     restart: unless-stopped
 
   # NB: the Plex exporter is NOT here. The common image (jsclayton/prometheus-plex-exporter) is

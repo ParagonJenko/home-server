@@ -58,3 +58,6 @@ mcp/proxmox/.venv/
 # AdGuard API creds (D3)
 configs/pi/adguard.creds
 *.creds
+
+# pve-exporter rendered config (holds the token)
+**/pve/pve.yml
