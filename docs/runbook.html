@@ -2207,7 +2207,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Context",
-            "html": "<p>The base stack (node_exporter, blackbox, SMART) watches the <em>infrastructure</em>. These exporters add <em>application</em> visibility: per-VM/LXC resource use (pve-exporter), Plex streams, qBittorrent + the Arrs, PBS backup state, Frigate FPS and AdGuard DNS stats. All run as containers in the Pi stack; every credential lives only in the gitignored <code class=\"inline\">.env</code> (R21). Full reference: <code class=\"inline\">runbooks/monitoring-exporters.md</code>.</p>"
+            "html": "<p>The base stack (node_exporter, blackbox, SMART) watches the <em>infrastructure</em>. These exporters add <em>application</em> visibility: per-VM/LXC resource use (pve-exporter), qBittorrent + the Arrs, PBS backup state and AdGuard DNS stats run as containers in the Pi stack; <strong>Plex</strong> runs on nuc1 and <strong>Frigate</strong> is parked (see the gotchas). Every credential lives only in the gitignored <code class=\"inline\">.env</code> (R21). Full reference: <code class=\"inline\">runbooks/monitoring-exporters.md</code>.</p>"
           },
           {
             "cmd": "# @where: Pi · shell — interactive wizard: creates the PVE/PBS monitoring tokens, reads the\n# Plex token + Arr API keys off the boxes, prompts for the two WebUI passwords, and writes it all\n# into /opt/pi-stack/.env. Then deploy the exporters + dashboards.\ncd ~/home-server && git pull\n./configs/pi/gather-exporter-creds.sh\n./configs/pi/redeploy.sh"
@@ -2224,15 +2224,30 @@ var STAGES = [
           },
           {
             "callout": "gotcha",
+            "title": "pve-exporter: config file + runs as root",
+            "html": "<p>This image <strong>ignores the <code class=\"inline\">PVE_*</code> env vars</strong> — it reads only <code class=\"inline\">/etc/prometheus/pve.yml</code>. <code class=\"inline\">redeploy.sh</code> renders that file from the <code class=\"inline\">PVE_*</code> values in <code class=\"inline\">.env</code> and mounts the <em>directory</em> <code class=\"inline\">./pve</code> (a single-file mount hits Docker's missing-file→dir trap). The container also runs as <code class=\"inline\">user: \"0:0\"</code> so it can read the <code class=\"inline\">root:root 600</code> config (same class as the alertmanager-webhook uid issue). All baked in — listed here so a rebuild knows why.</p>"
+          },
+          {
+            "callout": "gotcha",
+            "title": "Plex exporter runs on nuc1, not the Pi",
+            "html": "<p>The common Plex exporter image (<code class=\"inline\">jsclayton/prometheus-plex-exporter</code>) is <strong>amd64-only</strong> and the Pi is arm64, so it can't run in the Pi stack. Run it on the Plex LXC (220, amd64) with a <code class=\"inline\">docker run</code> and add a <code class=\"inline\">plex</code> scrape job pointing at <code class=\"inline\">plex-lxc:9000</code> — exact commands in <code class=\"inline\">runbooks/monitoring-exporters.md</code> → \"Plex — runs on nuc1\". The wizard still collects <code class=\"inline\">PLEX_TOKEN</code> for it.</p>"
+          },
+          {
+            "callout": "gotcha",
+            "title": "Frigate has no clean unauthenticated metrics path",
+            "html": "<p>Frigate's <code class=\"inline\">/api/metrics</code> on <code class=\"inline\">:8971</code> is auth-walled (401); <code class=\"inline\">:8971/metrics</code> returns the web UI's HTML (not metrics); and the unauth <code class=\"inline\">:5000/metrics</code> is localhost-only inside the container. So the <code class=\"inline\">frigate</code> scrape job is <strong>parked</strong>. To enable, either expose <code class=\"inline\">:5000</code> on the LAN from LXC 111's compose (weakens the never-expose-5000 stance in services.md — LAN-only, your call) or give Prometheus a Frigate credential for <code class=\"inline\">/api/metrics</code>.</p>"
+          },
+          {
+            "callout": "gotcha",
             "title": "Some metric names drift by version",
-            "html": "Plex, PBS, AdGuard and Frigate metric names vary between exporter/app versions. If a panel shows <em>No data</em> while its target is UP, it's a name mismatch, not a wiring fault — each dashboard notes the <code class=\"inline\">curl …/metrics | grep …</code> to check and which JSON to adjust. qBittorrent, the Arrs and pve-exporter are stable."
+            "html": "PBS and AdGuard metric names vary between exporter versions. If a panel shows <em>No data</em> while its target is UP, it's a name mismatch, not a wiring fault — each dashboard notes the <code class=\"inline\">curl …/metrics | grep …</code> to check and which JSON to adjust. qBittorrent, the Arrs and pve-exporter are stable."
           }
         ],
         "verify": [
           {
-            "cmd": "# @where: Pi · shell — these jobs should all be UP in Prometheus (one per credential supplied):\n#   pve · plex · qbittorrent · sonarr · radarr · prowlarr · pbs · adguard · frigate\ncurl -s localhost:9090/api/v1/targets | grep -oE '\"job\":\"(pve|plex|qbittorrent|sonarr|radarr|prowlarr|pbs|adguard|frigate)\"' | sort -u"
+            "cmd": "# @where: Pi · shell — these jobs should be UP in Prometheus (one per credential supplied):\n#   pve · qbittorrent · sonarr · radarr · prowlarr · pbs · adguard   (plex is on nuc1; frigate is parked)\ncurl -s localhost:9090/api/v1/targets | grep -oE '\"job\":\"(pve|qbittorrent|sonarr|radarr|prowlarr|pbs|adguard)\"' | sort -u\n# pve sanity (should print pve_up lines, not empty):\ncurl -s 'http://localhost:9221/pve?module=default&target=192.168.1.2' | grep -E '^pve_up' | head"
           },
-          "Each exporter you gave a credential should appear UP, and the four new Grafana dashboards fill in: <strong>Proxmox guests</strong>, <strong>Media stack</strong>, <strong>PBS backups</strong>, <strong>DNS &amp; NVR</strong>. A target that's UP with a No-data panel is a metric-name mismatch (see the gotcha), not a broken exporter."
+          "Each exporter you gave a credential should appear UP, and the new Grafana dashboards fill in: <strong>Proxmox guests</strong>, <strong>Media stack</strong>, <strong>PBS backups</strong>, <strong>DNS &amp; NVR</strong> (AdGuard half; Frigate half stays empty while parked). A target that's UP with a No-data panel is a metric-name mismatch, not a broken exporter."
         ],
         "device": "Pi"
       }
