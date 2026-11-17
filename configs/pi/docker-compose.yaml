@@ -21,6 +21,18 @@ services:
     network_mode: host
     volumes: [ ./alertmanager:/etc/alertmanager ]
     restart: unless-stopped
+
+  # Colours Discord embeds by severity (critical=red, warning=amber, resolved=green) — something
+  # Alertmanager's native Discord notifier can't do. Alertmanager posts to this via webhook_configs;
+  # it reads the same Discord webhook file and posts one coloured embed per alert. Listens :9095.
+  alert-relay:
+    image: python:3.12-alpine
+    network_mode: host
+    volumes:
+      - ./alert-relay/app.py:/app.py:ro
+      - ./alertmanager/discord-webhook-url:/etc/alertmanager/discord-webhook-url:ro
+    command: ["python3", "/app.py"]
+    restart: unless-stopped
   grafana:
     image: grafana/grafana:latest
     network_mode: host

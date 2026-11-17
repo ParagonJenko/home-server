@@ -1,20 +1,15 @@
-# configs/pi/alertmanager/alertmanager.yml — routes every alert to one Discord channel as a
-# formatted embed. The webhook is read from a SEPARATE gitignored file (webhook_url_file) so no
-# secret ever lands in this committed config. That file must exist (setup-pi.sh creates it, empty
-# if you skipped it); until it holds a real URL, Alertmanager runs fine but can't deliver. [R21]
-#
-# The embed's colour is set automatically by Alertmanager (red = firing, green = resolved). The
-# title + message below are Go templates; the message pulls the five annotations each rule defines
-# in configs/monitoring/alerts.yml (summary / impact / cause / fix / where). Firing shows the full
-# Impact/What/Fix/Where; resolved collapses to a single line.
+# configs/pi/alertmanager/alertmanager.yml — routes every alert to Discord as a per-severity-coloured
+# embed. Alertmanager can't colour by severity itself (native Discord = firing-red/resolved-green only),
+# so it POSTs to the alert-relay (configs/pi/alert-relay/app.py, :9095), which renders one embed per
+# alert — critical=red, warning=amber, resolved=green — with Impact/What/Fix/Where from the rule's
+# annotations. The relay reads the same gitignored discord-webhook-url file. [R21]
 global:
   resolve_timeout: 5m
 
 route:
   receiver: discord
-  # One embed PER alert (so each can be emoji-reacted): group by every distinguishing label, so no two
-  # distinct alerts ever share a group -> each gets its own Discord message. group_wait 10s so a burst
-  # (e.g. 3 disks) still arrives as 3 separate messages promptly rather than batched.
+  # One embed PER alert: group by every distinguishing label so no two alerts share a group, and the
+  # relay posts them individually (so each is emoji-reactable). group_wait 10s keeps a burst prompt.
   group_by: ['alertname', 'instance', 'device', 'service', 'mountpoint', 'job']
   group_wait: 10s
   group_interval: 5m
@@ -22,18 +17,6 @@ route:
 
 receivers:
   - name: discord
-    discord_configs:
-      - webhook_url_file: /etc/alertmanager/discord-webhook-url
+    webhook_configs:
+      - url: http://localhost:9095/alert
         send_resolved: true
-        title: '{{ if eq .Status "firing" }}🚨 FIRING{{ else }}✅ RESOLVED{{ end }} — {{ .CommonLabels.alertname }}{{ if .CommonLabels.instance }} @ {{ .CommonLabels.instance }}{{ end }}'
-        message: |-
-          {{ range .Alerts -}}
-          {{ if eq .Labels.severity "critical" }}🟥{{ else }}🟧{{ end }} **{{ .Labels.alertname }}**{{ if .Labels.instance }} · `{{ .Labels.instance }}`{{ end }}{{ if .Labels.device }} · `{{ .Labels.device }}`{{ end }}
-          {{ if eq .Status "resolved" }}✅ Resolved — {{ .Annotations.summary }}
-          {{ else }}_{{ .Annotations.summary }}_
-
-          💥 **Impact** — {{ .Annotations.impact }}
-          🔍 **What** — {{ .Annotations.cause }}
-          🛠️ **Fix** — {{ .Annotations.fix }}
-          📍 **Where** — {{ .Annotations.where }}
-          {{ end }}{{ end -}}
