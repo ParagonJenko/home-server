@@ -1967,15 +1967,17 @@ var STAGES = [
             "html": "Take one backup by hand first, or <code class=\"inline\">pvesm list</code> comes back empty and the restore has no source."
           },
           {
-            "cmd": "# @where: NUC-1 · host shell — restore the latest backup to a throwaway CT, boot it, destroy it:\n./configs/pbs/verify-restore.sh 210"
-          },
-          {
             "callout": "note",
             "title": "This is the minimum, not all of R12",
             "html": "A same-box restore from the local PBS, seconds after the backup, is the easy case. The real bar is a restore from the <em>offsite</em> copy (G6) and, at least once, onto different hardware — fold that into the I3 relocation test."
           }
         ],
-        "verify": "The restored 8210 starts and runs. Then write the “service is dead → restore it” runbook from what you just did — an untested restore is a hypothesis, and an unwritten one is tribal knowledge.",
+        "verify": [
+          {
+            "cmd": "# @where: NUC-1 · host shell — restore proof (R4/R12):\n./configs/pbs/verify-restore.sh 210"
+          },
+          "Ends on RESTORE PROVEN: the latest backup restored, booted (<code class=\"inline\">status: running</code>), and was torn down. Then write the “service is dead → restore it” runbook from what you just did — an untested restore is a hypothesis, and an unwritten one is tribal knowledge."
+        ],
         "device": "NUC-1"
       },
       {
