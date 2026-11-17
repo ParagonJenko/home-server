@@ -557,7 +557,7 @@ table.inv td.narrow { width: 1%; text-align: center; }
       <h2>Build the homelab in order, and prove each guardrail before the next one leans on it.</h2>
       <p><strong>Kit:</strong> two Beelink NUCs, a Raspberry Pi, a 2×4TB DAS, and a 2TB USB HDD (PBS backup datastore, Stage E).</p>
       <p>Work top to bottom. Every step is <strong>yours by hand</strong>, a <strong>script</strong> from <code class="inline">configs/</code>, or a <strong>check</strong> — don't retype script commands, run the file. Start at <a href="#stage-A">A0</a>.</p>
-      <details class="callout note"><summary class="ctitle">What each stage does</summary><ul><li><strong>A</strong> — host base (NUC-1).</li><li><strong>B</strong> — storage: build the media pool, break it on purpose.</li><li><strong>C</strong> — container template.</li><li><strong>D</strong> — internal DNS on the Pi (early — everything resolves through it).</li><li><strong>E</strong> — media stack (NUC-1).</li><li><strong>F</strong> — host base (NUC-2).</li><li><strong>G</strong> — Frigate + PBS backups (NUC-2).</li><li><strong>H</strong> — monitoring &amp; alerting on the Pi (late — needs the containers).</li><li><strong>I</strong> — remote access &amp; final proof.</li><li><strong>J</strong> — resilience &amp; lifecycle.</li><li><strong>K</strong> — local inference (future, optional).</li></ul></details>
+      <details class="callout note"><summary class="ctitle">What each stage does</summary><ul><li><strong>A</strong> — host base (NUC-1).</li><li><strong>B</strong> — storage: build the media pool, break it on purpose.</li><li><strong>C</strong> — container template.</li><li><strong>D</strong> — internal DNS on the Pi (early — everything resolves through it).</li><li><strong>E</strong> — media stack (NUC-1).</li><li><strong>F</strong> — host base (NUC-2).</li><li><strong>G</strong> — Frigate + PBS backups (NUC-2).</li><li><strong>H</strong> — monitoring &amp; alerting on the Pi (late — needs the containers).</li><li><strong>I</strong> — remote access &amp; final proof.</li><li><strong>J</strong> — resilience &amp; lifecycle.</li><li><strong>K</strong> — local inference (future, optional).</li><li><strong>L</strong> — future upgrades (roadmap: UPS/NUT, AdGuard DHCP, nofail boot, offsite restore).</li></ul></details>
       <details class="callout note"><summary class="ctitle">How this page works</summary><ul><li><strong>Fast path:</strong> on each box, run its bootstrap script — <code class="inline">sudo ./bootstrap-nuc1.sh</code>, then <code class="inline">./bootstrap-pi.sh</code>, then <code class="inline">./bootstrap-nuc2.sh</code>. Each prompts for what it needs (disks, the Pi's IP, secrets) and pauses at the manual bits. The stages below are the detail behind them.</li><li><strong>Where to run it:</strong> every command block is tagged with its destination. A <strong>host shell</strong> (NUC-1/NUC-2) is the Proxmox node's root shell — reach it however suits you: the Proxmox <em>Web UI</em> (Datacenter → node → Shell), SSH as <code class=\"inline\">root</code>, or physically at the NUC (HDMI + keyboard). All three are the <em>same</em> shell, so the command is identical whichever you use.</li><li><strong>Inside a container</strong> = <code class=\"inline\">pct enter &lt;id&gt;</code> from a host shell (or the container's Console in the Web UI); <strong>PBS VM</strong> = its console or SSH; <strong>Pi</strong> = SSH to the Pi. <strong>Edit — … config</strong> means a line you put in a file, not a command to run. Anything done purely in a web UI or by hand is a callout, not a command block.</li><li>Fill your values once in <em>Your values</em> — they appear in every command on the page.</li><li><span class=save>Record every MAC and IP in the address register below as you go</span> — it exports straight into <code class="inline">network.md</code>.</li><li>A script's real commands live in <code class="inline">configs/</code>; this page says which file and what it does.</li></ul></details>
       <div class="principle">
         <p><strong>A single workload filling up is normal, and must be handled gracefully.</strong></p>
@@ -2657,6 +2657,76 @@ var STAGES = [
           }
         ],
         "verify": "HA Assist answers via the local model, and Frigate writes event descriptions from it."
+      }
+    ]
+  },
+  {
+    "id": "L",
+    "name": "Future upgrades",
+    "where": "Roadmap · as hardware/time allows",
+    "title": "Future upgrades — plans & tests",
+    "intro": "Deferred or optional additions, each with how it would integrate and how you'd prove it. None of this is required for the build to be complete — it's the backlog, with enough of a plan that future-you isn't starting cold.",
+    "steps": [
+      {
+        "id": "L1",
+        "type": "ref",
+        "title": "UPS + NUT — graceful shutdown on power loss",
+        "rules": [ "R22" ],
+        "body": [
+          { "p": "You don't have a UPS yet, so an unexpected cut hard-kills the boxes mid-write. A UPS rides out brief dips, and <strong>NUT</strong> (Network UPS Tools) triggers a clean shutdown of every box when the battery runs low — the automatic version of I3's manual shutdown. Adding it is what lifts the \"never pull the mains\" caveat." },
+          { "list": [
+            "<strong>Buy:</strong> a line-interactive UPS with a <em>USB data port</em>. The NUCs + Pi + switch + DAS draw little, so a ~650–850VA unit holds them for the few minutes a clean shutdown needs.",
+            "<strong>Integrate:</strong> USB from the UPS into the box with the most critical writes (nuc1, which holds the pool). Install NUT there as the master (<code class=\"inline\">upsd</code> + <code class=\"inline\">upsmon</code>, netserver mode); point nuc2 and the Pi at it as <code class=\"inline\">netclient</code> slaves. Set the low-battery threshold so shutdown starts with headroom.",
+            "<strong>Test:</strong> pull the UPS's mains plug with everything running → every box shuts down cleanly (nuc2 → nuc1 → Pi) before the battery empties, and all come back on power restore. Then the I3 \"never pull mains\" line is lifted."
+          ] }
+        ]
+      },
+      {
+        "id": "L2",
+        "type": "ref",
+        "title": "Dedicated router + AdGuard DHCP",
+        "rules": [ "R15" ],
+        "body": [
+          { "p": "Today the ISP router runs DHCP and the Pi only does DNS, so reservations live in the router's UI (R15 is on hold to avoid two DHCP servers fighting). Moving DHCP to AdGuard unifies leases + DNS + reservations in one place that rebuilds from the repo." },
+          { "list": [
+            "<strong>Integrate:</strong> put the ISP box in bridge/modem-only mode (or disable its DHCP), add a router you control, then enable AdGuard's DHCP server with the reservations from <code class=\"inline\">network.md</code>. Exactly one DHCP server on the LAN at a time.",
+            "<strong>Test:</strong> a fresh client gets a lease from AdGuard with the Pi as its DNS, the reserved IPs still land where network.md says, and there are no address conflicts."
+          ] }
+        ]
+      },
+      {
+        "id": "L3",
+        "type": "ref",
+        "title": "Boot-survives-missing-disk (nofail hardening)",
+        "rules": [ "R9" ],
+        "body": [
+          { "p": "nuc1 currently refuses to boot if a DAS disk is missing — it hangs on the mount, the same safety net that stops the pool unioning off the host SSD. Optionally let it boot anyway so you can fix a missing disk remotely instead of needing a monitor on it." },
+          { "list": [
+            "<strong>Integrate:</strong> add <code class=\"inline\">nofail,x-systemd.device-timeout=30s</code> to the branch mounts in the mergerfs fstab snippet.",
+            "<strong>Test:</strong> boot nuc1 with one DAS disk unplugged → it comes up reachable in ~30s <em>without</em> the pool (the mergerfs mount and media containers stay down) instead of hanging. Trade-off: a genuinely missing disk then fails quietly rather than loudly — decide which you want before applying."
+          ] }
+        ]
+      },
+      {
+        "id": "L4",
+        "type": "ref",
+        "title": "Offsite restore onto different hardware (full R12)",
+        "rules": [ "R12", "R17" ],
+        "body": [
+          { "p": "G6 proves a restore from the local USB; the real disaster test is a restore from the <strong>B2 cloud copy</strong> onto hardware that isn't the original box. That's the half of R12 still unproven." },
+          { "list": [
+            "<strong>Integrate:</strong> on spare/different hardware with Tailscale + the encryption key (from the vault), add the PBS / B2 storage and restore a guest from the OFFSITE copy, not the USB.",
+            "<strong>Test:</strong> the restored guest boots and runs from the cloud copy. Record it — this is the offsite half of R12. Fold it into a periodic (e.g. quarterly) check."
+          ] }
+        ]
+      },
+      {
+        "id": "L5",
+        "type": "ref",
+        "title": "Local inference — see Stage K",
+        "body": [
+          { "p": "A GPU node for local LLMs: HA Assist and Frigate's GenAI event descriptions can both point at a local Ollama endpoint instead of the cloud. The full plan — hardware/VRAM sizing, GPU passthrough and tests — is in <a href=\"#stage-K\">Stage K</a>." }
+        ]
       }
     ]
   }
