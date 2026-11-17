@@ -4,142 +4,147 @@
   "tags": ["homelab", "network", "uptime"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 3,
   "refresh": "30s",
   "time": { "from": "now-6h", "to": "now" },
   "templating": { "list": [] },
   "annotations": { "list": [] },
   "panels": [
-    {
-      "id": 1, "type": "stat", "title": "Services down",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
-      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
-      "targets": [ { "refId": "A", "expr": "count(probe_success{job=\"blackbox-http\"} == 0) or vector(0)" } ]
-    },
+    { "id": 1, "type": "row", "title": "🌐 Internet (WAN)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
     {
       "id": 2, "type": "stat", "title": "Internet",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
       "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ] }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "probe_success{service=\"internet\"}" } ]
     },
     {
-      "id": 3, "type": "stat", "title": "Gateway RTT",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 0.05 }, { "color": "red", "value": 0.15 } ] } }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
-      "targets": [ { "refId": "A", "expr": "probe_duration_seconds{job=\"blackbox-icmp\", service=\"gateway\"}" } ]
-    },
-    {
-      "id": 4, "type": "stat", "title": "Internet RTT",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 0.05 }, { "color": "red", "value": 0.2 } ] } }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
-      "targets": [ { "refId": "A", "expr": "probe_duration_seconds{job=\"blackbox-icmp\", service=\"internet\"}" } ]
-    },
-    {
-      "id": 5, "type": "stat", "title": "Service status",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 4 },
-      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ] }, "overrides": [] },
-      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
-      "targets": [ { "refId": "A", "expr": "probe_success{job=\"blackbox-http\"}", "legendFormat": "{{service}}" } ]
-    },
-    {
-      "id": 6, "type": "timeseries", "title": "Service response time",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "targets": [ { "refId": "A", "expr": "probe_duration_seconds{job=\"blackbox-http\"}", "legendFormat": "{{service}}" } ]
-    },
-    {
-      "id": 7, "type": "timeseries", "title": "ICMP latency",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "targets": [ { "refId": "A", "expr": "probe_duration_seconds{job=\"blackbox-icmp\"}", "legendFormat": "{{service}}" } ]
-    },
-    {
-      "id": 8, "type": "timeseries", "title": "Network in (bits/s)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
-      "fieldConfig": { "defaults": { "unit": "bps" }, "overrides": [] },
-      "targets": [ { "refId": "A", "expr": "rate(node_network_receive_bytes_total{device!~\"lo|veth.*|docker.*|br-.*|fwbr.*|fwln.*|fwpr.*|tap.*|vmbr.*\"}[5m]) * 8", "legendFormat": "{{instance}} {{device}}" } ]
-    },
-    {
-      "id": 9, "type": "timeseries", "title": "Network out (bits/s)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
-      "fieldConfig": { "defaults": { "unit": "bps" }, "overrides": [] },
-      "targets": [ { "refId": "A", "expr": "rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|br-.*|fwbr.*|fwln.*|fwpr.*|tap.*|vmbr.*\"}[5m]) * 8", "legendFormat": "{{instance}} {{device}}" } ]
-    },
-    {
-      "id": 10, "type": "stat", "title": "Host uptime",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 26 },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none", "textMode": "value_and_name" },
-      "targets": [ { "refId": "A", "expr": "time() - node_boot_time_seconds", "legendFormat": "{{instance}}" } ]
-    },
-    {
-      "id": 11, "type": "stat", "title": "Cameras (RTSP :554)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 31 },
-      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ] }, "overrides": [] },
-      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
-      "targets": [ { "refId": "A", "expr": "probe_success{job=\"blackbox-cameras\"}", "legendFormat": "{{service}}" } ]
-    },
-    {
-      "id": 12, "type": "row", "title": "Internet (WAN) — speed & uptime",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 }, "collapsed": false, "panels": []
-    },
-    {
-      "id": 13, "type": "stat", "title": "Internet uptime (24h)",
+      "id": 3, "type": "stat", "title": "Uptime (24h)",
       "description": "Share of ICMP probes to 1.1.1.1 that succeeded over the last 24h.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 37 },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
       "fieldConfig": { "defaults": { "unit": "percent", "decimals": 2, "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 99 }, { "color": "green", "value": 99.9 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "avg_over_time(probe_success{service=\"internet\"}[24h]) * 100" } ]
     },
     {
-      "id": 14, "type": "stat", "title": "Download",
+      "id": 4, "type": "stat", "title": "Download",
+      "description": "Last Ookla speedtest download, in megabytes/sec.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 37 },
-      "fieldConfig": { "defaults": { "unit": "bps", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 50000000 }, { "color": "green", "value": 100000000 } ] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "Bps", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 6250000 }, { "color": "green", "value": 12500000 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
-      "targets": [ { "refId": "A", "expr": "speedtest_download_bits_per_second" } ]
+      "targets": [ { "refId": "A", "expr": "speedtest_download_bits_per_second / 8" } ]
     },
     {
-      "id": 15, "type": "stat", "title": "Upload",
+      "id": 5, "type": "stat", "title": "Upload",
+      "description": "Last Ookla speedtest upload, in megabytes/sec.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 37 },
-      "fieldConfig": { "defaults": { "unit": "bps", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 10000000 }, { "color": "green", "value": 20000000 } ] } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "Bps", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 1250000 }, { "color": "green", "value": 2500000 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
-      "targets": [ { "refId": "A", "expr": "speedtest_upload_bits_per_second" } ]
+      "targets": [ { "refId": "A", "expr": "speedtest_upload_bits_per_second / 8" } ]
     },
     {
-      "id": 16, "type": "stat", "title": "Speedtest ping",
+      "id": 6, "type": "stat", "title": "Speedtest ping",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 37 },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
       "fieldConfig": { "defaults": { "unit": "ms", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 30 }, { "color": "red", "value": 60 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "speedtest_ping_latency_ms" } ]
     },
     {
-      "id": 17, "type": "timeseries", "title": "Internet throughput (download / upload)",
+      "id": 7, "type": "stat", "title": "Internet RTT",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 42 },
-      "fieldConfig": { "defaults": { "unit": "bps", "custom": { "drawStyle": "line", "fillOpacity": 10, "spanNulls": true } }, "overrides": [] },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 0.05 }, { "color": "red", "value": 0.2 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "probe_duration_seconds{job=\"blackbox-icmp\", service=\"internet\"}" } ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Internet throughput (MB/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10, "spanNulls": true } }, "overrides": [] },
       "targets": [
-        { "refId": "A", "expr": "speedtest_download_bits_per_second", "legendFormat": "download" },
-        { "refId": "B", "expr": "speedtest_upload_bits_per_second", "legendFormat": "upload" }
+        { "refId": "A", "expr": "speedtest_download_bits_per_second / 8", "legendFormat": "download" },
+        { "refId": "B", "expr": "speedtest_upload_bits_per_second / 8", "legendFormat": "upload" }
       ]
+    },
+
+    { "id": 9, "type": "row", "title": "🔌 Services", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 }, "panels": [] },
+    {
+      "id": 10, "type": "stat", "title": "Services down",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 13 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "count(probe_success{job=\"blackbox-http\"} == 0) or vector(0)" } ]
+    },
+    {
+      "id": 11, "type": "stat", "title": "Service status",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 20, "x": 4, "y": 13 },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ] }, "overrides": [] },
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
+      "targets": [ { "refId": "A", "expr": "probe_success{job=\"blackbox-http\"}", "legendFormat": "{{service}}" } ]
+    },
+    {
+      "id": 12, "type": "timeseries", "title": "Service response time",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 17 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "probe_duration_seconds{job=\"blackbox-http\"}", "legendFormat": "{{service}}" } ]
+    },
+
+    { "id": 13, "type": "row", "title": "🖥️ LAN & Hosts", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 }, "panels": [] },
+    {
+      "id": 14, "type": "stat", "title": "Gateway RTT",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 25 },
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 0.05 }, { "color": "red", "value": 0.15 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "probe_duration_seconds{job=\"blackbox-icmp\", service=\"gateway\"}" } ]
+    },
+    {
+      "id": 15, "type": "stat", "title": "Host uptime",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 18, "x": 6, "y": 25 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none", "textMode": "value_and_name" },
+      "targets": [ { "refId": "A", "expr": "time() - node_boot_time_seconds", "legendFormat": "{{instance}}" } ]
+    },
+    {
+      "id": 16, "type": "timeseries", "title": "ICMP latency",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 29 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "probe_duration_seconds{job=\"blackbox-icmp\"}", "legendFormat": "{{service}}" } ]
+    },
+    {
+      "id": 17, "type": "timeseries", "title": "Network in (MB/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 35 },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "rate(node_network_receive_bytes_total{device!~\"lo|veth.*|docker.*|br-.*|fwbr.*|fwln.*|fwpr.*|tap.*|vmbr.*\"}[5m])", "legendFormat": "{{instance}} {{device}}" } ]
+    },
+    {
+      "id": 18, "type": "timeseries", "title": "Network out (MB/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 35 },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|br-.*|fwbr.*|fwln.*|fwpr.*|tap.*|vmbr.*\"}[5m])", "legendFormat": "{{instance}} {{device}}" } ]
+    },
+
+    { "id": 19, "type": "row", "title": "📹 Cameras", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 42 }, "panels": [] },
+    {
+      "id": 20, "type": "stat", "title": "Cameras (RTSP :554)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 43 },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ] }, "overrides": [] },
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
+      "targets": [ { "refId": "A", "expr": "probe_success{job=\"blackbox-cameras\"}", "legendFormat": "{{service}}" } ]
     }
   ]
 }
