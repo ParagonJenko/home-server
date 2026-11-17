@@ -22,26 +22,23 @@ mkdir -p /opt/monitoring && cp ../monitoring/alerts.yml /opt/monitoring/ 2>/dev/
 cd /opt/pi-stack
 
 # pve-exporter reads ONLY /etc/prometheus/pve.yml (it ignores PVE_* env vars), so render that file
-# from the PVE_* values in .env. Both .env and the rendered file are gitignored secrets. Always write
-# the file (even empty-token) so the bind mount is a file, not a directory.
+# from the PVE_* values in .env. Both .env and the rendered file are gitignored secrets. This block
+# must NEVER abort the render (every helper ends in '|| true'), and always leaves a FILE — if a
+# previous failed mount left a directory at that path, remove it first.
 mkdir -p pve
-if [ -f .env ]; then
-  pv() { grep -m1 "^$1=" .env 2>/dev/null | cut -d= -f2- | sed 's/^"//; s/"$//'; }
-  u=$(pv PVE_USER);        u=${u:-claude@pve}
-  tn=$(pv PVE_TOKEN_NAME);  tn=${tn:-monitoring}
-  tv=$(pv PVE_TOKEN_VALUE)
-  vs=$(pv PVE_VERIFY_SSL);  vs=${vs:-false}
-  cat > pve/pve.yml <<EOF
+if [ -d pve/pve.yml ]; then rm -rf pve/pve.yml; fi
+pv() { grep -m1 "^$1=" .env 2>/dev/null | cut -d= -f2- | sed 's/^"//; s/"$//' || true; }
+u=""; tn=""; tv=""; vs=""
+if [ -f .env ]; then u=$(pv PVE_USER); tn=$(pv PVE_TOKEN_NAME); tv=$(pv PVE_TOKEN_VALUE); vs=$(pv PVE_VERIFY_SSL); fi
+cat > pve/pve.yml <<EOF
 default:
-  user: ${u}
-  token_name: ${tn}
+  user: ${u:-claude@pve}
+  token_name: ${tn:-monitoring}
   token_value: "${tv}"
-  verify_ssl: ${vs}
+  verify_ssl: ${vs:-false}
 EOF
-  chmod 600 pve/pve.yml
-else
-  : > pve/pve.yml
-fi
+chmod 600 pve/pve.yml
+if [ -z "$tv" ]; then echo "!! PVE_TOKEN_VALUE is empty in .env — pve-exporter will fail auth until you add it (gather-exporter-creds.sh)" >&2; fi
 
 docker compose up -d \
   || echo "!! some containers failed to start/pull (see above) — continuing to reload core configs" >&2
