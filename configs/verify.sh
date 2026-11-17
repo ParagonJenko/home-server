@@ -8,6 +8,8 @@
 # Untested on hardware — treat a first PASS as "worth a sanity glance".
 source "$(dirname "$0")/lib/common.sh"
 set +e                       # common.sh sets -e; checks are allowed to fail
+set +o pipefail              # 'curl | grep -q' makes curl SIGPIPE on an early match; without this,
+                             # pipefail turns a successful MATCH into a false FAIL (bit H2 live)
 PASS=0; FAIL=0
 yes_() { ok   "  PASS  $*"; PASS=$((PASS + 1)); }
 no_()  { warn "  FAIL  $*"; FAIL=$((FAIL + 1)); }
