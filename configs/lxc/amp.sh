@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# amp.sh — LXC 230: AMP (CubeCoders) game-server panel. Native install, no Docker
-# (no --features), no media mount. AMP itself is installed by hand via CubeCoders'
-# interactive installer (runbook E4). [R13 R19]
+# amp.sh — LXC 230: AMP (CubeCoders) game-server panel. Native install, no Docker,
+# no media mount. --features nesting=1 (not keyctl): Debian 13's systemd 257 needs
+# nesting to boot cleanly in an unprivileged LXC; keyctl is Docker-only. AMP itself is
+# installed by hand via CubeCoders' interactive installer (runbook E4). [R13 R19]
 # Run as root on NUC-1.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -18,7 +19,7 @@ else
   say "create CT ${CTID} — AMP (game-server panel)"
   pct create "$CTID" "$(resolve_template)" \
     --hostname amp --cores 1 --memory 2048 --swap 512 \
-    --rootfs "local-lvm:40" --unprivileged 1 \
+    --rootfs "local-lvm:40" --unprivileged 1 --features nesting=1 \
     --onboot 1 --startup order=2 --nameserver "$NS" \
     --net0 name=eth0,bridge=vmbr0,ip=dhcp
 fi

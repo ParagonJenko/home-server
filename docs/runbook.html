@@ -1160,7 +1160,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Two scripts deviate, on purpose",
-            "html": "<ul><li><code class=\"inline\">frigate.sh</code> is <strong>privileged</strong> (<code class=\"inline\">--unprivileged 0 --features nesting=1</code>) for direct iGPU access — the render-node GID mapping in an unprivileged container is a recurring source of silent decode failures. A deliberate security tradeoff on a container running nothing but Frigate. <code class=\"inline\">keyctl</code> is omitted because privileged containers don't need it for Docker.</li><li><code class=\"inline\">nginx.sh</code> and <code class=\"inline\">amp.sh</code> set <strong>no <code class=\"inline\">--features</code> at all</strong> — Nginx and AMP are native installs, no Docker, so neither flag applies.</li></ul>"
+            "html": "<ul><li><code class=\"inline\">frigate.sh</code> is <strong>privileged</strong> (<code class=\"inline\">--unprivileged 0 --features nesting=1</code>) for direct iGPU access — the render-node GID mapping in an unprivileged container is a recurring source of silent decode failures. A deliberate security tradeoff on a container running nothing but Frigate. <code class=\"inline\">keyctl</code> is omitted because privileged containers don't need it for Docker.</li><li><code class=\"inline\">nginx.sh</code> and <code class=\"inline\">amp.sh</code> set <strong><code class=\"inline\">nesting=1</code> but not <code class=\"inline\">keyctl</code></strong> — Nginx and AMP are native (no Docker), but Debian 13's systemd 257 needs nesting to boot cleanly in an unprivileged LXC; <code class=\"inline\">keyctl</code> is Docker-only.</li></ul>"
           }
         ]
       }
