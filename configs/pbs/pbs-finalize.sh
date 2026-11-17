@@ -31,6 +31,37 @@ ssh_ok(){ _ssh true 2>/dev/null; }
 need_vm() { qm status "$VMID" >/dev/null 2>&1 || { err "VM ${VMID} doesn't exist — run pbs-vm.sh first."; exit 1; }; }
 need_ssh(){ ssh_ok || { err "Can't SSH to ${PBS_USER}@${PBS_HOST} — run: $0 setup-ssh"; return 1; }; }
 
+# -- 0. apt repos (over SSH) — same swap the NUCs' stage-a does, for PBS --------
+# PBS ships the paid pbs-enterprise repo enabled; without a subscription it 401s and every
+# apt update/upgrade/install errors. Drop it, add the free pbs-no-subscription repo.
+fix_repos() {
+  need_ssh || return 1
+  hdr "apt repos: drop the enterprise repo, ensure pbs-no-subscription"
+  _ssh bash -s <<'REMOTE'
+for f in /etc/apt/sources.list.d/pbs-enterprise.sources /etc/apt/sources.list.d/pbs-enterprise.list; do
+  [ -e "$f" ] && { mv "$f" "$f.disabled"; echo "  disabled $f"; }
+done
+# a unified proxmox.sources may carry an enterprise component — neutralise any that do
+if grep -rlsq 'enterprise.proxmox.com' /etc/apt/sources.list.d/ 2>/dev/null; then
+  grep -rls 'enterprise.proxmox.com' /etc/apt/sources.list.d/ | while read -r f; do
+    mv "$f" "$f.disabled"; echo "  disabled $f"; done
+fi
+if ! grep -rqs 'pbs-no-subscription' /etc/apt/sources.list.d/ /etc/apt/sources.list 2>/dev/null; then
+  . /etc/os-release
+  cat > /etc/apt/sources.list.d/pbs-no-subscription.sources <<EOF2
+Types: deb
+URIs: http://download.proxmox.com/debian/pbs
+Suites: ${VERSION_CODENAME}
+Components: pbs-no-subscription
+Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+EOF2
+  echo "  added pbs-no-subscription (${VERSION_CODENAME})"
+fi
+apt-get update -qq && echo "  apt update: clean" || echo "  apt update: still has errors — check by hand"
+REMOTE
+  ok "PBS apt now on the free no-subscription repo."
+}
+
 # -- 1. boot order (host-side) ------------------------------------------------
 boot_switch() {
   need_vm
@@ -157,6 +188,7 @@ EOF
     ;;
   boot-switch) boot_switch ;;
   datastore)   datastore ;;
-  finalize)    boot_switch && datastore ;;
-  *) echo "usage: $0 [setup-ssh | finalize | boot-switch | datastore]"; exit 1 ;;
+  repos)       fix_repos ;;
+  finalize)    boot_switch && { fix_repos || warn "repo swap had issues — continuing"; datastore; } ;;
+  *) echo "usage: $0 [setup-ssh | finalize | boot-switch | datastore | repos]"; exit 1 ;;
 esac
