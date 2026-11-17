@@ -20,6 +20,9 @@ cp ./docker-compose.yaml /opt/pi-stack/
 mkdir -p /opt/monitoring && cp ../monitoring/alerts.yml /opt/monitoring/ 2>/dev/null || true
 
 cd /opt/pi-stack
-docker compose up -d                        # recreate containers whose spec changed (blackbox/node_exporter)
-docker compose restart prometheus blackbox  # reload mounted configs (scrape+rules, probe modules)
-echo "redeployed. Grafana loads new/updated dashboards within ~30s (Dashboards → Homelab)."
+docker compose up -d                                # recreate containers whose spec changed (blackbox/node_exporter)
+docker compose restart prometheus blackbox grafana  # reload mounted configs: prometheus (scrape+rules),
+                                                    # blackbox (probe modules), grafana (datasource +
+                                                    # dashboard PROVIDERS — only re-read at Grafana boot,
+                                                    # so 'up -d' alone never registers newly-added dashboards)
+echo "redeployed. Dashboards appear under Grafana → Dashboards within a few seconds of the restart."

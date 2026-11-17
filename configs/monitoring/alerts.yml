@@ -34,17 +34,23 @@ groups:
         labels: { severity: critical }
         annotations: { summary: "Internal DNS not resolving *.home.alexjenkinson.com" }
 
-      - alert: SmartFailurePredicted      # off smartmon.sh textfile metrics (R24)
-        expr: smartmon_device_smart_healthy == 0
-        for: 1m
+      - alert: SmartFailurePredicted      # off smartmon.sh textfile metrics (R24). Only READABLE disks
+        expr: smartmon_device_smart_healthy == 0   # emit a health series, so this is a genuine FAIL, not
+        for: 1m                                     # an unreadable bridge (that's SmartUnreadable below).
         labels: { severity: critical }
         annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} SMART health FAILED — replace the disk" }
 
-      - alert: DiskTempHigh
-        expr: smartmon_temperature_celsius > 55
-        for: 10m
+      - alert: SmartUnreadable            # smartctl couldn't read SMART through the disk's bridge at all.
+        expr: smartmon_device_smart_readable == 0  # Usually a USB/DAS -d flag issue, NOT a failing disk —
+        for: 30m                                    # warning, not a critical page. Find the right -d flag.
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} over 55°C" }
+        annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} — smartctl can't read SMART (bridge needs the right -d flag; not necessarily failing)" }
+
+      - alert: DiskTempHigh               # 60°C: NVMe runs hot under load; 15m avoids flapping on spikes
+        expr: smartmon_temperature_celsius > 60
+        for: 15m
+        labels: { severity: warning }
+        annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} over 60°C" }
 
       - alert: SmartCollectorStale        # cron/smartmon.sh stopped writing — blind to disk health
         expr: time() - smartmon_last_collect_timestamp_seconds > 3600

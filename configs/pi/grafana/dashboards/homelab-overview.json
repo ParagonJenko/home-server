@@ -42,7 +42,7 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "Disks SMART unhealthy",
+      "title": "Disks FAILED",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
