@@ -90,5 +90,18 @@ services:
     network_mode: host
     environment: { PORT: 9710, URL: "http://media-pipeline.home.alexjenkinson.com:9696", APIKEY: "${PROWLARR_API_KEY}" }
     restart: unless-stopped
+
+  # PBS: datastore usage, snapshot counts, backup success — reads the PBS API with a read-only
+  # token (PBS_* in .env). Self-signed TLS -> PBS_INSECURE. Listens on :10019.
+  pbs-exporter:
+    image: ghcr.io/natrontech/pbs-exporter:latest
+    network_mode: host
+    environment:
+      PBS_ENDPOINT: "https://pbs.home.alexjenkinson.com:8007"
+      PBS_USERNAME: "root@pam"
+      PBS_API_TOKEN_NAME: "${PBS_TOKEN_NAME}"
+      PBS_API_TOKEN: "${PBS_TOKEN_VALUE}"
+      PBS_INSECURE: "true"
+    restart: unless-stopped
 volumes:
   grafana-data:

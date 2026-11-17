@@ -198,3 +198,14 @@ groups:
           cause: "{{ $labels.job }} system health count is {{ $value | humanize }}."
           fix: "Open {{ $labels.job }} → System → Status to read the issue (indexer down, download client unreachable, root folder missing, update available…)."
           where: "The app UI (https://{{ $labels.job }}.home.alexjenkinson.com). Grafana → Media stack → Arr health issues."
+
+      - alert: PBSDatastoreFull            # the backup datastore is filling — old backups prune, but watch it
+        expr: 100 * pbs_used / pbs_size > 85
+        for: 1h
+        labels: { severity: warning }
+        annotations:
+          summary: "PBS datastore {{ $labels.datastore }} over 85% full"
+          impact: "The backup datastore is nearly full — new backups may start failing and retention can't protect you if it hits 100%."
+          cause: "Datastore {{ $labels.datastore }} is {{ $value | humanize }}% used."
+          fix: "Check the PBS prune/GC schedule (keep-daily 7 / weekly 4 / monthly 6) ran; run GC: on PBS, proxmox-backup-manager garbage-collection start <datastore>. Consider a bigger datastore disk."
+          where: "PBS UI https://pbs.home.alexjenkinson.com:8007. Grafana → PBS backups. storage.md."

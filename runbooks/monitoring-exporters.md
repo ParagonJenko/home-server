@@ -59,3 +59,24 @@ Five exporters, all scraping services in LXC 210/220 over the LAN.
 `curl -s localhost:9000/metrics | grep -i plex` and adjust the queries in `media.json`. qBittorrent/Arr
 names are stable.
 
+---
+
+## PBS — pbs-exporter  ✅
+
+Datastore usage, snapshot counts and reachability, read from the PBS API with a read-only token.
+Binds `:10019`. Complements `verify-backups.sh` (which checks ages by CLI).
+
+**Token** (run on the PBS VM / shell):
+```bash
+proxmox-backup-manager user generate-token root@pam monitoring
+proxmox-backup-manager acl update / Audit --auth-id 'root@pam!monitoring'
+```
+Paste the printed value into `.env` as `PBS_TOKEN_VALUE` (name stays `monitoring`).
+
+**Dashboard:** Grafana → **PBS backups** (datastore used %, size/available, snapshots per guest, PBS reachable).
+**Alert:** `PBSDatastoreFull` (warning) at 85% datastore use.
+**Metric-name caveat:** this exporter's metric names (`pbs_used`/`pbs_size`/`pbs_snapshot_count` …) can
+differ by version — if panels show *No data*, `curl -s localhost:10019/metrics | grep pbs_` and adjust
+`pbs.json` + the `PBSDatastoreFull` expr to match.
+
+
