@@ -1812,6 +1812,12 @@ var STAGES = [
             "title": "Manual — the datastore",
             "html": "Copy <code class=\"inline\">configs/pbs/datastore-setup.sh</code> to the PBS VM and run it there — it creates the datastore and sets retention (<code class=\"inline\">keep-daily=7, keep-weekly=4, keep-monthly=6</code> — never <code class=\"inline\">keep-all</code>). Copy just that one file; it's deliberately self-contained, since the rest of the repo isn't on the PBS VM. Its <code class=\"inline\">DATASTORE_PATH</code> is <code class=\"inline\">{{DATASTORE_PATH}}</code>."
           }
+        ],
+        "verify": [
+          {
+            "cmd": "# @where: NUC-2 · host shell — PBS VM health:\n./configs/pbs/verify-pbs.sh"
+          },
+          "VM 900 up and onboot, the USB HDD passed through by-id with <code class=\"inline\">backup=0</code> (R3), booting off the system disk (not the installer ISO), and the PBS UI answering on :8007. Run it after the datastore step."
         ]
       },
       {
@@ -1839,8 +1845,14 @@ var STAGES = [
           {
             "callout": "manual",
             "title": "Manual",
-            "html": "Datacenter → Backup → add a daily scheduled job targeting <code class=\"inline\">pbs-backup</code> — <strong>all guests except Frigate's recording volume</strong> (260G of 14-day churn would overrun the 2TB datastore; back up Frigate's config, not its clips). Then back up the PBS VM's own config and keep a copy with the offsite sync (G6), not only on the DAS, so PBS is rebuildable even if NUC-1 is gone."
+            "html": "Datacenter → Backup → add a daily scheduled job targeting <code class=\"inline\">pbs-backup</code> — <strong>all guests except Frigate's recording volume</strong> (260G of 14-day churn would overrun the 2TB datastore; back up Frigate's config, not its clips). Then back up the PBS VM's own config and keep a copy with the offsite sync (G7), not only on the DAS, so PBS is rebuildable even if NUC-1 is gone."
           }
+        ],
+        "verify": [
+          {
+            "cmd": "# @where: each NUC · host shell — backup coverage (R4):\n./configs/pbs/verify-backups.sh"
+          },
+          "On each NUC: the PBS storage is active and every local guest is in a backup job — except Frigate (111, its 260G recordings) and the PBS VM (900, can't back up to itself), which should be in the job's exclude. A guest missing from the job fails loud. This proves coverage; G6's test restore proves it's actually restorable."
         ],
         "device": "Each NUC"
       },
