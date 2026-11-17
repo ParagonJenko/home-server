@@ -113,6 +113,39 @@ case "$STEP" in
     awk "BEGIN{exit !(${sent:-0}>0)}"            && yes_ "Discord notifications recorded (total=${sent})" || no_ "no Discord notification sent — is the webhook pasted into discord-webhook-url?"
     awk "BEGIN{exit !(${fail1:-0}<=${fail0:-0})}" && yes_ "no new failed Discord deliveries"            || no_ "Discord delivery FAILED (failed ${fail0} -> ${fail1}) — bad webhook URL; see: docker compose logs alertmanager"
     ;;
+  I2)
+    # Guardrails are per host: the media pool + containers 210/220 live on NUC-1 only, so on
+    # a host without them these report "n/a", not FAIL.
+    # R9: no container rootfs on the media pool
+    grep -h '^rootfs:' /etc/pve/lxc/*.conf 2>/dev/null | grep -qi 'media' \
+      && no_ "a container rootfs sits on the media pool (R9)" \
+      || yes_ "no container rootfs on the media pool (R9)"
+    # R6: every container rootfs on this host is size-capped
+    capbad=""
+    for f in /etc/pve/lxc/*.conf; do
+      [ -e "$f" ] || continue
+      r="$(grep '^rootfs:' "$f" 2>/dev/null)"; [ -n "$r" ] || continue
+      echo "$r" | grep -q 'size=' || capbad="${capbad} $(basename "$f" .conf)"
+    done
+    [ -z "$capbad" ] && yes_ "every container rootfs is size-capped (R6)" || no_ "rootfs with no size cap (R6):${capbad}"
+    # R8/R9: mergerfs pool guardrails — only where the pool actually lives
+    if grep -q mergerfs /etc/fstab 2>/dev/null; then
+      grep mergerfs /etc/fstab | grep -q minfreespace        && yes_ "mergerfs minfreespace set (R8)"      || no_ "mergerfs minfreespace missing (R8)"
+      grep mergerfs /etc/fstab | grep -q 'x-systemd.requires' && yes_ "pool requires its branches (R9)"    || no_ "pool branches ordering-only, not a dependency (R9)"
+    else
+      yes_ "no media pool on this host — mergerfs checks n/a"
+    fi
+    # R9: media-mount containers on THIS host refuse to start without the mount
+    mfound=""
+    for id in $(pct list 2>/dev/null | awk 'NR>1{print $1}'); do
+      grep -qE '^mp[0-9]+:.*(/data|/mnt/media)' "/etc/pve/lxc/${id}.conf" 2>/dev/null || continue
+      mfound=1
+      systemctl cat "pve-container@${id}" 2>/dev/null | grep -q RequiresMountsFor \
+        && yes_ "CT ${id} requires its media mount (R9)" \
+        || no_ "CT ${id} would start against an empty dir — apply_requires_mount (R9)"
+    done
+    [ -z "$mfound" ] && yes_ "no media-mount containers on this host — check n/a"
+    ;;
   J3)
     curl -s localhost:9100/metrics 2>/dev/null | grep -q smartmon \
       && yes_ "smartmon metrics present" || no_ "smartmon metrics (smartmon.sh cron)"

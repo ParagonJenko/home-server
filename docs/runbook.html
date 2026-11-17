@@ -2263,7 +2263,7 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Each NUC · host shell\n# No container rootfs on the DAS/media pool [R9]\ngrep -r \"rootfs\" /etc/pve/lxc/*.conf | grep -i media && echo \"!! rootfs on media — FIX\" || echo \"OK: no rootfs on media\"\n\n# Every container has a rootfs size cap [R6]\ngrep -H \"rootfs\" /etc/pve/lxc/*.conf\n\n# mergerfs headroom present [R8]\ngrep mergerfs /etc/fstab | grep minfreespace && echo \"OK: minfreespace set\"\n\n# A missing branch must stop the pool, not be unioned from the root device [R9]\ngrep mergerfs /etc/fstab | grep -q \"x-systemd.requires\" \\\n  && echo \"OK: pool requires its branches\" \\\n  || echo \"!! only ordering, not a dependency — FIX (see configs/mergerfs/fstab-snippet)\"\n\n# Media containers must refuse to start without the pool [R9]\nfor id in 210 220; do\n  systemctl cat \"pve-container@${id}\" 2>/dev/null | grep -q RequiresMountsFor \\\n    && echo \"OK: ${id} requires its mount\" \\\n    || echo \"!! ${id} would start against an empty directory — run apply_requires_mount\"\ndone"
+            "cmd": "# @where: Each NUC · host shell — scoped per host (NUC-2 has no media pool / media CTs, reported n/a):\n./configs/verify.sh I2"
           },
           {
             "callout": "note",
@@ -2282,7 +2282,7 @@ var STAGES = [
             "cmd": "# @where: Each NUC · host shell\n# R8: reserved-blocks actually set (don't assume) — root + container storage + DAS + USB HDD\ntune2fs -l $(findmnt -no SOURCE /) | grep -i 'reserved block count'\nlsblk -f    # then tune2fs -l each data filesystem to confirm its -m"
           }
         ],
-        "verify": "Every line prints OK, and the IP grep returns only the Pi and the gateway.",
+        "verify": "<code class=\"inline\">verify.sh I2</code> is all PASS/n-a on each host — on NUC-2 the media-pool and media-container checks read <em>n/a</em> (not FAIL), because that stack lives on NUC-1. The IP grep returns only the Pi and the gateway; reserved blocks confirmed on each data filesystem.",
         "device": "Each NUC"
       },
       {
