@@ -10,7 +10,7 @@ Owns which physical disk is which, every workload's disk ceiling, the reserved h
 | Internal SSD | nuc2 | TBD | TBD | Proxmox root + `local-lvm` (Frigate's 260G lives here) |
 | DAS disk 1 | nuc1 | ST4000DM004 / ZFN5Q3VL | `ata-ST4000DM004-2U9104_ZFN5Q3VL` | mergerfs branch → `/mnt/pool/disk1` |
 | DAS disk 2 | nuc1 | ST4000DM004 / ZW63SHWZ | `ata-ST4000DM004-2U9104_ZW63SHWZ` | mergerfs branch → `/mnt/pool/disk2` |
-| 2TB USB HDD | nuc2 | TBD | TBD | PBS datastore, passed to VM 900 as a block device |
+| 2TB USB HDD | nuc2 | TOSHIBA MQ04UBD200 / 56KQP05LT | `ata-TOSHIBA_MQ04UBD200_56KQP05LT` | PBS datastore, passed to VM 900 as a block device |
 
 > The DAS is a USB enclosure, so each DAS disk also exposes a position-based `usb-External_USB3.0_…-0:0` / `-0:1` path. Record and use the `ata-…_<serial>` by-id — it follows the disk, not the bay (R9). Both disks are the same model, so the serial is the only thing telling them apart.
 
