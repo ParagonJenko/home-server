@@ -90,5 +90,38 @@ EOF
   restart)
     need_ssh || exit 1
     restart_and_verify ;;
-  *) echo "usage: $0 [setup-ssh | status | view | port <80|8123> | restart]"; exit 1 ;;
+  enable-prometheus)
+    need_ssh || exit 1
+    if run_ha "docker exec homeassistant grep -q '^prometheus:' ${CONF}"; then
+      echo "prometheus: already present in ${CONF} — nothing to add."
+    else
+      echo "appending the prometheus: block to ${CONF}..."
+      run_ha "docker exec -i homeassistant sh -c 'cat >> ${CONF}'" <<'YAML'
+
+# --- added by ha-config.sh enable-prometheus: exposes /api/prometheus for the homelab Prometheus ---
+prometheus:
+  namespace: homeassistant
+  filter:
+    include_domains:
+      - light
+      - sensor
+      - binary_sensor
+      - switch
+      - climate
+      - device_tracker
+YAML
+    fi
+    echo "validating HA config..."
+    if ! run_ha "ha core check"; then
+      echo "!! 'ha core check' failed — fix configuration.yaml before restarting. Not restarting." >&2
+      exit 1
+    fi
+    restart_and_verify
+    echo
+    echo ">> Integration enabled. Two manual bits remain (a token can't be minted safely in code):"
+    echo "   1. HA -> your profile -> Security -> Long-lived access tokens -> Create. Copy it."
+    echo "   2. On the Pi: add HA_TOKEN=<token> to /opt/pi-stack/.env (or run gather-exporter-creds.sh),"
+    echo "      then ./configs/pi/redeploy.sh"
+    ;;
+  *) echo "usage: $0 [setup-ssh | status | view | port <80|8123> | restart | enable-prometheus]"; exit 1 ;;
 esac

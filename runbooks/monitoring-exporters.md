@@ -161,14 +161,29 @@ Then on the Pi `./configs/pi/redeploy.sh` so Prometheus picks up the `frigate` j
 HA exposes `/api/prometheus` (lights, sensors, climate, binary sensors, switches…) behind a bearer token
 — no separate exporter container. Two steps:
 
-**1. Enable it in HA.** Add the block in `configs/homeassistant/prometheus-snippet.yaml` to HA's
-`configuration.yaml` (via the File editor / Studio Code Server add-on, or HAOS SSH on :22222), then
-restart HA. The `filter.include_domains` keeps the metric set to the domains the dashboard uses.
+**1. Enable the integration (automated).** On nuc2, one command appends the `prometheus:` block to HA's
+`configuration.yaml`, validates, restarts HA and verifies — idempotent, safe to re-run:
+```bash
+./configs/homeassistant/ha-config.sh enable-prometheus
+```
+(Needs HAOS SSH set up once — `./configs/homeassistant/ha-config.sh setup-ssh`. The manual alternative
+is pasting `configs/homeassistant/prometheus-snippet.yaml` into `configuration.yaml` via the File editor
+add-on, then restarting HA.)
 
-**2. Make a token + deploy.** HA → your profile (bottom-left) → **Security** → **Long-lived access
-tokens** → **Create**. Put it in `.env` as `HA_TOKEN` (the creds wizard prompts for it as step 9).
-`redeploy.sh` writes it to `/etc/prometheus/ha_token` (chowned to Prometheus's uid) and the
-`home_assistant` scrape job reads it as a bearer.
+**2. Add the token.** HA → your profile (bottom-left) → **Security** → **Long-lived access tokens** →
+**Create**, copy it. Then on the **Pi** put it in `.env` as `HA_TOKEN` — either via the creds wizard
+(step 9, `./configs/pi/gather-exporter-creds.sh`) or this one-liner (reads hidden, no shell history):
+```bash
+read -rsp 'Paste HA token: ' HA && echo && \
+{ grep -q '^HA_TOKEN=' /opt/pi-stack/.env \
+    && sed -i "s#^HA_TOKEN=.*#HA_TOKEN=$HA#" /opt/pi-stack/.env \
+    || echo "HA_TOKEN=$HA" >> /opt/pi-stack/.env; } && unset HA
+```
+A long-lived token **can't be minted safely in code** — it's a UI action (the scriptable route means
+editing HA's auth store directly, which risks locking you out), so this one step stays manual.
+
+**3. Deploy.** `./configs/pi/redeploy.sh` on the Pi — it writes the token to `/etc/prometheus/ha_token`
+(chowned to Prometheus's uid) and the `home_assistant` scrape job reads it as a bearer.
 
 **Dashboard:** Grafana → **Home Assistant** (Lights / Climate / Batteries & power / Waste collection /
 Doors & motion).
