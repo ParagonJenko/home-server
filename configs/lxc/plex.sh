@@ -51,7 +51,9 @@ pct exec "$CTID" -- bash -c 'command -v docker >/dev/null || bash /root/_install
 say "deploy the compose stack"
 pct exec "$CTID" -- mkdir -p /opt/plex
 pct push "$CTID" ../plex/docker-compose.yaml /opt/plex/docker-compose.yaml
+pct push "$CTID" ../plex/verify-plex.sh /opt/plex/verify-plex.sh
 [ -f ../plex/.env ] && pct push "$CTID" ../plex/.env /opt/plex/.env
 pct exec "$CTID" -- bash -c 'cd /opt/plex && docker compose up -d'
 
 ok "plex up. Add libraries at /library/movies and /library/tv (NOT /movies /tv)."
+echo "   Verify: pct exec ${CTID} -- bash /opt/plex/verify-plex.sh"
