@@ -1875,8 +1875,7 @@ var STAGES = [
               "steps": [
                 "<strong>setup-ssh</strong> asks for the <strong>PBS root password</strong> you set during install, to copy nuc2's key in (once). If it can't, it prints a one-line key to paste into the VM console instead.",
                 "<strong>finalize → boot-switch</strong> asks <em>\"has the installer finished?\"</em> when PBS isn't answering yet — it is, right after install; the VM is just looping in the installer. Answer <code class=\"inline\">y</code>.",
-                "<strong>finalize → datastore</strong> asks you to confirm before it <strong>formats the 2TB disk</strong> (ext4). This wipes it — say yes only once you've checked it's the empty datastore disk.",
-                "<strong>Encryption key (R21) — do this one yourself</strong> on each NUC and copy it to your vault; lose it and the backups are unreadable even with the datastore intact: <code class=\"inline\">proxmox-backup-client key create /etc/pve/priv/pbs-enc.key</code>."
+                "<strong>finalize → datastore</strong> asks you to confirm before it <strong>formats the 2TB disk</strong> (ext4). This wipes it — say yes only once you've checked it's the empty datastore disk."
               ]
             }
           },
@@ -1914,6 +1913,18 @@ var STAGES = [
             "callout": "gotcha",
             "title": "This fails unless pbs.home.alexjenkinson.com resolves",
             "html": "Needs Stage D done, or a temporary <code class=\"inline\">/etc/hosts</code> line on each NUC (<code class=\"inline\">192.168.1.5 pbs.home.alexjenkinson.com</code>) removed once AdGuard has the rewrite. Adding the storage by IP is <em>not</em> the workaround — it breaks R13 and quietly fails the next time PBS moves."
+          },
+          {
+            "manual": {
+              "where": "Each NUC · host shell — encryption (R21)",
+              "lead": "Turn on client-side encryption on the storage <strong>before the first backup</strong> — PBS never re-encrypts snapshots already taken. Do this on each NUC; each gets its own key.",
+              "steps": [
+                "Generate the key on the storage, once, right after adding it: <code class=\"inline\">pvesm set pbs-backup --encryption-key autogen</code>. <strong>Only ever run this on a storage with no key yet</strong> — re-running replaces the key and orphans every backup made with the old one.",
+                "PVE writes the key, unprotected, to <code class=\"inline\">/etc/pve/priv/storage/pbs-backup.enc</code>. <span class=save>Copy that file to your vault (R21)</span> — lose it and these backups are unreadable even with the datastore fully intact.",
+                "Repeat on the other NUC. nuc1 and nuc2 aren't clustered, so each holds its own key — save <strong>both</strong> <code class=\"inline\">.enc</code> files, labelled by host.",
+                "Confirm it took: after the first backup runs (next step), the snapshot shows as <em>Encrypted</em> under PBS → Datastore → <code class=\"inline\">backups</code> → Content."
+              ]
+            }
           },
           {
             "manual": {

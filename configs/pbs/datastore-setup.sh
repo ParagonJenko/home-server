@@ -29,8 +29,9 @@ else
 fi
 echo "datastore '$DATASTORE' ready: GC daily 03:30, prune daily 02:00 (7d / 4w / 6m)."
 
-# 4. Encryption is CLIENT-side in PBS — there is no datastore toggle here. Create the
-#    key ON EACH PVE HOST (nuc1/nuc2), where backups originate:
-#      proxmox-backup-client key create /etc/pve/priv/pbs-enc.key
-#    SAVE: that key is the ONLY way to read encrypted backups — copy it to your vault
-#    (R21). Lost key = unreadable backups even with the datastore fully intact.
+# 4. Encryption is CLIENT-side in PBS — set it on the PVE *storage*, on each NUC, right after
+#    you add the storage (G5) and BEFORE the first backup (PBS never re-encrypts old snapshots):
+#      pvesm set pbs-backup --encryption-key autogen      # only on a storage with no key yet
+#    PVE writes the key (unprotected) to /etc/pve/priv/storage/pbs-backup.enc.
+#    SAVE both NUCs' key files to your vault (R21) — lost key = unreadable backups even with
+#    the datastore fully intact.
