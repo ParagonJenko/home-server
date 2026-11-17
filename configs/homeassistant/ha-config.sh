@@ -25,9 +25,12 @@ need_ssh() {
   ssh_reachable && return 0
   cat <<EOF
 >> Can't SSH to HAOS at ${HA_SSH_USER}@${HA_SSH_HOST}:${HA_SSH_PORT}.
-   Run once:  ./configs/homeassistant/ha-config.sh setup-ssh
-   (or from the Proxmox console: VM ${VMID} -> Console -> 'login', then
-    docker exec homeassistant cat ${CONF})
+   - SSH add-on? In its Configuration set 'username: root' AND 'authorized_keys', turn OFF
+     Protection mode, expose port 22, Start it — then run with HA_SSH_PORT=22
+     (and HA_SSH_USER=<name> if you set a username other than root).
+   - Not set up yet?  ./configs/homeassistant/ha-config.sh setup-ssh
+   - Or from the Proxmox console: VM ${VMID} -> Console -> 'login', then
+     docker exec homeassistant cat ${CONF}
 EOF
   return 1
 }
@@ -49,9 +52,14 @@ Authorise it on HAOS (pick one), then re-run any command:
       mkdir -p /root/.ssh && chmod 700 /root/.ssh
       echo '$(cat "${KEY}.pub")' >> /root/.ssh/authorized_keys
     This console step is the only manual bit; everything after runs from here.
- B) 'Advanced SSH & Web Terminal' add-on (HA UI -> Settings -> Add-ons -> Store): paste the key
-    above into its 'authorized_keys' option, start it, then run this script with HA_SSH_PORT=22.
-Then:  ./configs/homeassistant/ha-config.sh status
+ B) 'Advanced SSH & Web Terminal' add-on (HA UI -> Settings -> Add-ons). Easier to paste into:
+    1. Configuration tab: set  username: root  AND add the key under  authorized_keys:  . Save.
+       (it logs in as that username — if you leave it unset/other, SSH as root is refused)
+    2. Info tab: turn OFF 'Protection mode' (so docker/ha commands are allowed).
+    3. Network: expose SSH on port 22. Then Start the add-on (it won't start without a key).
+    4. Run with the add-on's port:  HA_SSH_PORT=22 ./configs/homeassistant/ha-config.sh status
+       (add HA_SSH_USER=<name> if you used a username other than root)
+Then:  ./configs/homeassistant/ha-config.sh status   (or 'HA_SSH_PORT=22 ...' for the add-on)
 EOF
     ;;
   status)
