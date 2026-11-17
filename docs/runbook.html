@@ -2296,28 +2296,32 @@ var STAGES = [
         ],
         "subs": [
           {
-            "name": "1 · Power down",
-            "html": "NUT does this automatically on battery (J1), in the same order written here as the manual fallback: services → storage → DNS last."
+            "name": "1 · Finish writes",
+            "html": "Pause anything mid-write so nothing's left half-done — a running PBS backup, active torrents. Check with <code class=\"inline\">pct list</code> / <code class=\"inline\">qm list</code> and the PBS UI → Tasks."
           },
           {
-            "name": "2 · Move",
+            "name": "2 · Shut down — reverse dependency order",
+            "html": "Clean shutdown only; <strong>never pull the mains on a running box</strong> until the UPS + NUT is in (J1). A Proxmox host stops its own guests on the way down, so one command per box, in this order:<ul><li><strong>nuc2</strong> (Frigate 111, PBS VM 900, HA VM 910): <code class=\"inline\">shutdown -h now</code></li><li><strong>nuc1</strong> (media containers + the mergerfs pool): <code class=\"inline\">shutdown -h now</code> — stops guests, unmounts the pool and its branches, then halts.</li><li><strong>Pi</strong> (DNS) <strong>last</strong>: <code class=\"inline\">shutdown -h now</code></li></ul>Wait until every box's activity LEDs are dark before cutting any power. The DAS and USB HDD unmount as part of the host shutdown — safe to unplug once the host is off."
+          },
+          {
+            "name": "3 · Unplug + cable-manage",
+            "html": "Everything off and unmounted → safe to unplug, re-route and tidy. The DAS disks mount by <strong>LABEL</strong> (<code class=\"inline\">media-disk1</code>/<code class=\"inline\">media-disk2</code>), so you can change <em>which</em> USB port each one sits in and the pool still rebuilds by identity — route them wherever's neat. Label each power and data cable now while you can see what goes where. Power off the switch and APs last."
+          },
+          {
+            "name": "4 · Move (if relocating)",
             "html": "The island: NUCs, Pi, switch, DAS, USB HDD, APs, Eufy cameras."
           },
           {
-            "name": "3 · Cable up",
-            "html": "Switch ← NUCs / Pi / APs; a single WAN link ← venue internet."
+            "name": "5 · Power on — dependency order, reconnect first",
+            "html": "Reconnect <em>every</em> cable and disk, then power on in order:<ul><li><strong>Disks before their hosts</strong> — both DAS disks on nuc1, the USB HDD on nuc2. A host that boots with its data disk off hangs on <em>\"Timed out waiting for device … Media-disk\"</em> (the mount depends on the disk).</li><li><strong>Switch + WAN</strong> first.</li><li><strong>Pi</strong> (DNS) — wait until it answers: <code class=\"inline\">getent hosts pi.home.alexjenkinson.com</code> from another box.</li><li><strong>nuc1</strong> — mounts the branches by LABEL → the pool → containers in <code class=\"inline\">onboot</code> order.</li><li><strong>nuc2</strong> — Frigate, the PBS VM and HA start.</li></ul>Then do nothing — ordered boot brings up DNS → mounts → services by itself."
           },
           {
-            "name": "4 · Power on",
-            "html": "And do nothing else. Ordered unattended boot brings up DNS → mounts → services by itself."
+            "name": "6 · Verify by name",
+            "html": "Internal DNS resolves (<code class=\"inline\">ping plex.home.alexjenkinson.com</code>); devices get addresses; Plex, Frigate and AdGuard are reachable on the LAN; Tailscale works from off-site; the cameras are online and Frigate has their streams. <code class=\"inline\">./configs/verify.sh B2</code> re-checks the pool. <strong>Re-run J5</strong> — a different venue router means the exposure check must be redone."
           },
           {
-            "name": "5 · Verify by name",
-            "html": "Internal DNS resolves (<code class=\"inline\">ping plex.home.alexjenkinson.com</code>); devices get addresses; Plex, Frigate and AdGuard are reachable on the LAN; Tailscale works from off-site; the cameras are online and Frigate has their streams. <strong>Re-run J5</strong> — a different venue router means the exposure check must be redone."
-          },
-          {
-            "name": "6 · If anything's off",
-            "html": "The docs repo has the service map and per-service runbooks. Nothing should require memory — if it did, that's the gap to write up."
+            "name": "7 · If anything's off",
+            "html": "Full procedure + troubleshooting (boot hangs, a disk that didn't come back): <code class=\"inline\">runbooks/power-cycle.md</code>. The docs repo has the service map and per-service runbooks — nothing should require memory; if it did, that's the gap to write up."
           }
         ]
       }

@@ -14,20 +14,14 @@ The one thing **not yet in place**: a UPS + NUT for automatic graceful shutdown 
 
 ## Current build state
 
-Only **NUC-1** exists so far (Stages A–B). No Pi, NUC-2, PBS or UPS yet. So right now the whole thing is just:
-
-1. Clean-shutdown NUC-1 — `shutdown -h now`
-2. Reconnect **both** DAS disks
-3. Power on
-
-The full ordering below matters once the Pi and NUC-2 are built. Update this file's build-state line as stages land.
+Built: **NUC-1** (media stack + mergerfs pool), **NUC-2** (Frigate + PBS VM + HA VM), the **Pi** (DNS + monitoring), **PBS** and the offsite sync. Still pending: the **UPS + NUT** for automatic graceful shutdown on power loss (Stage J / R22) — so until that lands, **always shut down cleanly before cutting power**. The full ordering below is now live. Update this line as remaining stages land.
 
 ## Power OFF — reverse dependency order
 
 Shut each box down cleanly; a Proxmox host stops its guests automatically on the way down.
 
 1. **Finish or pause anything writing** — a PBS backup, a torrent. (`pct list`, and check PBS tasks.)
-2. **NUC-2** (Frigate + PBS VM): `shutdown -h now`, or the Proxmox web UI. Waits for the guests to stop, then halts.
+2. **NUC-2** (Frigate + PBS VM + HA VM): `shutdown -h now`, or the Proxmox web UI. Waits for the guests to stop, then halts.
 3. **NUC-1** (containers + mergerfs pool): `shutdown -h now`. Stops the guests, unmounts `/mnt/media` and the branches, then halts.
 4. **Pi** (DNS): `sudo shutdown -h now`.
 5. **Wait for every box's activity LEDs to go dark** before pulling power. The DAS and USB HDD unmount as part of the host shutdown — safe to unplug once the host is off.
@@ -43,7 +37,7 @@ Everything is off and all disks are unmounted — safe to unplug, re-route and r
 1. **Reconnect all cables and disks** — both DAS disks to NUC-1, the USB HDD to NUC-2. A missing DAS disk makes NUC-1's pool refuse to mount (by design).
 2. **Pi first** — it is the DNS everything resolves through. Wait until it answers: from another box, `getent hosts pi.home.alexjenkinson.com` (or `getent hosts plex.home.alexjenkinson.com`).
 3. **NUC-1** — mounts the branches by LABEL, then the mergerfs pool (requires both branches), then starts containers in `onboot` order.
-4. **NUC-2** — Frigate and the PBS VM start.
+4. **NUC-2** — Frigate, the PBS VM and HA start.
 
 ## Verify after power-on
 
