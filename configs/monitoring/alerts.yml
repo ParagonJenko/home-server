@@ -75,3 +75,9 @@ groups:
         for: 1h
         labels: { severity: warning }
         annotations: { summary: "{{ $labels.instance }} TLS cert expires in under 14 days" }
+
+      - alert: CameraDown                 # RTSP port shut — Frigate has probably lost the stream
+        expr: probe_success{job="blackbox-cameras"} == 0
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "{{ $labels.instance }} RTSP (:554) unreachable for 10m — Frigate may have lost its stream (reservation/rewrite set? camera online?)" }

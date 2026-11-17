@@ -31,6 +31,15 @@ modules:
     icmp:
       preferred_ip_protocol: ip4
 
+  # TCP connect — used to probe cameras' RTSP port (:554). A camera serving RTSP to Frigate has
+  # :554 open; this is a truer "camera up" signal than ICMP (Eufy cams can sleep ping but keep
+  # the stream up).
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: ip4
+
   # Resolve a known *.home name against the target DNS server (AdGuard) — internal-DNS health.
   dns_home:
     prober: dns

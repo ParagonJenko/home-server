@@ -71,6 +71,20 @@ scrape_configs:
       - { source_labels: [service],     target_label: instance }
       - { target_label: __address__,    replacement: localhost:9115 }
 
+  # ---- CAMERAS: probe each camera's RTSP port (:554). DOWN -> Frigate likely lost the stream. ----
+  - job_name: blackbox-cameras
+    metrics_path: /probe
+    params: { module: [tcp_connect] }
+    static_configs:
+      - { targets: ['cam-living-room.home.alexjenkinson.com:554'], labels: { service: cam-living-room } }
+      - { targets: ['cam-kitchen.home.alexjenkinson.com:554'],     labels: { service: cam-kitchen } }
+      - { targets: ['cam-bedroom.home.alexjenkinson.com:554'],     labels: { service: cam-bedroom } }
+      - { targets: ['cam-basement.home.alexjenkinson.com:554'],    labels: { service: cam-basement } }
+    relabel_configs:
+      - { source_labels: [__address__], target_label: __param_target }
+      - { source_labels: [service],     target_label: instance }
+      - { target_label: __address__,    replacement: localhost:9115 }
+
   # Internal DNS health: ask AdGuard (:53) to resolve a *.home name. job=dns feeds InternalDNSBroken.
   - job_name: dns
     metrics_path: /probe
