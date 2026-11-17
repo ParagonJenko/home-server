@@ -1912,7 +1912,7 @@ var STAGES = [
           {
             "callout": "gotcha",
             "title": "This fails unless pbs.home.alexjenkinson.com resolves",
-            "html": "Needs Stage D done, or a temporary <code class=\"inline\">/etc/hosts</code> line on each NUC (<code class=\"inline\">192.168.1.5 pbs.home.alexjenkinson.com</code>) removed once AdGuard has the rewrite. Adding the storage by IP is <em>not</em> the workaround — it breaks R13 and quietly fails the next time PBS moves."
+            "html": "<p>The NUC must resolve the name, and at this stage it's still on its install-time resolver (<code class=\"inline\">1.1.1.1</code>), which doesn't know <code class=\"inline\">.home</code> names — so <code class=\"inline\">pvesm add</code> fails with \"Name or service not known\". Adding the storage by IP is <em>not</em> the workaround — it breaks R13 and quietly fails the next time PBS moves.</p><p><strong>Cleaner than a hosts line:</strong> if AdGuard already resolves the name (<code class=\"inline\">nslookup pbs.home.alexjenkinson.com {{PI_IP}}</code> answers <code class=\"inline\">192.168.1.5</code>), bring <a href=\"#stage-H\">H3</a> forward for this box — <code class=\"inline\">sed -i 's/^nameserver .*/nameserver {{PI_IP}}/' /etc/resolv.conf</code> — and skip the stopgap entirely.</p><p><strong>Stopgap</strong> if the Pi isn't up yet: a temporary <code class=\"inline\">/etc/hosts</code> line on each NUC (<code class=\"inline\">192.168.1.5 pbs.home.alexjenkinson.com</code>), removed once DNS resolves it.</p>"
           },
           {
             "manual": {
@@ -2099,7 +2099,12 @@ var STAGES = [
             "p": "Then switch the infrastructure boxes off <code class=\"inline\">1.1.1.1</code> onto the Pi — the step A1 and G3 deferred. On <strong>each NUC and the PBS VM</strong>, set the resolver to the Pi, or <code class=\"inline\">pbs.home.alexjenkinson.com</code> stops resolving from the hosts (G4):"
           },
           {
-            "cmd": "# @where: Each NUC + PBS VM\n# Proxmox hosts + PBS VM: GUI DNS field, or /etc/resolv.conf\nnameserver {{PI_IP}}\ngetent hosts pbs.home.alexjenkinson.com        # must resolve from each NUC now"
+            "cmd": "# @where: Each NUC + PBS VM · host shell — replace the resolver with the Pi (and ONLY the Pi):\nsed -i 's/^nameserver .*/nameserver {{PI_IP}}/' /etc/resolv.conf\ngetent hosts pbs.home.alexjenkinson.com        # must now return 192.168.1.5"
+          },
+          {
+            "callout": "gotcha",
+            "title": "Make it stick — the GUI overwrites the file",
+            "html": "The <code class=\"inline\">sed</code> edit persists across reboots on a stock Proxmox install, but setting DNS in the GUI later (<strong>node → System → DNS</strong>) rewrites <code class=\"inline\">/etc/resolv.conf</code> and would drop it. For permanence, set <code class=\"inline\">{{PI_IP}}</code> as the one DNS server there too (secondary empty — see below). The PBS VM has no such GUI; edit its <code class=\"inline\">/etc/resolv.conf</code> from the console the same way."
           },
           {
             "callout": "danger",
