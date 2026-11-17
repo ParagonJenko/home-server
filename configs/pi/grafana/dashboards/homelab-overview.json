@@ -4,77 +4,78 @@
   "tags": ["homelab"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "time": { "from": "now-6h", "to": "now" },
   "templating": { "list": [] },
   "annotations": { "list": [] },
   "panels": [
+    { "id": 1, "type": "row", "title": "✅ Health", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
     {
-      "id": 1,
-      "type": "stat",
-      "title": "Scrape targets UP",
+      "id": 2, "type": "stat", "title": "Scrape targets UP",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "count(up == 1)" } ]
     },
     {
-      "id": 2,
-      "type": "stat",
-      "title": "Thin-pool metadata % (max)",
+      "id": 3, "type": "stat", "title": "Probes failing",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 60 }, { "color": "red", "value": 80 } ] } }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
-      "targets": [ { "refId": "A", "expr": "max(lvm_thinpool_metadata_percent)" } ]
-    },
-    {
-      "id": 3,
-      "type": "stat",
-      "title": "Probes failing",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "count(probe_success == 0) or vector(0)" } ]
     },
     {
-      "id": 4,
-      "type": "stat",
-      "title": "Disks FAILED",
+      "id": 4, "type": "stat", "title": "Disks FAILED",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "count(smartmon_device_smart_healthy == 0) or vector(0)" } ]
     },
     {
-      "id": 5,
-      "type": "timeseries",
-      "title": "CPU busy % by host",
+      "id": 5, "type": "stat", "title": "Thin-pool metadata % (max)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 60 }, { "color": "red", "value": 80 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "max(lvm_thinpool_metadata_percent)" } ]
+    },
+
+    { "id": 6, "type": "row", "title": "⚙️ Compute", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "panels": [] },
+    {
+      "id": 7, "type": "timeseries", "title": "CPU busy % by host",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
       "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
       "targets": [ { "refId": "A", "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{instance}}" } ]
     },
     {
-      "id": 6,
-      "type": "timeseries",
-      "title": "Memory used %",
+      "id": 8, "type": "timeseries", "title": "Memory used %",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
       "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
       "targets": [ { "refId": "A", "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)", "legendFormat": "{{instance}}" } ]
     },
+
+    { "id": 9, "type": "row", "title": "💾 Storage", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "panels": [] },
     {
-      "id": 7,
-      "type": "timeseries",
-      "title": "Filesystem used %",
+      "id": 10, "type": "timeseries", "title": "Filesystem used %",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
       "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
       "targets": [ { "refId": "A", "expr": "100 - (node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes * 100)", "legendFormat": "{{instance}} {{mountpoint}}" } ]
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "LVM thin-pool % (data / metadata)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "lvm_thinpool_data_percent", "legendFormat": "{{instance}} data" },
+        { "refId": "B", "expr": "lvm_thinpool_metadata_percent", "legendFormat": "{{instance}} meta" }
+      ]
     }
   ]
 }

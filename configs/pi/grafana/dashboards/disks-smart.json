@@ -4,68 +4,73 @@
   "tags": ["homelab", "smart"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "1m",
   "time": { "from": "now-24h", "to": "now" },
   "templating": { "list": [] },
   "annotations": { "list": [] },
   "panels": [
+    { "id": 1, "type": "row", "title": "🚨 Status", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
     {
-      "id": 1, "type": "stat", "title": "Drives FAILED (replace)",
+      "id": 2, "type": "stat", "title": "Drives FAILED (replace)",
       "description": "SMART overall health reported FAIL on a readable disk. This is the real one — act on it.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "count(smartmon_device_smart_healthy == 0) or vector(0)" } ]
     },
     {
-      "id": 2, "type": "stat", "title": "Drives unreadable",
+      "id": 3, "type": "stat", "title": "Drives unreadable",
       "description": "smartctl couldn't read SMART through the disk's bridge. Usually a -d flag / USB-DAS issue, NOT a failing disk — a warning, not a page.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "count(smartmon_device_smart_readable == 0) or vector(0)" } ]
     },
     {
-      "id": 3, "type": "stat", "title": "SMART collectors stale (>1h)",
+      "id": 4, "type": "stat", "title": "SMART collectors stale (>1h)",
       "description": "smartmon.sh stopped writing on a host — you'd be blind to disk health there.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "count(time() - smartmon_last_collect_timestamp_seconds > 3600) or vector(0)" } ]
     },
     {
-      "id": 4, "type": "stat", "title": "Hottest drive",
+      "id": 5, "type": "stat", "title": "Hottest drive",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
       "fieldConfig": { "defaults": { "unit": "celsius", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 50 }, { "color": "red", "value": 60 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
       "targets": [ { "refId": "A", "expr": "max(smartmon_temperature_celsius)" } ]
     },
+
+    { "id": 6, "type": "row", "title": "📀 Per-drive", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "panels": [] },
     {
-      "id": 5, "type": "stat", "title": "Per-drive SMART health (readable disks)",
+      "id": 7, "type": "stat", "title": "Per-drive SMART health (readable disks)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 4 },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 6 },
       "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "FAIL", "color": "red" }, "1": { "text": "OK", "color": "green" } } } ], "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
       "targets": [ { "refId": "A", "expr": "smartmon_device_smart_healthy", "legendFormat": "{{instance}}/{{device}}" } ]
     },
     {
-      "id": 6, "type": "stat", "title": "Per-drive readability",
+      "id": 8, "type": "stat", "title": "Per-drive readability",
       "description": "Can smartctl read each disk? UNREADABLE = fix the -d flag in smartmon.sh, not the disk.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 9 },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 11 },
       "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "UNREADABLE", "color": "orange" }, "1": { "text": "OK", "color": "green" } } } ], "thresholds": { "mode": "absolute", "steps": [ { "color": "orange", "value": null }, { "color": "green", "value": 1 } ] } }, "overrides": [] },
       "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
       "targets": [ { "refId": "A", "expr": "smartmon_device_smart_readable", "legendFormat": "{{instance}}/{{device}}" } ]
     },
+
+    { "id": 9, "type": "row", "title": "🌡️ Temperature", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 }, "panels": [] },
     {
-      "id": 7, "type": "timeseries", "title": "Drive temperature (°C)",
+      "id": 10, "type": "timeseries", "title": "Drive temperature (°C)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 17 },
       "fieldConfig": { "defaults": { "unit": "celsius", "custom": { "drawStyle": "line", "fillOpacity": 5 }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 50 }, { "color": "red", "value": 60 } ] } }, "overrides": [] },
       "targets": [ { "refId": "A", "expr": "smartmon_temperature_celsius", "legendFormat": "{{instance}}/{{device}}" } ]
     }
