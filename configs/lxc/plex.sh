@@ -55,5 +55,4 @@ pct push "$CTID" ../plex/verify-plex.sh /opt/plex/verify-plex.sh
 [ -f ../plex/.env ] && pct push "$CTID" ../plex/.env /opt/plex/.env
 pct exec "$CTID" -- bash -c 'cd /opt/plex && docker compose up -d'
 
-ok "plex up. Add libraries at /library/movies and /library/tv (NOT /movies /tv)."
-echo "   Verify: pct exec ${CTID} -- bash /opt/plex/verify-plex.sh"
+ok "plex up — compose stack running; verify-plex.sh pushed to /opt/plex."

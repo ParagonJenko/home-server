@@ -37,6 +37,4 @@ install -m 644 /opt/nginx/homelab.conf /etc/nginx/conf.d/homelab.conf
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
-echo
-echo "TLS live. acme.sh will auto-renew and reload nginx. Verify: /opt/nginx/verify-nginx.sh"
-echo "Store the Cloudflare token in your vault (R21) — the cert reissues from it on any rebuild."
+echo "TLS live — acme.sh installed a renewal cron that reloads nginx on renewal."

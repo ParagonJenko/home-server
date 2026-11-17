@@ -42,7 +42,7 @@ rm -f "$TMP"
 pct push 240 ../nginx/ssl.conf        /opt/nginx/ssl.conf
 pct push 240 ../nginx/enable-tls.sh   /opt/nginx/enable-tls.sh
 pct push 240 ../nginx/verify-nginx.sh /opt/nginx/verify-nginx.sh
-ok "nginx 240 up (serving its default site). TLS is a manual step — follow Stage E3 in the runbook to issue the Cloudflare wildcard cert and go live."
+ok "nginx 240 up — serving default site; proxy config + TLS tooling staged in /opt/nginx."
 
 # --- AMP 230: game-server panel (CubeCoders, vendor-managed) ----------------
 create_ct 230 amp 40 2048
@@ -51,4 +51,4 @@ pct start 230 2>/dev/null || true
 pct exec 230 -- bash -c 'command -v curl >/dev/null || { apt-get update && apt-get install -y curl ca-certificates; }'
 pct exec 230 -- mkdir -p /opt/amp
 pct push 230 ../amp/verify-amp.sh /opt/amp/verify-amp.sh
-ok "AMP container 230 ready (curl + verify script in place). Install AMP and issue the nginx cert per Stage E3 in the runbook."
+ok "AMP container 230 provisioned — curl + verify script in place."
