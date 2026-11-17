@@ -28,12 +28,12 @@ Routes by `Host:` header. Backends are addressed by name, through the Pi resolve
 
 | Front name | → Nginx routes to |
 |---|---|
-| `plex.home` | `plex-lxc.home:32400` |
-| `frigate.home` | `frigate-lxc.home:8971` |
-| `sonarr.home` | `media-pipeline.home:8989` |
-| `radarr.home` | `media-pipeline.home:7878` |
-| `bazarr.home` | `media-pipeline.home:6767` |
-| `prowlarr.home` | `media-pipeline.home:9696` |
+| `plex.home.alexjenkinson.com` | `plex-lxc.home.alexjenkinson.com:32400` |
+| `frigate.home.alexjenkinson.com` | `frigate-lxc.home.alexjenkinson.com:8971` |
+| `sonarr.home.alexjenkinson.com` | `media-pipeline.home.alexjenkinson.com:8989` |
+| `radarr.home.alexjenkinson.com` | `media-pipeline.home.alexjenkinson.com:7878` |
+| `bazarr.home.alexjenkinson.com` | `media-pipeline.home.alexjenkinson.com:6767` |
+| `prowlarr.home.alexjenkinson.com` | `media-pipeline.home.alexjenkinson.com:9696` |
 
 ## Notes
 

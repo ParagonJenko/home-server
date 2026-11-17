@@ -610,7 +610,7 @@ var FIELDS = [
   { key: "ISO", label: "ISO_FILENAME", hint: "PBS ISO name as it appears in local:iso on NUC-2.", ph: "proxmox-backup-server_4.0-1.iso" },
   { key: "USB_ID", label: "usb-hdd-by-id", hint: "Stable by-id path for the 2TB USB HDD: ls -l /dev/disk/by-id/ | grep <usb-model>", ph: "/dev/disk/by-id/usb-..." },
   { key: "DATASTORE_PATH", label: "DATASTORE_PATH", hint: "Where the USB HDD mounts inside the PBS VM. Edited into configs/pbs/datastore-setup.sh.", ph: "/mnt/datastore/backups" },
-  { key: "PBS_FP", label: "PBS_FINGERPRINT", hint: "PBS web UI → Certificates. The server itself is pbs.home, never an IP.", ph: "AA:BB:CC:..." }
+  { key: "PBS_FP", label: "PBS_FINGERPRINT", hint: "PBS web UI → Certificates. The server itself is pbs.home.alexjenkinson.com, never an IP.", ph: "AA:BB:CC:..." }
 ];
 
 /* Seed the values network.md already answers, once — the Pi's address comes
@@ -850,7 +850,7 @@ var STAGES = [
           {
             "list": [
               "<strong>Disk:</strong> internal 500GB SSD, <strong>ext4</strong>. Never the DAS.",
-              "<strong>Hostname:</strong> <code class=\"inline\">nuc1.home</code> now — <em>(NUC-2 at Stage F: <code class=\"inline\">nuc2.home</code>)</em>.",
+              "<strong>Hostname:</strong> <code class=\"inline\">nuc1.home.alexjenkinson.com</code> now — <em>(NUC-2 at Stage F: <code class=\"inline\">nuc2.home.alexjenkinson.com</code>)</em>.",
               "<strong>IP (static):</strong> <code class=\"inline\">192.168.1.2</code> now — <em>(NUC-2: <code class=\"inline\">192.168.1.3</code>)</em> · gw <code class=\"inline\">192.168.1.1</code> · mask <code class=\"inline\">255.255.255.0</code>.",
               "<strong>DNS:</strong> set <code class=\"inline\">1.1.1.1</code> (a public resolver) — <strong>the Pi isn't built yet, and nothing in Stage A needs it</strong>. You repoint the host at the Pi much later, at step H3, once it exists."
             ]
@@ -858,7 +858,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Why these choices",
-            "html": "<ul><li>ext4 keeps the reserved-blocks behaviour R8 relies on.</li><li>The IP is set, not reserved — Proxmox writes it into <code class=\"inline\">/etc/network/interfaces</code> and <code class=\"inline\">/etc/hosts</code> at install, so it never takes a lease.</li><li>DNS moves to the Pi once Stage D is up because the host must resolve <code class=\"inline\">pbs.home</code> for G4, and the Pi doesn't exist yet at install.</li></ul>"
+            "html": "<ul><li>ext4 keeps the reserved-blocks behaviour R8 relies on.</li><li>The IP is set, not reserved — Proxmox writes it into <code class=\"inline\">/etc/network/interfaces</code> and <code class=\"inline\">/etc/hosts</code> at install, so it never takes a lease.</li><li>DNS moves to the Pi once Stage D is up because the host must resolve <code class=\"inline\">pbs.home.alexjenkinson.com</code> for G4, and the Pi doesn't exist yet at install.</li></ul>"
           }
         ],
         "verify": "You can log into <code class=\"inline\">https://&lt;ip&gt;:8006</code> and open a shell at Datacenter → node → Shell."
@@ -1193,12 +1193,12 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Why blackbox_exporter is in the stack",
-            "html": "<p><code class=\"inline\">up</code> only says whether Prometheus managed to scrape a target. Plex, the Arrs, Frigate and the Nginx front names export no metrics at all, so they have no <code class=\"inline\">up</code> series and the service-up checks storage.md promises would be covering nothing. blackbox opens the port and asks.</p><p>It also probes DNS properly: AdGuard answering on <code class=\"inline\">:53</code> is not the same as AdGuard still resolving <code class=\"inline\">*.home</code>. That second failure mode breaks every service at once — everything addresses everything else by name — while every process-level check stays green, which is why it gets its own critical alert.</p>"
+            "html": "<p><code class=\"inline\">up</code> only says whether Prometheus managed to scrape a target. Plex, the Arrs, Frigate and the Nginx front names export no metrics at all, so they have no <code class=\"inline\">up</code> series and the service-up checks storage.md promises would be covering nothing. blackbox opens the port and asks.</p><p>It also probes DNS properly: AdGuard answering on <code class=\"inline\">:53</code> is not the same as AdGuard still resolving <code class=\"inline\">*.home.alexjenkinson.com</code>. That second failure mode breaks every service at once — everything addresses everything else by name — while every process-level check stays green, which is why it gets its own critical alert.</p>"
           },
           {
             "callout": "note",
             "title": "Every service here runs on host networking",
-            "html": "<p>Not laziness — three things break on a bridge network. The Pi's resolver is AdGuard on <code class=\"inline\">127.0.0.1</code>, and Docker refuses to hand a loopback resolver to a bridged container: it silently substitutes public DNS, so <code class=\"inline\">*.home</code> stops resolving and Prometheus can't find <code class=\"inline\">nuc1.home</code> at all. <code class=\"inline\">localhost:9100</code> from a bridged Prometheus would mean the Prometheus container, not the Pi. And the DNS probe has to ask <code class=\"inline\">127.0.0.1:53</code> and mean the Pi's resolver.</p><p>The cost: services address each other as <code class=\"inline\">localhost:&lt;port&gt;</code> rather than by compose service name, and there's no isolation between them. On a single-purpose box that's the better trade — and blackbox then resolves names through AdGuard exactly like every other client, so its probes test the real path.</p><p>blackbox is also <em>scraped</em>, not just used: if it dies, every <code class=\"inline\">probe_success</code> series simply disappears, and absence isn't a failure in PromQL — ProbeFailed couldn't fire and the dashboard's down-count would go <em>down</em>. Its own <code class=\"inline\">up</code> series is what notices.</p>"
+            "html": "<p>Not laziness — three things break on a bridge network. The Pi's resolver is AdGuard on <code class=\"inline\">127.0.0.1</code>, and Docker refuses to hand a loopback resolver to a bridged container: it silently substitutes public DNS, so <code class=\"inline\">*.home.alexjenkinson.com</code> stops resolving and Prometheus can't find <code class=\"inline\">nuc1.home.alexjenkinson.com</code> at all. <code class=\"inline\">localhost:9100</code> from a bridged Prometheus would mean the Prometheus container, not the Pi. And the DNS probe has to ask <code class=\"inline\">127.0.0.1:53</code> and mean the Pi's resolver.</p><p>The cost: services address each other as <code class=\"inline\">localhost:&lt;port&gt;</code> rather than by compose service name, and there's no isolation between them. On a single-purpose box that's the better trade — and blackbox then resolves names through AdGuard exactly like every other client, so its probes test the real path.</p><p>blackbox is also <em>scraped</em>, not just used: if it dies, every <code class=\"inline\">probe_success</code> series simply disappears, and absence isn't a failure in PromQL — ProbeFailed couldn't fire and the dashboard's down-count would go <em>down</em>. Its own <code class=\"inline\">up</code> series is what notices.</p>"
           },
           {
             "callout": "note",
@@ -1235,7 +1235,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Hostname — raspberry-pi-5 is fine",
-            "html": "<p>Cosmetic. The system reaches the Pi by its static IP (<code class=\"inline\">192.168.1.4</code>) and the <code class=\"inline\">pi.home</code> DNS rewrite, never its hostname — nothing to rename.</p>"
+            "html": "<p>Cosmetic. The system reaches the Pi by its static IP (<code class=\"inline\">192.168.1.4</code>) and the <code class=\"inline\">pi.home.alexjenkinson.com</code> DNS rewrite, never its hostname — nothing to rename.</p>"
           },
           {
             "cmd": "# @where: Your desktop — after first boot (it's on DHCP; find it by its mDNS name)\nssh <user>@raspberry-pi-5.local"
@@ -1246,7 +1246,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Why 1.1.1.1 here is temporary",
-            "html": "AdGuard isn't running yet. D3 switches the Pi to its own resolver — Prometheus and blackbox share the Pi's network namespace, so they use the Pi's resolver to scrape <code class=\"inline\">nuc1.home</code> and the rest by name."
+            "html": "AdGuard isn't running yet. D3 switches the Pi to its own resolver — Prometheus and blackbox share the Pi's network namespace, so they use the Pi's resolver to scrape <code class=\"inline\">nuc1.home.alexjenkinson.com</code> and the rest by name."
           },
           {
             "cmd": "# @where: Your desktop AND laptop — ONLY if you didn't paste the keys in the imager\nssh-copy-id <user>@192.168.1.4"
@@ -1334,7 +1334,7 @@ var STAGES = [
           {
             "callout": "manual",
             "title": "The AdGuard wizard — the script pauses for it",
-            "html": "<p>At <code class=\"inline\">http://&lt;pi&gt;:3000</code>: set the admin interface to <strong>8081</strong> (Grafana owns 3000), create the admin user + password, set upstream DNS to <code class=\"inline\">1.1.1.1</code>. The script then asks for those admin creds and pushes these three rewrite groups from network.md — nothing resolves without all three:</p><ul><li><strong>Front names</strong> → Nginx's IP: plex, frigate, sonarr, radarr, bazarr, prowlarr.</li><li><strong>Backend names</strong> → the container's own IP: <code class=\"inline\">plex-lxc.home</code>, <code class=\"inline\">frigate-lxc.home</code>, <code class=\"inline\">media-pipeline.home</code>.</li><li><strong>Hosts and cameras</strong> → their own IPs: four <code class=\"inline\">cam-*.home</code>, plus nuc1, nuc2, pbs, and <code class=\"inline\">pi.home</code>.</li></ul>"
+            "html": "<p>At <code class=\"inline\">http://&lt;pi&gt;:3000</code>: set the admin interface to <strong>8081</strong> (Grafana owns 3000), create the admin user + password, set upstream DNS to <code class=\"inline\">1.1.1.1</code>. The script then asks for those admin creds and pushes these three rewrite groups from network.md — nothing resolves without all three:</p><ul><li><strong>Front names</strong> → Nginx's IP: plex, frigate, sonarr, radarr, bazarr, prowlarr.</li><li><strong>Backend names</strong> → the container's own IP: <code class=\"inline\">plex-lxc.home.alexjenkinson.com</code>, <code class=\"inline\">frigate-lxc.home.alexjenkinson.com</code>, <code class=\"inline\">media-pipeline.home.alexjenkinson.com</code>.</li><li><strong>Hosts and cameras</strong> → their own IPs: four <code class=\"inline\">cam-*.home.alexjenkinson.com</code>, plus nuc1, nuc2, pbs, and <code class=\"inline\">pi.home.alexjenkinson.com</code>.</li></ul>"
           },
           {
             "callout": "note",
@@ -1356,7 +1356,7 @@ var STAGES = [
           {
             "cmd": "# @where: Pi · shell\n./configs/verify.sh D3"
           },
-          "Expect PASS: AdGuard running, resolver 127.0.0.1, pi.home resolves."
+          "Expect PASS: AdGuard running, resolver 127.0.0.1, pi.home.alexjenkinson.com resolves."
         ],
         "device": "Pi"
       }
@@ -1407,7 +1407,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "How this stage works",
-            "html": "<p>LXC 210 runs the whole stack — qBittorrent, Sonarr, Radarr, Bazarr, Prowlarr, FlareSolverr, Recyclarr, Decluttarr, qbit_manage — from one compose file, resolving each other by Docker service name. The script installs Docker, publishes each web UI's port, and starts the <strong>core apps only</strong>: Recyclarr, Decluttarr and qbit_manage read <code class=\"inline\">.env</code> keys that don't exist until the apps boot once, so they wait for phase 2 (starting them early just crash-loops them).</p><p><strong>Reaching the UIs:</strong> fronted by Nginx (LXC 240) as <code class=\"inline\">qbittorrent.home</code>, <code class=\"inline\">sonarr.home</code>, <code class=\"inline\">radarr.home</code>, <code class=\"inline\">bazarr.home</code>, <code class=\"inline\">prowlarr.home</code> once that stage and the AdGuard rewrites are in — add names later and re-run <code class=\"inline\">adguard-rewrites.py --apply</code> on the Pi. Until DNS resolves them, use the LXC IP on the ports the script prints.</p><p><strong>Limits:</strong> <code class=\"inline\">mem_limit</code> caps memory; disk is bounded by the rootfs cap, mergerfs <code class=\"inline\">minfreespace</code> and the Arr Minimum Free Space (qBittorrent has no disk setting). In phase 2, <code class=\"inline\">arr-setup.py</code> (idempotent, schema-driven) and <code class=\"inline\">fill-arr-keys.sh</code> do the wiring — including Bazarr's connections and Forms auth on Sonarr/Radarr/Prowlarr (login required; API keys bypass it, so automation is unaffected). It prints an <strong>Arr WebUI login once</strong> — save it. What's left by hand needs <em>your</em> accounts.</p>"
+            "html": "<p>LXC 210 runs the whole stack — qBittorrent, Sonarr, Radarr, Bazarr, Prowlarr, FlareSolverr, Recyclarr, Decluttarr, qbit_manage — from one compose file, resolving each other by Docker service name. The script installs Docker, publishes each web UI's port, and starts the <strong>core apps only</strong>: Recyclarr, Decluttarr and qbit_manage read <code class=\"inline\">.env</code> keys that don't exist until the apps boot once, so they wait for phase 2 (starting them early just crash-loops them).</p><p><strong>Reaching the UIs:</strong> fronted by Nginx (LXC 240) as <code class=\"inline\">qbittorrent.home.alexjenkinson.com</code>, <code class=\"inline\">sonarr.home.alexjenkinson.com</code>, <code class=\"inline\">radarr.home.alexjenkinson.com</code>, <code class=\"inline\">bazarr.home.alexjenkinson.com</code>, <code class=\"inline\">prowlarr.home.alexjenkinson.com</code> once that stage and the AdGuard rewrites are in — add names later and re-run <code class=\"inline\">adguard-rewrites.py --apply</code> on the Pi. Until DNS resolves them, use the LXC IP on the ports the script prints.</p><p><strong>Limits:</strong> <code class=\"inline\">mem_limit</code> caps memory; disk is bounded by the rootfs cap, mergerfs <code class=\"inline\">minfreespace</code> and the Arr Minimum Free Space (qBittorrent has no disk setting). In phase 2, <code class=\"inline\">arr-setup.py</code> (idempotent, schema-driven) and <code class=\"inline\">fill-arr-keys.sh</code> do the wiring — including Bazarr's connections and Forms auth on Sonarr/Radarr/Prowlarr (login required; API keys bypass it, so automation is unaffected). It prints an <strong>Arr WebUI login once</strong> — save it. What's left by hand needs <em>your</em> accounts.</p>"
           },
           {
             "p": "<strong>Phase 2 — run once the core apps have booted.</strong> Each command is its own step."
@@ -1420,7 +1420,7 @@ var STAGES = [
           },
           {
             "list": [
-              "Open <code class=\"inline\">http://&lt;LXC-IP&gt;:8080</code> (the IP the script printed, or <code class=\"inline\">qbittorrent.home</code> once DNS resolves).",
+              "Open <code class=\"inline\">http://&lt;LXC-IP&gt;:8080</code> (the IP the script printed, or <code class=\"inline\">qbittorrent.home.alexjenkinson.com</code> once DNS resolves).",
               "Log in as <code class=\"inline\">admin</code> with the temp password from step 1.",
               "<strong>Tools → Options → Web UI</strong> → set a new password → <strong>Save</strong>. Remember it."
             ]
@@ -1444,11 +1444,11 @@ var STAGES = [
         "subs": [
           {
             "name": "Bazarr — subtitle providers",
-            "html": "arr-setup.py now connects Bazarr to Sonarr and Radarr and sets an English language profile as the default for both — so all that's left is your provider account (which needs a login):<ol><li>Open <code class=\"inline\">http://bazarr.home</code> (or the LXC IP :6767).</li><li>Settings → Providers → Add → pick <strong>OpenSubtitles.com</strong> (or others) → enter your username + password → Save.</li></ol>"
+            "html": "arr-setup.py now connects Bazarr to Sonarr and Radarr and sets an English language profile as the default for both — so all that's left is your provider account (which needs a login):<ol><li>Open <code class=\"inline\">http://bazarr.home.alexjenkinson.com</code> (or the LXC IP :6767).</li><li>Settings → Providers → Add → pick <strong>OpenSubtitles.com</strong> (or others) → enter your username + password → Save.</li></ol>"
           },
           {
             "name": "Prowlarr — your indexers",
-            "html": "<ol><li>Open <code class=\"inline\">http://prowlarr.home</code> (or the LXC IP :9696).</li><li>Indexers → <strong>Add Indexer</strong> → search the tracker's name → select it.</li><li>Private tracker: paste your API key or cookie. Public: nothing to enter.</li><li>Cloudflare-protected only: in the <strong>Tags</strong> field, pick the existing <code class=\"inline\">flaresolverr</code> tag — arr-setup already created it and put it on the FlareSolverr proxy.</li><li>Click <strong>Test</strong> → <strong>Save</strong>.</li><li>Settings → Apps → <strong>Sync App Indexers</strong> to push it to Sonarr/Radarr now (they're already linked, so this is just to skip the wait).</li></ol>"
+            "html": "<ol><li>Open <code class=\"inline\">http://prowlarr.home.alexjenkinson.com</code> (or the LXC IP :9696).</li><li>Indexers → <strong>Add Indexer</strong> → search the tracker's name → select it.</li><li>Private tracker: paste your API key or cookie. Public: nothing to enter.</li><li>Cloudflare-protected only: in the <strong>Tags</strong> field, pick the existing <code class=\"inline\">flaresolverr</code> tag — arr-setup already created it and put it on the FlareSolverr proxy.</li><li>Click <strong>Test</strong> → <strong>Save</strong>.</li><li>Settings → Apps → <strong>Sync App Indexers</strong> to push it to Sonarr/Radarr now (they're already linked, so this is just to skip the wait).</li></ol>"
           }
         ],
         "after": [
@@ -1538,17 +1538,17 @@ var STAGES = [
           {
             "callout": "danger",
             "title": "The proxy is HTTP-only, on port 80",
-            "html": "<p><code class=\"inline\">.home</code> is not a public TLD, so no public CA can ever issue a certificate for it — <code class=\"inline\">certbot --dns-cloudflare -d \"*.home\"</code> cannot work, whatever the DNS provider. An internal CA would mean installing a root cert on every phone, laptop and TV, including clients that can't be made to trust one.</p><p>Accepted tradeoff: <strong>LAN logins to these UIs travel in the clear</strong>, and Tailscale is the encrypted path from outside. Port 80 must never be forwarded through the venue router.</p>"
+            "html": "<p><code class=\"inline\">.home</code> is not a public TLD, so no public CA can ever issue a certificate for it — <code class=\"inline\">certbot --dns-cloudflare -d \"*.home.alexjenkinson.com\"</code> cannot work, whatever the DNS provider. An internal CA would mean installing a root cert on every phone, laptop and TV, including clients that can't be made to trust one.</p><p>Accepted tradeoff: <strong>LAN logins to these UIs travel in the clear</strong>, and Tailscale is the encrypted path from outside. Port 80 must never be forwarded through the venue router.</p>"
           },
           {
             "callout": "note",
             "title": "Every proxied service needs two DNS names",
-            "html": "<p><code class=\"inline\">plex.home</code> resolves to Nginx — that's how Host-header routing works — so Nginx cannot proxy to <code class=\"inline\">plex.home</code> without looping back to itself. The container gets a second name, <code class=\"inline\">plex-lxc.home</code>, pointing at its own IP, and that's what <code class=\"inline\">proxy_pass</code> targets. Add both rewrites in AdGuard at D1 when adding a service. Containers that are never proxied — <code class=\"inline\">media-pipeline</code> — need only one name.</p>"
+            "html": "<p><code class=\"inline\">plex.home.alexjenkinson.com</code> resolves to Nginx — that's how Host-header routing works — so Nginx cannot proxy to <code class=\"inline\">plex.home.alexjenkinson.com</code> without looping back to itself. The container gets a second name, <code class=\"inline\">plex-lxc.home.alexjenkinson.com</code>, pointing at its own IP, and that's what <code class=\"inline\">proxy_pass</code> targets. Add both rewrites in AdGuard at D1 when adding a service. Containers that are never proxied — <code class=\"inline\">media-pipeline</code> — need only one name.</p>"
           },
           {
             "callout": "gotcha",
             "title": "Don't simplify the proxy_pass pattern",
-            "html": "<code class=\"inline\">set $backend; proxy_pass http://$backend:port;</code> looks redundant next to a bare <code class=\"inline\">proxy_pass http://media-pipeline.home:8989;</code>, but nginx caches a bare hostname's IP forever once resolved and ignores DNS TTL entirely. A DHCP lease renewal on a backend LXC would silently strand nginx on the old IP until someone noticed and reloaded it. The variable form is what forces nginx to honor the resolver's TTL."
+            "html": "<code class=\"inline\">set $backend; proxy_pass http://$backend:port;</code> looks redundant next to a bare <code class=\"inline\">proxy_pass http://media-pipeline.home.alexjenkinson.com:8989;</code>, but nginx caches a bare hostname's IP forever once resolved and ignores DNS TTL entirely. A DHCP lease renewal on a backend LXC would silently strand nginx on the old IP until someone noticed and reloaded it. The variable form is what forces nginx to honor the resolver's TTL."
           },
           {
             "callout": "note",
@@ -1572,7 +1572,7 @@ var STAGES = [
         "title": "Host base + template on NUC-2",
         "body": [
           {
-            "p": "Install Proxmox 9.2 on the S12 Pro from USB — hostname <code class=\"inline\">nuc2.home</code>, static <code class=\"inline\">192.168.1.3</code> — exactly as A1. Then run the host base AND the template on NUC-2: it creates the Frigate container and the PBS VM, so it needs both before Stage G."
+            "p": "Install Proxmox 9.2 on the S12 Pro from USB — hostname <code class=\"inline\">nuc2.home.alexjenkinson.com</code>, static <code class=\"inline\">192.168.1.3</code> — exactly as A1. Then run the host base AND the template on NUC-2: it creates the Frigate container and the PBS VM, so it needs both before Stage G."
           },
           {
             "cmd": "# @where: NUC-2 · host shell\n# fresh Proxmox has no git — install it (no-subscription repo), then clone\nif ! command -v git >/dev/null 2>&1; then\n  rm -f /etc/apt/sources.list.d/pve-enterprise.sources /etc/apt/sources.list.d/ceph.sources\n  echo 'deb http://download.proxmox.com/debian/pve trixie pve-no-subscription' > /etc/apt/sources.list.d/pve-no-subscription.list\n  apt update && apt -y install git\nfi\ngit clone https://github.com/ParagonJenko/home-server && cd home-server\n# host base + NUC-2's OWN scoped MCP token (writes its proxmox.env)\n./configs/lxc/stage-a-host-setup.sh\n# the container template — frigate.sh and pbs-vm.sh clone from this\n./configs/lxc/stage-c-template.sh"
@@ -1641,7 +1641,7 @@ var STAGES = [
           {
             "callout": "manual",
             "title": "Manual — camera names, not IPs",
-            "html": "<p>Fill in <code class=\"inline\">configs/frigate/.env.example</code> → <code class=\"inline\">.env</code> with the real Eufy RTSP credentials. <code class=\"inline\">config.yaml</code> itself holds no secrets and is safe as committed.</p><p><strong>The cameras are addressed by hostname</strong> (<code class=\"inline\">cam-living-room.home</code>, …), not IP — literal camera IPs are exactly what broke the old setup, and R13's rationale names this file. Add a DHCP reservation per camera on the router and a matching rewrite in AdGuard (D3) <em>before</em> starting Frigate; they're in network.md's tables. <strong>This is one of the three steps that needs the Pi already built</strong> — without it Frigate starts and records nothing. Pressing on anyway: add the four cameras to <code class=\"inline\">/etc/hosts</code> inside LXC 111, and delete those lines the moment AdGuard has the rewrites.</p>"
+            "html": "<p>Fill in <code class=\"inline\">configs/frigate/.env.example</code> → <code class=\"inline\">.env</code> with the real Eufy RTSP credentials. <code class=\"inline\">config.yaml</code> itself holds no secrets and is safe as committed.</p><p><strong>The cameras are addressed by hostname</strong> (<code class=\"inline\">cam-living-room.home.alexjenkinson.com</code>, …), not IP — literal camera IPs are exactly what broke the old setup, and R13's rationale names this file. Add a DHCP reservation per camera on the router and a matching rewrite in AdGuard (D3) <em>before</em> starting Frigate; they're in network.md's tables. <strong>This is one of the three steps that needs the Pi already built</strong> — without it Frigate starts and records nothing. Pressing on anyway: add the four cameras to <code class=\"inline\">/etc/hosts</code> inside LXC 111, and delete those lines the moment AdGuard has the rewrites.</p>"
           }
         ],
         "verify": [
@@ -1672,7 +1672,7 @@ var STAGES = [
           {
             "callout": "manual",
             "title": "Manual — onboarding + address",
-            "html": "<p>Open <code class=\"inline\">http://homeassistant.home:8123</code> (or the VM's IP until DNS is set) and create the owner account. <span class=save>Save the HA admin login and a long-lived access token to the vault (R21).</span></p><p><strong>Address by name, not IP (R13):</strong> add a DHCP reservation for VM 910 → <code class=\"inline\">192.168.1.25</code> and the matching AdGuard rewrite at <a href=\"#stage-D\">Stage D</a>. <code class=\"inline\">homeassistant.home</code> is a group-3 (own-IP) name, already in network.md.</p>"
+            "html": "<p>Open <code class=\"inline\">http://homeassistant.home.alexjenkinson.com:8123</code> (or the VM's IP until DNS is set) and create the owner account. <span class=save>Save the HA admin login and a long-lived access token to the vault (R21).</span></p><p><strong>Address by name, not IP (R13):</strong> add a DHCP reservation for VM 910 → <code class=\"inline\">192.168.1.25</code> and the matching AdGuard rewrite at <a href=\"#stage-D\">Stage D</a>. <code class=\"inline\">homeassistant.home.alexjenkinson.com</code> is a group-3 (own-IP) name, already in network.md.</p>"
           },
           {
             "callout": "note",
@@ -1759,17 +1759,17 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Each NUC · host shell\npvesm add pbs pbs-backup --server pbs.home --datastore backups \\\n  --username root@pam --password --fingerprint {{PBS_FP}}"
+            "cmd": "# @where: Each NUC · host shell\npvesm add pbs pbs-backup --server pbs.home.alexjenkinson.com --datastore backups \\\n  --username root@pam --password --fingerprint {{PBS_FP}}"
           },
           {
             "callout": "note",
             "title": "Context",
-            "html": "<p>On <strong>each</strong> NUC host — use the hostname <code class=\"inline\">pbs.home</code>, not an IP. Fingerprint from PBS web UI → Certificates:</p>"
+            "html": "<p>On <strong>each</strong> NUC host — use the hostname <code class=\"inline\">pbs.home.alexjenkinson.com</code>, not an IP. Fingerprint from PBS web UI → Certificates:</p>"
           },
           {
             "callout": "gotcha",
-            "title": "This fails unless pbs.home resolves",
-            "html": "Needs Stage D done, or a temporary <code class=\"inline\">/etc/hosts</code> line on each NUC (<code class=\"inline\">192.168.1.5 pbs.home</code>) removed once AdGuard has the rewrite. Adding the storage by IP is <em>not</em> the workaround — it breaks R13 and quietly fails the next time PBS moves."
+            "title": "This fails unless pbs.home.alexjenkinson.com resolves",
+            "html": "Needs Stage D done, or a temporary <code class=\"inline\">/etc/hosts</code> line on each NUC (<code class=\"inline\">192.168.1.5 pbs.home.alexjenkinson.com</code>) removed once AdGuard has the rewrite. Adding the storage by IP is <em>not</em> the workaround — it breaks R13 and quietly fails the next time PBS moves."
           },
           {
             "callout": "manual",
@@ -1871,7 +1871,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Context",
-            "html": "<p>Grafana <code class=\"inline\">pi.home:3000</code>, Prometheus <code class=\"inline\">:9090</code>, Alertmanager <code class=\"inline\">:9093</code>.</p>"
+            "html": "<p>Grafana <code class=\"inline\">pi.home.alexjenkinson.com:3000</code>, Prometheus <code class=\"inline\">:9090</code>, Alertmanager <code class=\"inline\">:9093</code>.</p>"
           },
           {
             "callout": "note",
@@ -1931,15 +1931,15 @@ var STAGES = [
             "p": "On the ISP router: <strong>DNS = the Pi, and only the Pi</strong> (<code class=\"inline\">{{PI_IP}}</code>). Add the reservations for every container MAC from the <a href=\"#stage-INV\">address register</a> while you are in there — the plan allocates <code class=\"inline\">.20</code>–<code class=\"inline\">.39</code> for them."
           },
           {
-            "p": "Then switch the infrastructure boxes off <code class=\"inline\">1.1.1.1</code> onto the Pi — the step A1 and G3 deferred. On <strong>each NUC and the PBS VM</strong>, set the resolver to the Pi, or <code class=\"inline\">pbs.home</code> stops resolving from the hosts (G4):"
+            "p": "Then switch the infrastructure boxes off <code class=\"inline\">1.1.1.1</code> onto the Pi — the step A1 and G3 deferred. On <strong>each NUC and the PBS VM</strong>, set the resolver to the Pi, or <code class=\"inline\">pbs.home.alexjenkinson.com</code> stops resolving from the hosts (G4):"
           },
           {
-            "cmd": "# @where: Each NUC + PBS VM\n# Proxmox hosts + PBS VM: GUI DNS field, or /etc/resolv.conf\nnameserver {{PI_IP}}\ngetent hosts pbs.home        # must resolve from each NUC now"
+            "cmd": "# @where: Each NUC + PBS VM\n# Proxmox hosts + PBS VM: GUI DNS field, or /etc/resolv.conf\nnameserver {{PI_IP}}\ngetent hosts pbs.home.alexjenkinson.com        # must resolve from each NUC now"
           },
           {
             "callout": "danger",
             "title": "Leave the secondary DNS field empty",
-            "html": "<p>A secondary of <code class=\"inline\">1.1.1.1</code> looks like sensible redundancy and is the nastiest failure mode in this build. Clients fall back to it on timeout, and some ask both and take whichever answers first. <code class=\"inline\">1.1.1.1</code> has never heard of <code class=\"inline\">plex.home</code>, so it returns NXDOMAIN — and internal names start failing <em>intermittently</em>, on some devices, some of the time, with nothing in any log saying why.</p><p><code class=\"inline\">1.1.1.1</code> belongs in AdGuard's <em>upstream</em> setting, which is a different field entirely. The accepted trade: the Pi going down then takes all name resolution with it — loud, obvious, fixed in minutes, and far better than weeks of misdiagnosis.</p>"
+            "html": "<p>A secondary of <code class=\"inline\">1.1.1.1</code> looks like sensible redundancy and is the nastiest failure mode in this build. Clients fall back to it on timeout, and some ask both and take whichever answers first. <code class=\"inline\">1.1.1.1</code> has never heard of <code class=\"inline\">plex.home.alexjenkinson.com</code>, so it returns NXDOMAIN — and internal names start failing <em>intermittently</em>, on some devices, some of the time, with nothing in any log saying why.</p><p><code class=\"inline\">1.1.1.1</code> belongs in AdGuard's <em>upstream</em> setting, which is a different field entirely. The accepted trade: the Pi going down then takes all name resolution with it — loud, obvious, fixed in minutes, and far better than weeks of misdiagnosis.</p>"
           },
           {
             "callout": "note",
@@ -1957,7 +1957,7 @@ var STAGES = [
             "html": "R15 is on hold. Running it alongside the ISP router's DHCP causes address conflicts. It stays off until a dedicated router replaces the ISP box, or that box's DHCP is disabled."
           }
         ],
-        "verify": "A phone on the Wi-Fi resolves <code class=\"inline\">plex.home</code>. If it doesn't, the AP is handing out its own DNS rather than the router's.",
+        "verify": "A phone on the Wi-Fi resolves <code class=\"inline\">plex.home.alexjenkinson.com</code>. If it doesn't, the AP is handing out its own DNS rather than the router's.",
         "device": "Each NUC + PBS VM"
       },
       {
@@ -2101,7 +2101,7 @@ var STAGES = [
           },
           {
             "name": "5 · Verify by name",
-            "html": "Internal DNS resolves (<code class=\"inline\">ping plex.home</code>); devices get addresses; Plex, Frigate and AdGuard are reachable on the LAN; Tailscale works from off-site; the cameras are online and Frigate has their streams. <strong>Re-run J5</strong> — a different venue router means the exposure check must be redone."
+            "html": "Internal DNS resolves (<code class=\"inline\">ping plex.home.alexjenkinson.com</code>); devices get addresses; Plex, Frigate and AdGuard are reachable on the LAN; Tailscale works from off-site; the cameras are online and Frigate has their streams. <strong>Re-run J5</strong> — a different venue router means the exposure check must be redone."
           },
           {
             "name": "6 · If anything's off",
@@ -2380,7 +2380,7 @@ var STAGES = [
             "html": "Model files are large and re-downloadable. Put them on the media pool or a dedicated dataset and <strong>exclude them from PBS</strong> — never version GBs of weights."
           }
         ],
-        "verify": "Open WebUI answers at <code class=\"inline\">llm.home</code> and <code class=\"inline\">ollama ls</code> shows the model. Expect slow generation on CPU — that's the point at which you decide on a GPU.",
+        "verify": "Open WebUI answers at <code class=\"inline\">llm.home.alexjenkinson.com</code> and <code class=\"inline\">ollama ls</code> shows the model. Expect slow generation on CPU — that's the point at which you decide on a GPU.",
         "device": "Inside the LLM LXC"
       },
       {
@@ -2429,7 +2429,7 @@ var STAGES = [
           },
           {
             "list": [
-              "DNS: an <code class=\"inline\">llm.home</code> rewrite in AdGuard; front it with Nginx like Plex (two names).",
+              "DNS: an <code class=\"inline\">llm.home.alexjenkinson.com</code> rewrite in AdGuard; front it with Nginx like Plex (two names).",
               "Monitoring: GPU temp/util into Prometheus (nvidia exporter) — same shape as R24's disk alerts.",
               "Expose it only over Tailscale (R23), never a port forward."
             ]
@@ -2792,54 +2792,54 @@ function saveInv() { store.set(IKEY, JSON.stringify(inv)); }
 
 var ADDR = [
   { g: "Hosts" },
-  { id: "nuc1", plannedIp: "192.168.1.2", kind: "static", dev: "nuc1", meta: "Beelink S13 · Proxmox host · :8006", own: ["nuc1.home"],
+  { id: "nuc1", plannedIp: "192.168.1.2", kind: "static", dev: "nuc1", meta: "Beelink S13 · Proxmox host · :8006", own: ["nuc1.home.alexjenkinson.com"],
     md: "`nuc1` — Beelink S13, Proxmox host",
     note: "Dual NIC — record the MAC of the port actually patched",
     hint: "Dual NIC — record the MAC of the port you actually patch." },
-  { id: "nuc2", plannedIp: "192.168.1.3", kind: "static", dev: "nuc2", meta: "Beelink S12 Pro · Proxmox host · :8006", own: ["nuc2.home"],
+  { id: "nuc2", plannedIp: "192.168.1.3", kind: "static", dev: "nuc2", meta: "Beelink S12 Pro · Proxmox host · :8006", own: ["nuc2.home.alexjenkinson.com"],
     md: "`nuc2` — Beelink S12 Pro, Proxmox host", note: "" },
   { id: "pi", plannedIp: "192.168.1.4", kind: "static", dev: "Pi", meta: "AdGuard :53/:8081 · Grafana :3000 · Prometheus :9090 · Alertmanager :9093",
-    own: ["pi.home"],
+    own: ["pi.home.alexjenkinson.com"],
     md: "Pi — AdGuard, Prometheus, Alertmanager, Grafana",
     note: "The resolver itself. Its IP is the one literal IP configs may contain ([R13](rules.md)) — it goes in every `configs/lxc/*.sh` and `homelab.conf`'s `resolver` line",
     hint: "This one is PI_IP — the only literal IP the rules allow. <span class=save>Put it in Your values too</span>." },
   { g: "Guests — NUC-1" },
   { id: "lxc210", plannedIp: "192.168.1.21", kind: "reserved", dev: "media-pipeline", meta: "LXC 210 · :8080 :8989 :7878 :6767 :9696 :8191",
-    own: ["media-pipeline.home"], front: ["sonarr.home", "radarr.home", "bazarr.home", "prowlarr.home"],
+    own: ["media-pipeline.home.alexjenkinson.com"], front: ["sonarr.home.alexjenkinson.com", "radarr.home.alexjenkinson.com", "bazarr.home.alexjenkinson.com", "prowlarr.home.alexjenkinson.com"],
     md: "`media-pipeline` — LXC 210, nuc1",
     note: "Never proxied under this name, so it doubles as Nginx's backend target for the Arrs" },
-  { id: "lxc220", plannedIp: "192.168.1.22", kind: "reserved", dev: "plex", meta: "LXC 220 · :32400", own: ["plex-lxc.home"], front: ["plex.home"],
+  { id: "lxc220", plannedIp: "192.168.1.22", kind: "reserved", dev: "plex", meta: "LXC 220 · :32400", own: ["plex-lxc.home.alexjenkinson.com"], front: ["plex.home.alexjenkinson.com"],
     md: "`plex` — LXC 220, nuc1",
-    note: "Backend `plex-lxc.home` points here; front `plex.home` points at Nginx" },
+    note: "Backend `plex-lxc.home.alexjenkinson.com` points here; front `plex.home.alexjenkinson.com` points at Nginx" },
   { id: "lxc230", plannedIp: "192.168.1.23", kind: "reserved", dev: "amp", meta: "LXC 230 · port TBD", own: [], md: "`amp` — LXC 230, nuc1",
     note: "Add its rewrite to the DNS table when AMP is installed",
-    hint: "No rewrite in network.md's DNS table yet — add amp.home there when AMP goes in." },
+    hint: "No rewrite in network.md's DNS table yet — add amp.home.alexjenkinson.com there when AMP goes in." },
   { id: "lxc240", plannedIp: "192.168.1.20", kind: "reserved", dev: "nginx", meta: "LXC 240 · :80 · reverse proxy", own: [], isProxy: true,
     md: "`nginx` — LXC 240, nuc1",
     note: "**Every front name resolves to this IP.** Fill this row first",
     hint: "Fill this row first — every front-name rewrite points at it." },
   { g: "Guests — NUC-2" },
-  { id: "lxc111", plannedIp: "192.168.1.24", kind: "reserved", dev: "frigate", meta: "LXC 111 · privileged · :8971", own: ["frigate-lxc.home"],
-    front: ["frigate.home"], md: "`frigate` — LXC 111, nuc2 (privileged)",
-    note: "Backend `frigate-lxc.home` points here",
+  { id: "lxc111", plannedIp: "192.168.1.24", kind: "reserved", dev: "frigate", meta: "LXC 111 · privileged · :8971", own: ["frigate-lxc.home.alexjenkinson.com"],
+    front: ["frigate.home.alexjenkinson.com"], md: "`frigate` — LXC 111, nuc2 (privileged)",
+    note: "Backend `frigate-lxc.home.alexjenkinson.com` points here",
     hint: "Port 5000 also answers and is unauthenticated — never proxy or expose it." },
-  { id: "vm900", plannedIp: "192.168.1.5", kind: "static", dev: "pbs", meta: "VM 900 · :8007", own: ["pbs.home"], md: "`pbs` — VM 900, nuc2",
-    note: "`pvesm add pbs --server pbs.home` uses the name, never this IP" },
+  { id: "vm900", plannedIp: "192.168.1.5", kind: "static", dev: "pbs", meta: "VM 900 · :8007", own: ["pbs.home.alexjenkinson.com"], md: "`pbs` — VM 900, nuc2",
+    note: "`pvesm add pbs --server pbs.home.alexjenkinson.com` uses the name, never this IP" },
   { g: "Cameras — addressed by name, never IP" },
-  { id: "cam1", plannedIp: "192.168.1.30", kind: "reserved", dev: "cam-living-room", meta: "Eufy · RTSP", own: ["cam-living-room.home"],
+  { id: "cam1", plannedIp: "192.168.1.30", kind: "reserved", dev: "cam-living-room", meta: "Eufy · RTSP", own: ["cam-living-room.home.alexjenkinson.com"],
     md: "`cam-living-room`", note: "Frigate opens RTSP by name — a lost reservation breaks recording" },
-  { id: "cam2", plannedIp: "192.168.1.31", kind: "reserved", dev: "cam-kitchen", meta: "Eufy · RTSP", own: ["cam-kitchen.home"],
+  { id: "cam2", plannedIp: "192.168.1.31", kind: "reserved", dev: "cam-kitchen", meta: "Eufy · RTSP", own: ["cam-kitchen.home.alexjenkinson.com"],
     md: "`cam-kitchen`", note: "as above" },
-  { id: "cam3", plannedIp: "192.168.1.32", kind: "reserved", dev: "cam-bedroom", meta: "Eufy · RTSP", own: ["cam-bedroom.home"],
+  { id: "cam3", plannedIp: "192.168.1.32", kind: "reserved", dev: "cam-bedroom", meta: "Eufy · RTSP", own: ["cam-bedroom.home.alexjenkinson.com"],
     md: "`cam-bedroom`", note: "as above" },
-  { id: "cam4", plannedIp: "192.168.1.33", kind: "reserved", dev: "cam-basement", meta: "Eufy · RTSP", own: ["cam-basement.home"],
+  { id: "cam4", plannedIp: "192.168.1.33", kind: "reserved", dev: "cam-basement", meta: "Eufy · RTSP", own: ["cam-basement.home.alexjenkinson.com"],
     md: "`cam-basement`", note: "as above" },
   { g: "Network kit" },
   { id: "switch", plannedIp: "192.168.1.6", kind: "static", dev: "Managed switch", meta: "management address", own: [], md: "Managed switch",
     note: "Management address only if managed" },
   { id: "ap", plannedIp: "192.168.1.7", kind: "static", dev: "Access point(s)", meta: "Wi-Fi", own: [], md: "Access point(s)",
     note: "Its DHCP-issued DNS must also be the Pi ([R14](rules.md))",
-    hint: "Its DHCP-issued DNS must point at the Pi too, or clients on Wi-Fi can't resolve *.home." }
+    hint: "Its DHCP-issued DNS must point at the Pi too, or clients on Wi-Fi can't resolve *.home.alexjenkinson.com." }
 ];
 
 var DISKS = [

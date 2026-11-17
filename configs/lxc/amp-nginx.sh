@@ -35,7 +35,7 @@ sed "s/{{PI_IP}}/${PI_IP}/g" ../nginx/homelab.conf > "$TMP"
 pct push 240 "$TMP" /etc/nginx/conf.d/homelab.conf
 rm -f "$TMP"
 pct exec 240 -- bash -c 'rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl reload nginx'
-ok "nginx 240 up. A passing 'nginx -t' only means syntax — routing needs the Pi resolving *.home."
+ok "nginx 240 up. A passing 'nginx -t' only means syntax — routing needs the Pi resolving *.home.alexjenkinson.com."
 
 # --- AMP 230: game-server panel (CubeCoders, vendor-managed) ----------------
 create_ct 230 amp 40 2048
@@ -43,5 +43,5 @@ pct start 230 2>/dev/null || true
 pause "AMP uses CubeCoders' own interactive installer. Enter the container and run it:
    pct enter 230
    then: bash <(curl -fsSL https://cubecoders.com/getamp.sh)   (follow the prompts)
-   Add amp.home to network.md's address register once it has a reserved IP."
+   Add amp.home.alexjenkinson.com to network.md's address register once it has a reserved IP."
 ok "amp-nginx done (AMP finishes in its installer)."

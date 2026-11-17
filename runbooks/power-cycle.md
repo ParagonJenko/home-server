@@ -41,7 +41,7 @@ Everything is off and all disks are unmounted — safe to unplug, re-route and r
 **Reconnect everything first**, then power on in order:
 
 1. **Reconnect all cables and disks** — both DAS disks to NUC-1, the USB HDD to NUC-2. A missing DAS disk makes NUC-1's pool refuse to mount (by design).
-2. **Pi first** — it is the DNS everything resolves through. Wait until it answers: from another box, `getent hosts pi.home` (or `getent hosts plex.home`).
+2. **Pi first** — it is the DNS everything resolves through. Wait until it answers: from another box, `getent hosts pi.home.alexjenkinson.com` (or `getent hosts plex.home.alexjenkinson.com`).
 3. **NUC-1** — mounts the branches by LABEL, then the mergerfs pool (requires both branches), then starts containers in `onboot` order.
 4. **NUC-2** — Frigate and the PBS VM start.
 
@@ -50,7 +50,7 @@ Everything is off and all disks are unmounted — safe to unplug, re-route and r
 - Pool back: `df -h /mnt/media` shows ~7T; `findmnt /mnt/media` shows `fuse.mergerfs`.
 - Branches mounted: `lsblk -f` shows `media-disk1` / `media-disk2` at `/mnt/pool/disk{1,2}`.
 - Guests up: `pct list` and `qm list` show them running.
-- DNS: `getent hosts plex.home` resolves.
+- DNS: `getent hosts plex.home.alexjenkinson.com` resolves.
 - Full pool re-check (optional): `./configs/verify.sh B2`.
 
 ## If a disk didn't come back

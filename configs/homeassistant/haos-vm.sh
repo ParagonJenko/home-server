@@ -53,7 +53,7 @@ qm resize "$VMID" scsi0 32G        # HAOS grows its data partition to fill the d
 
 qm start "$VMID"
 ok "Home Assistant OS ${VMID} started (give it ~2 min on first boot)."
-echo "   Onboard at:  http://homeassistant.home:8123   (or the VM's IP until DNS is set)"
+echo "   Onboard at:  http://homeassistant.home.alexjenkinson.com:8123   (or the VM's IP until DNS is set)"
 echo "   R13: add a DHCP reservation for VM ${VMID} -> 192.168.1.25 + the AdGuard rewrite (Stage D)."
 echo "   R4:  it's a guest, so the PBS backup job already covers it — no extra wiring."
 echo "   Verify: ./configs/homeassistant/verify-ha.sh"

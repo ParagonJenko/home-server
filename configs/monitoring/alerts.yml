@@ -28,11 +28,11 @@ groups:
         labels: { severity: warning }
         annotations: { summary: "{{ $labels.job }}/{{ $labels.instance }} scrape target down" }
 
-      - alert: InternalDNSBroken          # AdGuard answering on :53 != resolving *.home
+      - alert: InternalDNSBroken          # AdGuard answering on :53 != resolving *.home.alexjenkinson.com
         expr: probe_success{job="dns"} == 0
         for: 2m
         labels: { severity: critical }
-        annotations: { summary: "Internal DNS not resolving *.home" }
+        annotations: { summary: "Internal DNS not resolving *.home.alexjenkinson.com" }
 
       - alert: SmartFailurePredicted      # off smartmon.sh textfile metrics (R24)
         expr: smartmon_device_smart_healthy == 0

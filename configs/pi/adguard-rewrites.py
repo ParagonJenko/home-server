@@ -64,7 +64,7 @@ def parse_register(md):
             device = line.strip().strip("|").split("|")[0].lower()
             if "nginx" in device:
                 nginx_ip = ip
-            for nm in re.findall(r"([a-z0-9-]+\.home)", line):
+            for nm in re.findall(r"([a-z0-9-]+\.home\.alexjenkinson\.com)", line):
                 name_to_ip.setdefault(nm, ip)
     return nginx_ip, name_to_ip
 
@@ -82,9 +82,9 @@ def parse_groups(md):
             continue
         s = line.lstrip()
         if s.startswith("1."):
-            g[1] = re.findall(r"`([a-z0-9-]+\.home)`", line)
+            g[1] = re.findall(r"`([a-z0-9-]+\.home\.alexjenkinson\.com)`", line)
         elif s.startswith("2."):
-            g[2] = re.findall(r"`([a-z0-9-]+\.home)`", line)
+            g[2] = re.findall(r"`([a-z0-9-]+\.home\.alexjenkinson\.com)`", line)
         elif s.startswith("3."):
             g[3] = re.findall(r"`([a-z0-9*.-]+)`", line)
     return g
@@ -100,12 +100,12 @@ def build_desired(nginx_ip, name_to_ip, groups):
     for nm in groups[2]:                       # backend names -> own IP
         (desired.__setitem__(nm, name_to_ip[nm]) if nm in name_to_ip else unresolved.append(nm))
     for tok in groups[3]:                       # hosts & cameras -> own IP
-        if tok == "cam-*.home":
+        if tok == "cam-*.home.alexjenkinson.com":
             for nm, ip in name_to_ip.items():
                 if nm.startswith("cam-"):
                     desired[nm] = ip
         else:
-            nm = tok if "." in tok else tok + ".home"
+            nm = tok if "." in tok else tok + ".home.alexjenkinson.com"
             (desired.__setitem__(nm, name_to_ip[nm]) if nm in name_to_ip else unresolved.append(nm))
     return desired, unresolved
 

@@ -37,7 +37,7 @@ lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir
 EOF
 fi
 
-warn "Cameras are addressed by hostname (cam-*.home). Add their DHCP reservations AND the"
+warn "Cameras are addressed by hostname (cam-*.home.alexjenkinson.com). Add their DHCP reservations AND the"
 warn "AdGuard rewrites BEFORE starting Frigate (adguard-rewrites.py --apply), or it records nothing."
 
 say "start CT ${CTID} + install Docker"

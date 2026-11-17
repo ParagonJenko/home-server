@@ -21,4 +21,4 @@ volumes:
   ollama-models:
   open-webui:
 # After up: docker exec -it ollama ollama pull llama3.3:8b
-# Front with Nginx as llm.home; expose only over Tailscale (R23). Wire HA Assist + Frigate genai.
+# Front with Nginx as llm.home.alexjenkinson.com; expose only over Tailscale (R23). Wire HA Assist + Frigate genai.

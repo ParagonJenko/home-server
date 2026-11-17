@@ -10,11 +10,11 @@ schema rather than hardcoding field names, so it survives Arr releases.
 Indexers stay manual (they need your accounts). Quality profiles are Recyclarr's job.
 
 Reads config from .env (gitignored) next to this file, e.g.:
-  SONARR_URL=http://media-pipeline.home:8989
+  SONARR_URL=http://media-pipeline.home.alexjenkinson.com:8989
   SONARR_API_KEY=...
-  RADARR_URL=http://media-pipeline.home:7878
+  RADARR_URL=http://media-pipeline.home.alexjenkinson.com:7878
   RADARR_API_KEY=...
-  PROWLARR_URL=http://media-pipeline.home:9696
+  PROWLARR_URL=http://media-pipeline.home.alexjenkinson.com:9696
   PROWLARR_API_KEY=...
   QBIT_HOST=qbittorrent        # reachable by Docker service name on the compose net
   QBIT_PORT=8080

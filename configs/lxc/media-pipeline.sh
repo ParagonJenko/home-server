@@ -71,7 +71,7 @@ pct exec "$CTID" -- bash -c 'cd /opt/media-pipeline && docker compose up -d \
 
 IP="$(pct exec "$CTID" -- hostname -I | awk '{print $1}')"
 ok "Core stack up. Once nginx (LXC 240) + AdGuard rewrites are in, reach them by name:"
-echo "     qbittorrent.home  sonarr.home  radarr.home  bazarr.home  prowlarr.home"
+echo "     qbittorrent.home.alexjenkinson.com  sonarr.home.alexjenkinson.com  radarr.home.alexjenkinson.com  bazarr.home.alexjenkinson.com  prowlarr.home.alexjenkinson.com"
 echo "   Until DNS resolves, use this LXC's IP directly:"
 echo "     qBittorrent http://${IP}:8080   Sonarr http://${IP}:8989   Radarr http://${IP}:7878"
 echo "     Prowlarr    http://${IP}:9696   Bazarr http://${IP}:6767"

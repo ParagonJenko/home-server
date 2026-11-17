@@ -51,8 +51,8 @@ case "$STEP" in
       && yes_ "AdGuard container running" || no_ "AdGuard container running"
     grep -q '127.0.0.1' /etc/resolv.conf 2>/dev/null \
       && yes_ "Pi resolver is 127.0.0.1" || no_ "Pi resolver = 127.0.0.1 (nmcli ipv4.dns)"
-    getent hosts pi.home >/dev/null 2>&1 \
-      && yes_ "pi.home resolves — internal DNS works" || no_ "pi.home resolves via AdGuard"
+    getent hosts pi.home.alexjenkinson.com >/dev/null 2>&1 \
+      && yes_ "pi.home.alexjenkinson.com resolves — internal DNS works" || no_ "pi.home.alexjenkinson.com resolves via AdGuard"
     ;;
   D2)
     docker run --rm hello-world >/dev/null 2>&1 \

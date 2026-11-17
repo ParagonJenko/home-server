@@ -5,7 +5,7 @@
 #   ./configs/homeassistant/verify-ha.sh
 set -uo pipefail
 VMID=910
-NAME="homeassistant.home"
+NAME="homeassistant.home.alexjenkinson.com"
 G=$'\e[32m'; R=$'\e[31m'; Y=$'\e[33m'; Z=$'\e[0m'
 fails=0
 pass() { echo "${G}PASS${Z} $*"; }

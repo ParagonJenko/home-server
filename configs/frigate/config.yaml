@@ -22,7 +22,7 @@ cameras:
   cam-living-room:
     ffmpeg:
       inputs:
-        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-living-room.home:554/live0
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-living-room.home.alexjenkinson.com:554/live0
           roles: [detect, record]
   # ENTER: add cam-kitchen, cam-bedroom, cam-basement (same shape, by name).
   # NOTE: no HomeBase — confirm each Eufy model exposes standalone RTSP (many need a base).
@@ -30,5 +30,5 @@ cameras:
 # Optional (Stage K): genai descriptions via local Ollama instead of OpenAI.
 # genai:
 #   provider: ollama
-#   base_url: http://llm.home:11434
+#   base_url: http://llm.home.alexjenkinson.com:11434
 #   model: llava

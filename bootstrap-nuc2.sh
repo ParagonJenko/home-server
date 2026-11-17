@@ -14,12 +14,12 @@ echo "--- Stage F: host base ---"
 run ./configs/lxc/stage-a-host-setup.sh            # repos, tools, MCP token
 pause "Copy the printed API token into your MCP config + vault."
 run ./configs/lxc/stage-c-template.sh              # template (per-host)
-echo "Point NUC-2's resolver at the Pi so pbs.home resolves (Stage H3 does this on the router)."
+echo "Point NUC-2's resolver at the Pi so pbs.home.alexjenkinson.com resolves (Stage H3 does this on the router)."
 
 echo "--- Stage G: Frigate + PBS ---"
 ./secrets-init.sh                                  # Frigate Eufy RTSP creds (gitignored)
 run ./configs/lxc/frigate.sh                       # G1
-pause "Add a DHCP reservation + AdGuard rewrite per camera BEFORE Frigate records (cam-*.home)."
+pause "Add a DHCP reservation + AdGuard rewrite per camera BEFORE Frigate records (cam-*.home.alexjenkinson.com)."
 run ./configs/pbs/pbs-vm.sh                        # G3: prompts for ISO + USB by-id
 pause "Install PBS from the VM console, switch boot off the ISO, run datastore-setup.sh on the VM."
 run bash -c 'echo "Then: pvesm add pbs on each NUC (G4), a test restore (G5), and offsite sync (G6)."'
