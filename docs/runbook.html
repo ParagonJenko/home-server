@@ -1697,6 +1697,11 @@ var STAGES = [
             "callout": "manual",
             "title": "Cameras are addressed by hostname, not IP",
             "html": "<p><code class=\"inline\">cam-living-room.home.alexjenkinson.com</code>, … — literal camera IPs are exactly what broke the old setup. Add a DHCP reservation per camera (by MAC) and a matching AdGuard rewrite (D3) <em>before</em> starting Frigate; they're in network.md's tables. <strong>This needs the Pi already built</strong> — without it Frigate starts and records nothing. Pressing on anyway: add the four cameras to <code class=\"inline\">/etc/hosts</code> inside LXC 111, and delete those lines the moment AdGuard has the rewrites.</p>"
+          },
+          {
+            "callout": "gotcha",
+            "title": "Eufy cameras go through go2rtc — and must resolve inside the container",
+            "html": "<p>Eufy RTSP is unreliable for ffmpeg to pull directly, so <code class=\"inline\">config.yaml</code> restreams each camera through <strong>go2rtc</strong> (built into Frigate): go2rtc connects to the camera by hostname, and the Frigate cameras pull from <code class=\"inline\">rtsp://127.0.0.1:8554/&lt;name&gt;</code> (this also powers the live view). Because go2rtc resolves the camera hostnames, they must resolve <strong>from inside LXC 111</strong> — <code class=\"inline\">pct exec 111 -- getent hosts cam-living-room.home.alexjenkinson.com</code> must return the camera's IP. If it doesn't, the container is on the wrong DNS (the same R14 fix — the router must hand out the Pi) and every stream stays down while the config looks fine. A changed <code class=\"inline\">config.yaml</code> needs <code class=\"inline\">docker compose restart frigate</code> to take effect.</p>"
           }
         ],
         "verify": [
