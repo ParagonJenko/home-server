@@ -1,7 +1,12 @@
-# configs/pi/alertmanager/alertmanager.yml — routes every alert to one Discord channel.
-# The webhook is read from a SEPARATE gitignored file (webhook_url_file) so no secret ever
-# lands in this committed config. That file must exist (setup-pi.sh creates it, empty if you
-# skipped it); until it holds a real URL, Alertmanager runs fine but can't deliver. [R21]
+# configs/pi/alertmanager/alertmanager.yml — routes every alert to one Discord channel as a
+# formatted embed. The webhook is read from a SEPARATE gitignored file (webhook_url_file) so no
+# secret ever lands in this committed config. That file must exist (setup-pi.sh creates it, empty
+# if you skipped it); until it holds a real URL, Alertmanager runs fine but can't deliver. [R21]
+#
+# The embed's colour is set automatically by Alertmanager (red = firing, green = resolved). The
+# title + message below are Go templates; the message pulls the five annotations each rule defines
+# in configs/monitoring/alerts.yml (summary / impact / cause / fix / where). Firing shows the full
+# Impact/What/Fix/Where; resolved collapses to a single line.
 global:
   resolve_timeout: 5m
 
@@ -17,3 +22,17 @@ receivers:
     discord_configs:
       - webhook_url_file: /etc/alertmanager/discord-webhook-url
         send_resolved: true
+        title: '{{ if eq .Status "firing" }}🚨 FIRING{{ else }}✅ RESOLVED{{ end }} — {{ .CommonLabels.alertname }}{{ if .CommonLabels.instance }} @ {{ .CommonLabels.instance }}{{ end }}'
+        message: |-
+          {{ range .Alerts -}}
+          {{ if eq .Labels.severity "critical" }}🟥{{ else }}🟧{{ end }} **{{ .Labels.alertname }}**{{ if .Labels.instance }} · `{{ .Labels.instance }}`{{ end }}{{ if .Labels.device }} · `{{ .Labels.device }}`{{ end }}
+          {{ if eq .Status "resolved" }}✅ Resolved — {{ .Annotations.summary }}
+          {{ else }}_{{ .Annotations.summary }}_
+
+          💥 **Impact** — {{ .Annotations.impact }}
+          🔍 **What** — {{ .Annotations.cause }}
+          🛠️ **Fix** — {{ .Annotations.fix }}
+          📍 **Where** — {{ .Annotations.where }}
+          {{ end }}
+          ━━━━━━━━━━━━━━━
+          {{ end -}}

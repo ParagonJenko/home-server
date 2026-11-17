@@ -1,6 +1,14 @@
 # monitoring/alerts.yml — the ONE canonical copy of the alert rules (mounted into
 # Prometheus from here by configs/pi/docker-compose.yaml). Alerts inform, they never
 # protect (R11) — every "must not happen" is a hard mechanism elsewhere. Fire at 80%.
+#
+# Every alert carries five annotations, rendered by the Discord template in
+# configs/pi/alertmanager/alertmanager.yml:
+#   summary — one-line headline
+#   impact  — what it means for you / what breaks
+#   cause   — what actually tripped
+#   fix     — first debug step(s)
+#   where   — dashboard / host / runbook to look at
 groups:
   - name: homelab
     rules:
@@ -8,82 +16,174 @@ groups:
         expr: 100 - (node_filesystem_avail_bytes / node_filesystem_size_bytes * 100) > 80
         for: 10m
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.instance }} {{ $labels.mountpoint }} over 80%" }
+        annotations:
+          summary: "{{ $labels.instance }} {{ $labels.mountpoint }} over 80% full"
+          impact: "Writes to this filesystem will start failing soon; services on it degrade or stop (R7)."
+          cause: "{{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | humanize }}% used."
+          fix: "asquared ssh {{ $labels.instance }} → df -h {{ $labels.mountpoint }}; clear space or raise the cap (local-lvm ceilings / mergerfs minfreespace in storage.md)."
+          where: "Grafana → Homelab overview → Filesystem used %. Host {{ $labels.instance }}."
 
       - alert: ThinPoolMetadataHigh        # the alert closest to unrecoverable (R8)
         expr: lvm_thinpool_metadata_percent > 80
         for: 5m
         labels: { severity: critical }
-        annotations: { summary: "{{ $labels.instance }} thin-pool metadata over 80%" }
+        annotations:
+          summary: "{{ $labels.instance }} thin-pool metadata over 80%"
+          impact: "If thin-pool METADATA hits 100% the pool goes read-only and can be unrecoverable — every LXC/VM on local-lvm is affected. The worst storage failure."
+          cause: "LVM-thin metadata on {{ $labels.instance }} is {{ $value | humanize }}%."
+          fix: "asquared ssh {{ $labels.instance }} → lvs -a; extend: lvextend --poolmetadatasize +1G pve/data. Autoextend should pre-empt this — check thin_pool_autoextend_* in /etc/lvm/lvm.conf."
+          where: "Grafana → Homelab overview → Thin-pool metadata %. Host {{ $labels.instance }}."
 
       - alert: ServiceDown
-        expr: probe_success == 0
+        expr: probe_success{job="blackbox-http"} == 0
         for: 5m
         labels: { severity: critical }
-        annotations: { summary: "{{ $labels.instance }} probe failing" }
+        annotations:
+          summary: "{{ $labels.instance }} not responding"
+          impact: "This service is unreachable — you and anyone else can't use it."
+          cause: "HTTP probe to {{ $labels.instance }} failed for 5m."
+          fix: "asquared status on its host; asquared logs {{ $labels.instance }}; is the guest up and does its name resolve (getent hosts)? asquared restart <id>."
+          where: "Grafana → Network & Uptime → Service status. services.md maps {{ $labels.instance }} → host/guest/port."
 
       - alert: ProbeFailed
         expr: up == 0
         for: 5m
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.job }}/{{ $labels.instance }} scrape target down" }
+        annotations:
+          summary: "{{ $labels.job }}/{{ $labels.instance }} scrape target down"
+          impact: "Prometheus can't scrape {{ $labels.instance }} — you are blind to its metrics and its other alerts can't fire."
+          cause: "The {{ $labels.job }} exporter on {{ $labels.instance }} isn't answering Prometheus."
+          fix: "asquared ssh {{ $labels.instance }}: systemctl status prometheus-node-exporter (NUCs) or docker ps (Pi); check :9100 / :9115."
+          where: "Prometheus → Status → Targets. Host {{ $labels.instance }}."
 
       - alert: InternalDNSBroken          # AdGuard answering on :53 != resolving *.home.alexjenkinson.com
         expr: probe_success{job="dns"} == 0
         for: 2m
         labels: { severity: critical }
-        annotations: { summary: "Internal DNS not resolving *.home.alexjenkinson.com" }
+        annotations:
+          summary: "Internal DNS not resolving *.home.alexjenkinson.com"
+          impact: "Nothing on the LAN can resolve *.home names — every service-by-name breaks, Frigate loses cameras, Prometheus loses targets. Near-total outage."
+          cause: "AdGuard on the Pi (127.0.0.1:53) failed to resolve a known *.home name."
+          fix: "asquared ssh pi: is AdGuard up (docker ps, :8081)? asquared dns re-applies the rewrites. Confirm the Pi is the router's only DNS (R14)."
+          where: "AdGuard http://192.168.1.4:8081. Grafana → Network & Uptime. Prometheus job=dns."
 
-      - alert: SmartFailurePredicted      # off smartmon.sh textfile metrics (R24). Only READABLE disks
-        expr: smartmon_device_smart_healthy == 0   # emit a health series, so this is a genuine FAIL, not
-        for: 1m                                     # an unreadable bridge (that's SmartUnreadable below).
+      - alert: SmartFailurePredicted      # readable disk reports FAILED (not merely unreadable — see below). R24
+        expr: smartmon_device_smart_healthy == 0
+        for: 1m
         labels: { severity: critical }
-        annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} SMART health FAILED — replace the disk" }
+        annotations:
+          summary: "{{ $labels.instance }} {{ $labels.device }} SMART health FAILED — replace the disk"
+          impact: "Disk {{ $labels.device }} on {{ $labels.instance }} reports SMART failure — imminent data-loss risk."
+          cause: "SMART overall-health = FAILED on a readable disk (this is the real one, not an unreadable-bridge false alarm)."
+          fix: "Confirm: smartctl -H -d sat /dev/{{ $labels.device }}; read attributes + run smartctl -t long. If real, replace per role (drive-health.md §4). Check backups: verify-backups.sh."
+          where: "Grafana → Disks & SMART → per-drive health. Runbook runbooks/drive-health.md. {{ $labels.device }} on {{ $labels.instance }}."
 
       - alert: SmartUnreadable            # smartctl couldn't read SMART through the disk's bridge at all.
-        expr: smartmon_device_smart_readable == 0  # Usually a USB/DAS -d flag issue, NOT a failing disk —
-        for: 30m                                    # warning, not a critical page. Find the right -d flag.
+        expr: smartmon_device_smart_readable == 0
+        for: 30m
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} — smartctl can't read SMART (bridge needs the right -d flag; not necessarily failing)" }
+        annotations:
+          summary: "{{ $labels.instance }} {{ $labels.device }} — smartctl can't read SMART"
+          impact: "You are blind to this disk's health — but this is usually a cable/flag issue, NOT a failing disk."
+          cause: "No -d flag let smartctl read SMART for {{ $labels.device }} on {{ $labels.instance }}."
+          fix: "smartctl --scan-open for the right -d flag; smartctl -H -d sat /dev/{{ $labels.device }}; reseat the USB/DAS cable. drive-health.md §0."
+          where: "Grafana → Disks & SMART → per-drive readability. Runbook runbooks/drive-health.md."
 
       - alert: DiskTempHigh               # 60°C: NVMe runs hot under load; 15m avoids flapping on spikes
         expr: smartmon_temperature_celsius > 60
         for: 15m
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.instance }} {{ $labels.device }} over 60°C" }
+        annotations:
+          summary: "{{ $labels.instance }} {{ $labels.device }} over 60°C"
+          impact: "Disk {{ $labels.device }} is running hot ({{ $value | humanize }}°C); sustained heat shortens its life."
+          cause: "Drive temperature above 60°C for 15m."
+          fix: "Check airflow/fans around the box and DAS, ambient temperature, and whether a scrub/backup/SMR write-storm is hammering it. Usually cooling, not the disk."
+          where: "Grafana → Disks & SMART → temperature. {{ $labels.device }} on {{ $labels.instance }}."
 
       - alert: SmartCollectorStale        # cron/smartmon.sh stopped writing — blind to disk health
         expr: time() - smartmon_last_collect_timestamp_seconds > 3600
         for: 15m
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.instance }} SMART metrics stale (smartmon.sh not running?)" }
+        annotations:
+          summary: "{{ $labels.instance }} SMART metrics stale"
+          impact: "smartmon.sh stopped writing on {{ $labels.instance }} — a disk failure there would now go unnoticed."
+          cause: "No fresh SMART textfile metric in over an hour (the script or its cron stopped)."
+          fix: "asquared ssh {{ $labels.instance }}: run /usr/local/bin/smartmon.sh by hand; crontab -l has the 15-min entry? smartmontools + jq installed?"
+          where: "Host {{ $labels.instance }}. Script /usr/local/bin/smartmon.sh. drive-health.md §5."
 
       - alert: InternetDown               # ICMP to 1.1.1.1 failing — WAN/upstream is gone
         expr: probe_success{service="internet"} == 0
         for: 3m
         labels: { severity: critical }
-        annotations: { summary: "No internet — ICMP to 1.1.1.1 failing for 3m" }
+        annotations:
+          summary: "No internet — ICMP to 1.1.1.1 failing for 3m"
+          impact: "The whole LAN has no internet — remote access, updates, streaming and offsite backup are all down."
+          cause: "ICMP to 1.1.1.1 failed for 3m (the gateway may be fine but the WAN/upstream isn't)."
+          fix: "Check the router WAN/modem. Is GatewayDown also firing? If not, it's WAN/ISP, not LAN — reboot the ONT/router and check ISP status."
+          where: "Grafana → Network & Uptime → Internet tile / uptime %. Prometheus service=internet."
 
       - alert: GatewayDown                # the LAN gateway itself is unreachable
         expr: probe_success{service="gateway"} == 0
         for: 2m
         labels: { severity: critical }
-        annotations: { summary: "LAN gateway 192.168.1.1 unreachable" }
+        annotations:
+          summary: "LAN gateway 192.168.1.1 unreachable"
+          impact: "The LAN gateway is unreachable — likely a LAN-wide outage (router down or a dead link)."
+          cause: "ICMP to 192.168.1.1 failed for 2m."
+          fix: "Is the router powered and up? Check the switch and the Pi's own link. If the Pi lost its network, every probe fails — check ProbeFailed too."
+          where: "Grafana → Network & Uptime. Router 192.168.1.1."
 
       - alert: HighLatency                # round-trip to a box/gateway degraded
         expr: probe_duration_seconds{job="blackbox-icmp"} > 0.15
         for: 10m
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.instance }} ICMP RTT over 150ms for 10m" }
+        annotations:
+          summary: "{{ $labels.instance }} ICMP RTT over 150ms"
+          impact: "Round-trip to {{ $labels.instance }} is slow ({{ $value | humanizeDuration }}) — sluggish access and possible packet loss."
+          cause: "ICMP RTT above 150ms for 10m."
+          fix: "If {{ $labels.instance }} is internet/gateway: WAN congestion or Wi-Fi backhaul. If a box: its load or link. Check asquared status + the latency graph."
+          where: "Grafana → Network & Uptime → ICMP latency. Target {{ $labels.instance }}."
 
       - alert: TLSCertExpiringSoon        # the wildcard cert nginx serves is close to expiry
         expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 14
         for: 1h
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.instance }} TLS cert expires in under 14 days" }
+        annotations:
+          summary: "{{ $labels.instance }} TLS cert expires in under 14 days"
+          impact: "The *.home wildcard cert nginx serves is near expiry — HTTPS services will throw cert errors when it lapses."
+          cause: "The certificate for {{ $labels.instance }} expires in under 14 days."
+          fix: "acme.sh auto-renews via Cloudflare DNS-01. Force on nginx LXC 240: acme.sh --renew -d '*.home.alexjenkinson.com' --force. Check the Cloudflare API token (R21)."
+          where: "nginx LXC 240 on nuc1. configs/nginx/enable-tls.sh. services.md."
 
       - alert: CameraDown                 # RTSP port shut — Frigate has probably lost the stream
         expr: probe_success{job="blackbox-cameras"} == 0
         for: 10m
         labels: { severity: warning }
-        annotations: { summary: "{{ $labels.instance }} RTSP (:554) unreachable for 10m — Frigate may have lost its stream (reservation/rewrite set? camera online?)" }
+        annotations:
+          summary: "{{ $labels.instance }} RTSP (:554) unreachable for 10m"
+          impact: "Camera {{ $labels.instance }} is unreachable on RTSP — Frigate has probably lost its stream and is not recording it."
+          cause: "TCP connect to {{ $labels.instance }}:554 failed for 10m."
+          fix: "Camera powered/online? Reservation + AdGuard rewrite set? getent hosts {{ $labels.instance }} inside LXC 111. runbooks/cameras.md troubleshooting."
+          where: "Grafana → Network & Uptime → Cameras. Frigate https://frigate.home.alexjenkinson.com. Runbook cameras.md."
+
+      - alert: InternetSpeedLow           # download well below plan. TUNE the threshold to ~50% of your plan.
+        expr: speedtest_download_bits_per_second < 50e6   # 50 Mbit/s placeholder — change it.
+        for: 1h
+        labels: { severity: warning }
+        annotations:
+          summary: "Internet download below threshold for 1h"
+          impact: "Internet download is well under your plan — slow streaming and downloads for everyone on the LAN."
+          cause: "Ookla download is {{ $value | humanize }}bit/s, under the configured floor."
+          fix: "Run speedtest on the Pi by hand to confirm; check for a big download (qBittorrent) or congestion; reboot the router; compare to your plan. Tune the threshold in alerts.yml."
+          where: "Grafana → Network & Uptime → Internet (WAN) → Download. Script configs/monitoring/speedtest.sh."
+
+      - alert: SpeedtestStale             # speedtest.sh stopped running — no fresh speed data
+        expr: time() - speedtest_last_run_timestamp_seconds > 10800   # >3h; it runs every 2h
+        for: 30m
+        labels: { severity: warning }
+        annotations:
+          summary: "Internet speedtest hasn't run in over 3h"
+          impact: "No fresh internet-speed data — a speed problem would go unseen."
+          cause: "speedtest.sh hasn't written a result in over 3h (it runs every 2h)."
+          fix: "asquared ssh pi: run /usr/local/bin/speedtest.sh by hand; crontab -l has the 2h entry? Ookla CLI installed (speedtest --version)?"
+          where: "Host pi. Script /usr/local/bin/speedtest.sh."

@@ -21,8 +21,10 @@ mkdir -p /opt/monitoring && cp ../monitoring/alerts.yml /opt/monitoring/ 2>/dev/
 
 cd /opt/pi-stack
 docker compose up -d                                # recreate containers whose spec changed (blackbox/node_exporter)
-docker compose restart prometheus blackbox grafana  # reload mounted configs: prometheus (scrape+rules),
-                                                    # blackbox (probe modules), grafana (datasource +
-                                                    # dashboard PROVIDERS — only re-read at Grafana boot,
-                                                    # so 'up -d' alone never registers newly-added dashboards)
+docker compose restart prometheus blackbox grafana alertmanager  # reload mounted configs:
+                                                    # prometheus (scrape+rules), blackbox (probe modules),
+                                                    # grafana (datasource + dashboard PROVIDERS — only
+                                                    # re-read at boot, so 'up -d' alone never registers
+                                                    # newly-added dashboards), alertmanager (routes + the
+                                                    # Discord embed template)
 echo "redeployed. Dashboards appear under Grafana → Dashboards within a few seconds of the restart."
