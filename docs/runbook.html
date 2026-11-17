@@ -1690,15 +1690,24 @@ var STAGES = [
           },
           {
             "callout": "manual",
-            "title": "Manual — camera names, not IPs",
-            "html": "<p>Fill in <code class=\"inline\">configs/frigate/.env.example</code> → <code class=\"inline\">.env</code> with the real Eufy RTSP credentials. <code class=\"inline\">config.yaml</code> itself holds no secrets and is safe as committed.</p><p><strong>The cameras are addressed by hostname</strong> (<code class=\"inline\">cam-living-room.home.alexjenkinson.com</code>, …), not IP — literal camera IPs are exactly what broke the old setup, and R13's rationale names this file. Add a DHCP reservation per camera on the router and a matching rewrite in AdGuard (D3) <em>before</em> starting Frigate; they're in network.md's tables. <strong>This is one of the three steps that needs the Pi already built</strong> — without it Frigate starts and records nothing. Pressing on anyway: add the four cameras to <code class=\"inline\">/etc/hosts</code> inside LXC 111, and delete those lines the moment AdGuard has the rewrites.</p>"
+            "title": "RTSP creds — the script prompts you",
+            "html": "<p><code class=\"inline\">frigate.sh</code> <strong>prompts</strong> for the Eufy RTSP username and password and writes the gitignored <code class=\"inline\">configs/frigate/.env</code> (chmod 600, password hidden) — no hand-editing. One user/pass is shared by all four cameras; <code class=\"inline\">config.yaml</code> holds no secrets and is safe as committed. <span class=save>Use fresh creds and save them to your vault (R21)</span> — the old Eufy creds leaked into git history.</p>"
+          },
+          {
+            "callout": "manual",
+            "title": "Cameras are addressed by hostname, not IP",
+            "html": "<p><code class=\"inline\">cam-living-room.home.alexjenkinson.com</code>, … — literal camera IPs are exactly what broke the old setup. Add a DHCP reservation per camera (by MAC) and a matching AdGuard rewrite (D3) <em>before</em> starting Frigate; they're in network.md's tables. <strong>This needs the Pi already built</strong> — without it Frigate starts and records nothing. Pressing on anyway: add the four cameras to <code class=\"inline\">/etc/hosts</code> inside LXC 111, and delete those lines the moment AdGuard has the rewrites.</p>"
           }
         ],
         "verify": [
           {
-            "cmd": "# @where: NUC-2 · host shell\nlvs"
+            "cmd": "# @where: NUC-2 · host shell — BEFORE you run it, check local-lvm headroom:\nlvs"
           },
-          "Before running Frigate: local-lvm on NUC-2 has room for 260G (Frigate) + 16G (PBS) + 32G (Home Assistant), with headroom left."
+          "local-lvm on NUC-2 needs room for 260G (Frigate) + 16G (PBS) + 32G (Home Assistant), with headroom left.",
+          {
+            "cmd": "# @where: NUC-2 · host shell — AFTER it's up, health-check Frigate:\npct exec 111 -- bash /opt/frigate/verify-frigate.sh"
+          },
+          "verify-frigate checks the container's up, all four cameras are in the loaded config, :5000 is NOT exposed (R13), the iGPU decode + recordings path work, and each camera's live stream. A camera you haven't set up yet shows a WARN, not a fail."
         ]
       },
       {

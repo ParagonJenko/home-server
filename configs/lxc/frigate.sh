@@ -46,14 +46,20 @@ pct push "$CTID" ./_install-docker.sh /root/_install-docker.sh
 pct exec "$CTID" -- bash -c 'command -v docker >/dev/null || bash /root/_install-docker.sh'
 
 say "deploy Frigate compose + config"
-pct exec "$CTID" -- mkdir -p /opt/frigate
+pct exec "$CTID" -- mkdir -p /opt/frigate/config
 pct push "$CTID" ../frigate/docker-compose.yaml /opt/frigate/docker-compose.yaml
-pct push "$CTID" ../frigate/config.yaml /opt/frigate/config.yaml
-if [ -f ../frigate/.env ]; then
-  pct push "$CTID" ../frigate/.env /opt/frigate/.env
+pct push "$CTID" ../frigate/config.yaml /opt/frigate/config/config.yaml    # compose mounts /opt/frigate/config -> /config
+pct push "$CTID" ../frigate/verify-frigate.sh /opt/frigate/verify-frigate.sh
+
+# Eufy RTSP creds -> gitignored .env (one user/pass, shared by all four cameras). Prompt once.
+if ! grep -q '^FRIGATE_RTSP_PASSWORD=.' ../frigate/.env 2>/dev/null; then
+  say "Eufy RTSP credentials — stored in configs/frigate/.env (gitignored, chmod 600). Use FRESH creds (R21)."
+  envset ../frigate/.env FRIGATE_RTSP_USER "Eufy RTSP username"
+  envset ../frigate/.env FRIGATE_RTSP_PASSWORD "Eufy RTSP password" --secret
 else
-  warn "  ENTER: ../frigate/.env not found — fill camera creds + RTSP before starting."
+  say "RTSP creds already in configs/frigate/.env — keeping them."
 fi
+pct push "$CTID" ../frigate/.env /opt/frigate/.env
 pct exec "$CTID" -- bash -c 'cd /opt/frigate && docker compose up -d'
 
 ok "frigate up on NUC-2. Auth UI on :8971 — never expose :5000 (unauthenticated, R13)."
