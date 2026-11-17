@@ -42,18 +42,21 @@ if ! getent hosts "$NAME" >/dev/null 2>&1; then
   fi
 fi
 if [ "$target" != "$NAME" ] || getent hosts "$NAME" >/dev/null 2>&1; then
-  # Retry — HAOS can take a minute to answer after a (re)boot. -L follows the onboarding redirect.
-  code=000
+  # HA's port isn't fixed: default is 8123, but a restored config can use 80. Try both.
+  # HAOS can also be slow after a (re)boot, so retry. -L follows the onboarding redirect.
+  hacode=000; haport=
   for _ in 1 2 3 4 5; do
-    code="$(curl -sL -o /dev/null -w '%{http_code}' --max-time 8 "http://${target}:8123/" 2>/dev/null)"
-    case "$code" in 000|"") sleep 3;; *) break;; esac
+    for p in 8123 80; do
+      c="$(curl -sL -o /dev/null -w '%{http_code}' --max-time 6 "http://${target}:${p}/" 2>/dev/null)"
+      case "$c" in 200|301|302|303|307|308|401|403) hacode="$c"; haport="$p"; break 2;; esac
+    done
+    sleep 3
   done
-  case "$code" in
-    200|301|302|303|307|308|401|403) pass "Home Assistant answers on :8123 (HTTP ${code})";;
-    5*) fail "Home Assistant :8123 returned ${code} — check the VM";;
-    000|"") fail "Home Assistant :8123 — no response after ~25s of retries (still booting, or not listening)";;
-    *) warn "Home Assistant :8123 returned HTTP ${code}";;
-  esac
+  if [ -n "$haport" ]; then
+    pass "Home Assistant answers on :${haport} (HTTP ${hacode})"
+  else
+    fail "Home Assistant not answering on :8123 or :80 after retries (still booting, or not listening)"
+  fi
 fi
 
 # NOTE: backup coverage (is VM 910 in the PBS job?) is an R4 check that belongs with
