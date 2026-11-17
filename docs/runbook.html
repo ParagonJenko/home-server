@@ -2165,7 +2165,7 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Pi · shell\ndocker compose exec alertmanager amtool alert add \\\n  alertname=TestAlert severity=warning instance=pi \\\n  --alertmanager.url=http://localhost:9093"
+            "cmd": "# @where: Pi · shell — compose commands run from the stack dir:\ncd /opt/pi-stack\ndocker compose exec alertmanager amtool alert add \\\n  alertname=TestAlert severity=warning instance=pi \\\n  --alertmanager.url=http://localhost:9093"
           },
           {
             "callout": "note",
