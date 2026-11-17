@@ -13,21 +13,29 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 VMID=910
 CONF='/config/configuration.yaml'                 # path inside the homeassistant container
 HA_SSH_HOST="${HA_SSH_HOST:-192.168.1.25}"
-HA_SSH_PORT="${HA_SSH_PORT:-22222}"               # HAOS OS SSH; set HA_SSH_PORT=22 for the add-on
 HA_SSH_USER="${HA_SSH_USER:-root}"
 KEY="${HA_SSH_KEY:-$HOME/.ssh/id_ed25519}"
-SSH_OPTS=(-p "$HA_SSH_PORT" -i "$KEY" -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new)
+# Ports to try, in order: an explicit HA_SSH_PORT wins; else HAOS OS SSH :22222 then add-on :22.
+PORTS=("${HA_SSH_PORT:-22222}" 22)
+PORT=""
 
-ssh_reachable() { ssh "${SSH_OPTS[@]}" "${HA_SSH_USER}@${HA_SSH_HOST}" true 2>/dev/null; }
-run_ha()        { ssh "${SSH_OPTS[@]}" "${HA_SSH_USER}@${HA_SSH_HOST}" "$1"; }
+_ssh() { ssh -p "$1" -i "$KEY" -o BatchMode=yes -o ConnectTimeout=4 -o StrictHostKeyChecking=accept-new "${HA_SSH_USER}@${HA_SSH_HOST}" "${@:2}"; }
+pick_port() {   # find the first SSH port that answers; cache it in PORT
+  [ -n "$PORT" ] && return 0
+  local p
+  for p in "${PORTS[@]}"; do _ssh "$p" true 2>/dev/null && { PORT="$p"; return 0; }; done
+  return 1
+}
+ssh_reachable() { pick_port; }
+run_ha()        { pick_port || return 1; _ssh "$PORT" "$1"; }
 
 need_ssh() {
   ssh_reachable && return 0
   cat <<EOF
->> Can't SSH to HAOS at ${HA_SSH_USER}@${HA_SSH_HOST}:${HA_SSH_PORT}.
+>> Can't SSH to HAOS at ${HA_SSH_USER}@${HA_SSH_HOST} (tried ports ${PORTS[*]}).
    - SSH add-on? In its Configuration set 'username: root' AND 'authorized_keys', turn OFF
-     Protection mode, expose port 22, Start it — then run with HA_SSH_PORT=22
-     (and HA_SSH_USER=<name> if you set a username other than root).
+     Protection mode, expose port 22, Start it (this script auto-finds :22).
+     If you used a username other than root, run with HA_SSH_USER=<name>.
    - Not set up yet?  ./configs/homeassistant/ha-config.sh setup-ssh
    - Or from the Proxmox console: VM ${VMID} -> Console -> 'login', then
      docker exec homeassistant cat ${CONF}
@@ -57,9 +65,9 @@ Authorise it on HAOS (pick one), then re-run any command:
        (it logs in as that username — if you leave it unset/other, SSH as root is refused)
     2. Info tab: turn OFF 'Protection mode' (so docker/ha commands are allowed).
     3. Network: expose SSH on port 22. Then Start the add-on (it won't start without a key).
-    4. Run with the add-on's port:  HA_SSH_PORT=22 ./configs/homeassistant/ha-config.sh status
-       (add HA_SSH_USER=<name> if you used a username other than root)
-Then:  ./configs/homeassistant/ha-config.sh status   (or 'HA_SSH_PORT=22 ...' for the add-on)
+    4. Start the add-on, then:  ./configs/homeassistant/ha-config.sh status
+       (the script auto-tries :22222 then :22; add HA_SSH_USER=<name> if not root)
+Then:  ./configs/homeassistant/ha-config.sh status
 EOF
     ;;
   status)
