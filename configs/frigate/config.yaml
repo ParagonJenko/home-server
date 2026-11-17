@@ -24,8 +24,24 @@ cameras:
       inputs:
         - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-living-room.home.alexjenkinson.com:554/live0
           roles: [detect, record]
-  # ENTER: add cam-kitchen, cam-bedroom, cam-basement (same shape, by name).
+  cam-kitchen:
+    ffmpeg:
+      inputs:
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-kitchen.home.alexjenkinson.com:554/live0
+          roles: [detect, record]
+  cam-bedroom:
+    ffmpeg:
+      inputs:
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-bedroom.home.alexjenkinson.com:554/live0
+          roles: [detect, record]
+  cam-basement:
+    ffmpeg:
+      inputs:
+        - path: rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-basement.home.alexjenkinson.com:554/live0
+          roles: [detect, record]
   # NOTE: no HomeBase — confirm each Eufy model exposes standalone RTSP (many need a base).
+  # All four share one RTSP user/pass (from .env) and the :554/live0 path. If a model's
+  # path differs, change just that camera's input; the hostname is what network.md + AdGuard pin.
 
 # Optional (Stage K): genai descriptions via local Ollama instead of OpenAI.
 # genai:
