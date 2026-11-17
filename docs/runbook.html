@@ -2234,8 +2234,8 @@ var STAGES = [
           },
           {
             "callout": "gotcha",
-            "title": "Frigate has no clean unauthenticated metrics path",
-            "html": "<p>Frigate's <code class=\"inline\">/api/metrics</code> on <code class=\"inline\">:8971</code> is auth-walled (401); <code class=\"inline\">:8971/metrics</code> returns the web UI's HTML (not metrics); and the unauth <code class=\"inline\">:5000/metrics</code> is localhost-only inside the container. So the <code class=\"inline\">frigate</code> scrape job is <strong>parked</strong>. To enable, either expose <code class=\"inline\">:5000</code> on the LAN from LXC 111's compose (weakens the never-expose-5000 stance in services.md — LAN-only, your call) or give Prometheus a Frigate credential for <code class=\"inline\">/api/metrics</code>.</p>"
+            "title": "Frigate metrics go through a metrics-only sidecar",
+            "html": "<p>Frigate 0.18 serves metrics at <code class=\"inline\">/api/metrics</code> unauthenticated, but on its <strong>loopback-bound <code class=\"inline\">:5000</code></strong> (unreachable from the LAN; <code class=\"inline\">/api/metrics</code> on the authed <code class=\"inline\">:8971</code> is 401). A tiny nginx sidecar (<code class=\"inline\">configs/frigate/metrics-proxy.conf</code>, <code class=\"inline\">network_mode: service:frigate</code>) reaches <code class=\"inline\">127.0.0.1:5000</code> and exposes <strong>only</strong> <code class=\"inline\">/metrics</code> on <code class=\"inline\">:9101</code>, 403 for everything else — so the full unauth <code class=\"inline\">:5000</code> API stays unreachable (services.md). Prometheus scrapes <code class=\"inline\">frigate-lxc:9101</code>. Deploy the Frigate side with the three <code class=\"inline\">pct push</code>/<code class=\"inline\">docker compose up</code> commands in <code class=\"inline\">runbooks/monitoring-exporters.md</code> → Frigate.</p>"
           },
           {
             "callout": "gotcha",
@@ -2245,9 +2245,9 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: Pi · shell — these jobs should be UP in Prometheus (one per credential supplied):\n#   pve · qbittorrent · sonarr · radarr · prowlarr · pbs · adguard   (plex is on nuc1; frigate is parked)\ncurl -s localhost:9090/api/v1/targets | grep -oE '\"job\":\"(pve|qbittorrent|sonarr|radarr|prowlarr|pbs|adguard)\"' | sort -u\n# pve sanity (should print pve_up lines, not empty):\ncurl -s 'http://localhost:9221/pve?module=default&target=192.168.1.2' | grep -E '^pve_up' | head"
+            "cmd": "# @where: Pi · shell — these jobs should be UP in Prometheus (one per credential supplied):\n#   pve · qbittorrent · sonarr · radarr · prowlarr · pbs · adguard · frigate   (plex runs on nuc1)\ncurl -s localhost:9090/api/v1/targets | grep -oE '\"job\":\"(pve|qbittorrent|sonarr|radarr|prowlarr|pbs|adguard|frigate)\"' | sort -u\n# pve sanity (should print pve_up lines, not empty):\ncurl -s 'http://localhost:9221/pve?module=default&target=192.168.1.2' | grep -E '^pve_up' | head"
           },
-          "Each exporter you gave a credential should appear UP, and the new Grafana dashboards fill in: <strong>Proxmox guests</strong>, <strong>Media stack</strong>, <strong>PBS backups</strong>, <strong>DNS &amp; NVR</strong> (AdGuard half; Frigate half stays empty while parked). A target that's UP with a No-data panel is a metric-name mismatch, not a broken exporter."
+          "Each exporter you gave a credential should appear UP, and the new Grafana dashboards fill in: <strong>Proxmox guests</strong>, <strong>Media stack</strong>, <strong>PBS backups</strong>, <strong>DNS &amp; NVR</strong>. A target that's UP with a No-data panel is a metric-name mismatch, not a broken exporter."
         ],
         "device": "Pi"
       }
