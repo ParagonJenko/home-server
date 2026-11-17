@@ -2088,7 +2088,7 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Each NUC · host shell\napt -y install prometheus-node-exporter\nmkdir -p /var/lib/node_exporter/textfile_collector\n\n# Debian's package takes its flags from /etc/default/ and ships with none.\n# This is the line that turns the textfile collector on:\necho 'ARGS=\"--collector.textfile.directory=/var/lib/node_exporter/textfile_collector\"' \\\n  > /etc/default/prometheus-node-exporter\nsystemctl restart prometheus-node-exporter\n\n# LVM thin-pool metadata, every 15 min\ncp configs/monitoring/check-thinpool.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/check-thinpool.sh\" ) | crontab -"
+            "cmd": "# @where: Each NUC · host shell — run from the repo (the cp below is repo-relative):\ncd ~/home-server\napt -y install prometheus-node-exporter\nmkdir -p /var/lib/node_exporter/textfile_collector\n\n# Debian's package takes its flags from /etc/default/ and ships with none.\n# This is the line that turns the textfile collector on:\necho 'ARGS=\"--collector.textfile.directory=/var/lib/node_exporter/textfile_collector\"' \\\n  > /etc/default/prometheus-node-exporter\nsystemctl restart prometheus-node-exporter\n\n# LVM thin-pool metadata, every 15 min\ncp configs/monitoring/check-thinpool.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/check-thinpool.sh\" ) | crontab -"
           },
           {
             "callout": "note",
