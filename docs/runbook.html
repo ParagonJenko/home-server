@@ -2411,7 +2411,7 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Each NUC · host shell\ncd ~/home-server\napt -y install smartmontools jq\nsystemctl enable --now smartd        # default DEVICESCAN schedules self-tests on every disk\n# export SMART to the node_exporter textfile collector (from H2), every 15 min + once now\ncp configs/monitoring/smartmon.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/smartmon.sh\" ) | crontab -\n/usr/local/bin/smartmon.sh           # run once so the metric exists before verify"
+            "cmd": "# @where: Each NUC · host shell\ncd ~/home-server\napt -y install smartmontools jq\nsystemctl enable --now smartmontools.service   # Debian's unit name (DEVICESCAN self-tests); 'smartd' is a linked alias and refuses to enable\n# export SMART to the node_exporter textfile collector (from H2), every 15 min + once now\ncp configs/monitoring/smartmon.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/smartmon.sh\" ) | crontab -\n/usr/local/bin/smartmon.sh           # run once so the metric exists before verify"
           },
           {
             "callout": "note",
