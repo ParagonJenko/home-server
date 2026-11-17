@@ -48,6 +48,7 @@ pct exec "$CTID" -- bash -c 'command -v docker >/dev/null || bash /root/_install
 say "deploy Frigate compose + config"
 pct exec "$CTID" -- mkdir -p /opt/frigate/config
 pct push "$CTID" ../frigate/docker-compose.yaml /opt/frigate/docker-compose.yaml
+pct push "$CTID" ../frigate/metrics-proxy.conf /opt/frigate/metrics-proxy.conf   # metrics-only sidecar (:9101)
 pct push "$CTID" ../frigate/config.yaml /opt/frigate/config/config.yaml    # compose mounts /opt/frigate/config -> /config
 
 # Eufy RTSP creds -> gitignored .env (one user/pass, shared by all four cameras). Prompt once.

@@ -135,17 +135,24 @@ differ by version — if panels show *No data*, `curl -s localhost:10019/metrics
 this same host, so the exporter points at `127.0.0.1:8081` with the admin login in `.env`
 (`ADGUARD_USER`/`ADGUARD_PASS` — the credentials you set in the AdGuard wizard).
 
-**Frigate — native** (no container): Frigate serves Prometheus metrics at `http://frigate-lxc:5000/metrics`;
-Prometheus scrapes it directly (LAN only — `:5000` is never exposed, per services.md). Gives camera/detection
-FPS, skipped frames, detector inference speed, storage.
+**Frigate — metrics-only sidecar** (`:9101`): Frigate 0.18 serves metrics at `/api/metrics`, unauthenticated
+but on its **loopback-bound `:5000`** (so unreachable from the LAN; `/api/metrics` on the authed `:8971` is
+401). A tiny nginx sidecar (`configs/frigate/metrics-proxy.conf`) runs in Frigate's own network namespace
+(`network_mode: service:frigate`), reaches `127.0.0.1:5000`, and exposes **only** `/metrics` → `/api/metrics`
+on `:9101`, 403 for everything else — so the full unauth `:5000` API stays unreachable (services.md).
+Prometheus scrapes `frigate-lxc:9101/metrics`. Gives camera/detection FPS, skipped frames, inference, storage.
+
+**Deploy the Frigate side** (on nuc2, after `git pull` in `~/home-server`):
+```bash
+pct push 111 ~/home-server/configs/frigate/docker-compose.yaml /opt/frigate/docker-compose.yaml
+pct push 111 ~/home-server/configs/frigate/metrics-proxy.conf   /opt/frigate/metrics-proxy.conf
+pct exec 111 -- bash -c 'cd /opt/frigate && docker compose up -d'
+```
+Then on the Pi `./configs/pi/redeploy.sh` so Prometheus picks up the `frigate` job.
 
 **Dashboard:** Grafana → **DNS & NVR** (AdGuard section + Frigate section).
-**Verify:** Prometheus → Targets → `adguard` and `frigate` UP.
-**Caveats:**
-- AdGuard metric names vary by exporter version — if No data, `curl -s localhost:9617/metrics | grep adguard_`.
-- Frigate: if `frigate` target is DOWN, your Frigate version may serve metrics on a different path or
-  require it enabled — check `curl -s http://frigate-lxc.home.alexjenkinson.com:5000/metrics | head`, and
-  adjust the `frigate` job's `metrics_path`/port if needed. Camera labels are `camera_name`.
+**Verify:** Prometheus → Targets → `adguard` and `frigate` UP; `curl -s http://frigate-lxc.home.alexjenkinson.com:9101/metrics | grep frigate_ | head`.
+**Caveat:** AdGuard metric names vary by exporter version — if No data, `curl -s localhost:9617/metrics | grep adguard_`.
 
 ---
 
