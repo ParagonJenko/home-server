@@ -17,7 +17,7 @@ command -v curl >/dev/null || { apt-get update && apt-get install -y curl; }
 
 # Install acme.sh (self-contained ACME client; installs a daily renewal cron on first run).
 if [ ! -f "$HOME/.acme.sh/acme.sh" ]; then
-  curl -fsSL https://get.acme.sh | sh -s -- --home "$HOME/.acme.sh"
+  curl -fsSL https://get.acme.sh | sh      # installs to $HOME/.acme.sh + a renewal cron
 fi
 ACME="$HOME/.acme.sh/acme.sh"
 "$ACME" --set-default-ca --server letsencrypt
