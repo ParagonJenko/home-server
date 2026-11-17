@@ -2195,6 +2195,46 @@ var STAGES = [
           "Checks Prometheus loaded all five rules (DiskUsageHigh, ThinPoolMetadataHigh, ServiceDown, ProbeFailed, InternalDNSBroken), fires a test alert, and confirms Alertmanager delivered it to Discord with <strong>no failed notifications</strong> (<code class=\"inline\">alertmanager_notifications_failed_total</code> stays 0 — i.e. the webhook returned 2xx). The one thing it can't check is your eyes: confirm the message actually appears in the Discord channel, and that a resolved notice follows when it expires."
         ],
         "device": "Pi"
+      },
+      {
+        "id": "H5",
+        "type": "run",
+        "title": "Application exporters (per-app metrics)",
+        "rules": [
+          "R21"
+        ],
+        "body": [
+          {
+            "callout": "note",
+            "title": "Context",
+            "html": "<p>The base stack (node_exporter, blackbox, SMART) watches the <em>infrastructure</em>. These exporters add <em>application</em> visibility: per-VM/LXC resource use (pve-exporter), Plex streams, qBittorrent + the Arrs, PBS backup state, Frigate FPS and AdGuard DNS stats. All run as containers in the Pi stack; every credential lives only in the gitignored <code class=\"inline\">.env</code> (R21). Full reference: <code class=\"inline\">runbooks/monitoring-exporters.md</code>.</p>"
+          },
+          {
+            "cmd": "# @where: Pi · shell — interactive wizard: creates the PVE/PBS monitoring tokens, reads the\n# Plex token + Arr API keys off the boxes, prompts for the two WebUI passwords, and writes it all\n# into /opt/pi-stack/.env. Then deploy the exporters + dashboards.\ncd ~/home-server && git pull\n./configs/pi/gather-exporter-creds.sh\n./configs/pi/redeploy.sh"
+          },
+          {
+            "callout": "note",
+            "title": "What the wizard does",
+            "html": "<p>It walks each credential one at a time. Auto-discovered values (Plex token, Sonarr/Radarr/Prowlarr API keys, usernames) are offered as <code class=\"inline\">[suggestions]</code> — Enter accepts. The PVE and PBS monitoring tokens are created read-only on the box (PVEAuditor / Audit) only if they don't already exist. The qBittorrent and AdGuard passwords are typed hidden (hashed on disk, can't be read back). Nothing is committed.</p>"
+          },
+          {
+            "callout": "gotcha",
+            "title": "Exporters with a blank credential just stay DOWN",
+            "html": "An exporter whose key you skipped fails auth and shows DOWN in Prometheus — harmless, it doesn't affect the rest of the stack. Fill the key later and re-run the wizard (it replaces lines in place), then <code class=\"inline\">docker compose up -d</code>."
+          },
+          {
+            "callout": "gotcha",
+            "title": "Some metric names drift by version",
+            "html": "Plex, PBS, AdGuard and Frigate metric names vary between exporter/app versions. If a panel shows <em>No data</em> while its target is UP, it's a name mismatch, not a wiring fault — each dashboard notes the <code class=\"inline\">curl …/metrics | grep …</code> to check and which JSON to adjust. qBittorrent, the Arrs and pve-exporter are stable."
+          }
+        ],
+        "verify": [
+          {
+            "cmd": "# @where: Pi · shell — these jobs should all be UP in Prometheus (one per credential supplied):\n#   pve · plex · qbittorrent · sonarr · radarr · prowlarr · pbs · adguard · frigate\ncurl -s localhost:9090/api/v1/targets | grep -oE '\"job\":\"(pve|plex|qbittorrent|sonarr|radarr|prowlarr|pbs|adguard|frigate)\"' | sort -u"
+          },
+          "Each exporter you gave a credential should appear UP, and the four new Grafana dashboards fill in: <strong>Proxmox guests</strong>, <strong>Media stack</strong>, <strong>PBS backups</strong>, <strong>DNS &amp; NVR</strong>. A target that's UP with a No-data panel is a metric-name mismatch (see the gotcha), not a broken exporter."
+        ],
+        "device": "Pi"
       }
     ]
   },

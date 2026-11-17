@@ -35,13 +35,18 @@ while read -r sdev dflag dtype _rest; do
 done < <(smartctl --scan-open 2>/dev/null || true)
 
 # Echo "<dtype>\t<json>" and exit 0 on the first flag that yields a SMART status; exit 1 if none do.
+# Retries the whole flag sweep a few times: a USB/DAS bridge intermittently drops SMART passthrough
+# (drive waking from standby, bridge cache miss), and a one-off miss shouldn't read as "unreadable".
 read_dev() {
-  local dev="$1" d j
-  for d in "${HINT[$dev]:-}" "" sat "sat,12" "sat,16" scsi usbjmicron usbsunplus usbprolific nvme; do
-    j="$(smartctl -a -j ${d:+-d $d} "$dev" 2>/dev/null)" || true
-    if printf '%s' "$j" | jq -e '.smart_status' >/dev/null 2>&1; then
-      printf '%s\t%s' "${d:-auto}" "$j"; return 0
-    fi
+  local dev="$1" d j attempt
+  for attempt in 1 2 3; do
+    for d in "${HINT[$dev]:-}" "" sat "sat,12" "sat,16" scsi usbjmicron usbsunplus usbprolific nvme; do
+      j="$(smartctl -a -j ${d:+-d $d} "$dev" 2>/dev/null)" || true
+      if printf '%s' "$j" | jq -e '.smart_status' >/dev/null 2>&1; then
+        printf '%s\t%s' "${d:-auto}" "$j"; return 0
+      fi
+    done
+    [ "$attempt" -lt 3 ] && sleep 3   # let a spun-down drive wake / the bridge settle, then retry
   done
   return 1
 }

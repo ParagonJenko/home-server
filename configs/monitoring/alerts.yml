@@ -79,14 +79,18 @@ groups:
           where: "Grafana → Disks & SMART → per-drive health. Runbook runbooks/drive-health.md. {{ $labels.device }} on {{ $labels.instance }}."
 
       - alert: SmartUnreadable            # smartctl couldn't read SMART through the disk's bridge at all.
+        # Long grace (6h) ON PURPOSE: USB/DAS bridges drop SMART passthrough intermittently (drives
+        # waking from standby, bridge cache), and smartmon.sh already retries per run. Only a disk that
+        # stays unreadable for 6h straight (a real cable/bridge fault) should warn — a blip that recovers
+        # never fires. This is a readability warning, never a failing disk (that's SmartFailurePredicted).
         expr: smartmon_device_smart_readable == 0
-        for: 30m
+        for: 6h
         labels: { severity: warning }
         annotations:
-          summary: "{{ $labels.instance }} {{ $labels.device }} — smartctl can't read SMART"
-          impact: "You are blind to this disk's health — but this is usually a cable/flag issue, NOT a failing disk."
-          cause: "No -d flag let smartctl read SMART for {{ $labels.device }} on {{ $labels.instance }}."
-          fix: "smartctl --scan-open for the right -d flag; smartctl -H -d sat /dev/{{ $labels.device }}; reseat the USB/DAS cable. drive-health.md §0."
+          summary: "{{ $labels.instance }} {{ $labels.device }} — SMART unreadable for 6h"
+          impact: "You've been blind to this disk's health for 6h — but this is a cable/bridge issue, NOT a failing disk (health failures alert separately)."
+          cause: "smartctl couldn't read SMART for {{ $labels.device }} on {{ $labels.instance }} for 6h straight (not a transient blip — those are ridden out)."
+          fix: "smartctl --scan-open for the right -d flag; smartctl -H -d sat /dev/{{ $labels.device }}; reseat the USB/DAS cable or check the enclosure power. drive-health.md §0."
           where: "Grafana → Disks & SMART → per-drive readability. Runbook runbooks/drive-health.md."
 
       - alert: DiskTempHigh               # 60°C: NVMe runs hot under load; 15m avoids flapping on spikes
