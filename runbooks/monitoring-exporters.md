@@ -79,4 +79,35 @@ Paste the printed value into `.env` as `PBS_TOKEN_VALUE` (name stays `monitoring
 differ by version — if panels show *No data*, `curl -s localhost:10019/metrics | grep pbs_` and adjust
 `pbs.json` + the `PBSDatastoreFull` expr to match.
 
+---
+
+## Frigate + AdGuard  ✅
+
+**AdGuard — adguard-exporter** (`:9617`): query volume, block rate, processing time. AdGuard runs on
+this same host, so the exporter points at `127.0.0.1:8081` with the admin login in `.env`
+(`ADGUARD_USER`/`ADGUARD_PASS` — the credentials you set in the AdGuard wizard).
+
+**Frigate — native** (no container): Frigate serves Prometheus metrics at `http://frigate-lxc:5000/metrics`;
+Prometheus scrapes it directly (LAN only — `:5000` is never exposed, per services.md). Gives camera/detection
+FPS, skipped frames, detector inference speed, storage.
+
+**Dashboard:** Grafana → **DNS & NVR** (AdGuard section + Frigate section).
+**Verify:** Prometheus → Targets → `adguard` and `frigate` UP.
+**Caveats:**
+- AdGuard metric names vary by exporter version — if No data, `curl -s localhost:9617/metrics | grep adguard_`.
+- Frigate: if `frigate` target is DOWN, your Frigate version may serve metrics on a different path or
+  require it enabled — check `curl -s http://frigate-lxc.home.alexjenkinson.com:5000/metrics | head`, and
+  adjust the `frigate` job's `metrics_path`/port if needed. Camera labels are `camera_name`.
+
+---
+
+## Adding another exporter later
+
+1. Add the service to `configs/pi/docker-compose.yaml` (host networking, a free port).
+2. Put any secret in `configs/pi/.env` (and document it in `.env.example`, value blank).
+3. Add a scrape job to `configs/pi/prometheus/prometheus.yml`.
+4. Add a dashboard JSON under `configs/pi/grafana/dashboards/`.
+5. `git pull && ./configs/pi/redeploy.sh` on the Pi. Check Prometheus → Targets.
+
+
 

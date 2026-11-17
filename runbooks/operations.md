@@ -86,6 +86,7 @@ is written into `~/.ssh`. To use it on a new machine:
 - **Storage headroom:** `asquared status` shows the thin-pool data/metadata %. The *ThinPoolMetadataHigh* alert (80%) is the one closest to unrecoverable — act on it.
 - **Adding or re-provisioning a camera:** see [`cameras.md`](cameras.md) — RTSP → DHCP reservation (.30–.33) → AdGuard rewrite → Frigate `.env`. `configs/frigate/find-cameras.sh` discovers MACs.
 - **A SMART alert fired, a drive sounds wrong, or one needs replacing:** see [`drive-health.md`](drive-health.md) — reading attributes, self-tests, unreadable-vs-failed, and the per-role replacement steps (mergerfs pool / Proxmox SSD / PBS disk).
+- **Application metrics (Proxmox guests, Plex, qBittorrent, Arrs, PBS, Frigate, AdGuard):** see [`monitoring-exporters.md`](monitoring-exporters.md) — each exporter, the token/key it needs (all in `configs/pi/.env`), and its dashboard.
 
 ## Add a new container (LXC)
 

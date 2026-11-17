@@ -103,5 +103,21 @@ services:
       PBS_API_TOKEN: "${PBS_TOKEN_VALUE}"
       PBS_INSECURE: "true"
     restart: unless-stopped
+
+  # AdGuard: query volume, block rate, processing time. AdGuard is on THIS host (:8081), so the
+  # exporter talks to 127.0.0.1. Admin creds in .env. Listens :9617.
+  # (Frigate needs no exporter — it serves Prometheus metrics natively; see prometheus.yml.)
+  adguard-exporter:
+    image: ghcr.io/ebrianne/adguard-exporter:latest
+    network_mode: host
+    environment:
+      ADGUARD_PROTOCOL: http
+      ADGUARD_HOSTNAME: 127.0.0.1
+      ADGUARD_PORT: 8081
+      ADGUARD_USERNAME: ${ADGUARD_USER}
+      ADGUARD_PASSWORD: ${ADGUARD_PASS}
+      SERVER_PORT: 9617
+      INTERVAL: 30s
+    restart: unless-stopped
 volumes:
   grafana-data:

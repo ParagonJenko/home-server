@@ -1,0 +1,90 @@
+{
+  "uid": "dns-nvr",
+  "title": "DNS & NVR",
+  "tags": ["homelab", "dns", "frigate"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    { "id": 1, "type": "row", "title": "🛡️ AdGuard (DNS)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
+    {
+      "id": 2, "type": "stat", "title": "Queries/sec",
+      "description": "If AdGuard panels are No data, check names: curl localhost:9617/metrics | grep adguard_",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "qps", "decimals": 1 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "targets": [ { "refId": "A", "expr": "rate(adguard_num_dns_queries[5m])" } ]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Block rate %",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "100 * rate(adguard_num_blocked_filtering[5m]) / rate(adguard_num_dns_queries[5m])" } ]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Avg processing time",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "adguard_avg_processing_time" } ]
+    },
+    {
+      "id": 5, "type": "stat", "title": "AdGuard running",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ] }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "adguard_running" } ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Queries vs blocked",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "qps", "custom": { "drawStyle": "line", "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "rate(adguard_num_dns_queries[5m])", "legendFormat": "queries" },
+        { "refId": "B", "expr": "rate(adguard_num_blocked_filtering[5m])", "legendFormat": "blocked" }
+      ]
+    },
+
+    { "id": 7, "type": "row", "title": "📹 Frigate (NVR)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 }, "panels": [] },
+    {
+      "id": 8, "type": "timeseries", "title": "Camera FPS",
+      "description": "If Frigate panels are No data, its /metrics may need enabling/auth — see monitoring-exporters.md.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 13 },
+      "fieldConfig": { "defaults": { "min": 0 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "frigate_camera_fps", "legendFormat": "{{camera_name}}" } ]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Detection FPS",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 13 },
+      "fieldConfig": { "defaults": { "min": 0 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "frigate_detection_fps", "legendFormat": "{{camera_name}}" } ]
+    },
+    {
+      "id": 10, "type": "stat", "title": "Detector inference speed",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 20 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "targets": [ { "refId": "A", "expr": "frigate_detector_inference_speed_seconds", "legendFormat": "{{name}}" } ]
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "Skipped FPS (frames Frigate couldn't process)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 16, "x": 8, "y": 20 },
+      "fieldConfig": { "defaults": { "min": 0 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "frigate_skipped_fps", "legendFormat": "{{camera_name}}" } ]
+    }
+  ]
+}
