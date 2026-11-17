@@ -68,29 +68,33 @@ else
   pass ":5000 not exposed on the LXC host"
 fi
 
-echo "== config + live camera state =="
+echo "== config + live camera streams =="
+# Ground truth is go2rtc's producer byte count (camera -> go2rtc), not Frigate's
+# camera_fps — the latter sits at 0 during startup/resolution probing even when the
+# stream is fine.
 out="$(docker compose exec -T frigate python3 - "$CAMS" <<'PY' 2>/dev/null
 import urllib.request, json, sys
 cams = sys.argv[1].split()
-def get(p): return json.load(urllib.request.urlopen("http://127.0.0.1:5000"+p, timeout=10))
+def j(u): return json.load(urllib.request.urlopen(u, timeout=10))
 try:
-    cfg = get("/api/config"); stats = get("/api/stats")
+    cfg = j("http://127.0.0.1:5000/api/config")
+    streams = j("http://127.0.0.1:1984/api/streams")
 except Exception:
     print("APIERR"); sys.exit(0)
 cfgcams = set((cfg.get("cameras") or {}).keys())
 for c in cams:
-    s = stats.get(c) if isinstance(stats.get(c), dict) else {}
-    fps = s.get("camera_fps", 0) or 0
-    print(f"CAM {c} {'yes' if c in cfgcams else 'no'} {fps}")
+    prods = (streams.get(c) or {}).get("producers") or []
+    recv = sum((p.get("bytes_recv") or 0) for p in prods)
+    print(f"CAM {c} {'yes' if c in cfgcams else 'no'} {recv}")
 PY
 )"
 if [ -z "$out" ] || echo "$out" | grep -q APIERR; then
-  fail "Frigate API not answering yet (api/config + api/stats) — still starting?"
+  fail "Frigate/go2rtc API not answering yet — still starting?"
 else
-  while read -r _ cam incfg fps; do
+  while read -r _ cam incfg recv; do
     [ -z "${cam:-}" ] && continue
     if [ "$incfg" = yes ]; then pass "  $cam in loaded config"; else fail "  $cam MISSING from loaded config (stale config.yaml?)"; fi
-    if awk "BEGIN{exit !($fps > 0)}" 2>/dev/null; then pass "  $cam streaming (${fps} fps)"; else warn "  $cam no stream (RTSP down / camera offline / not set up yet)"; fi
+    if [ "${recv:-0}" -gt 0 ] 2>/dev/null; then pass "  $cam streaming via go2rtc (~$((recv/1048576)) MB received)"; else warn "  $cam no stream (go2rtc not receiving — RTSP down / wrong creds / camera offline)"; fi
   done <<< "$out"
 fi
 
