@@ -2214,29 +2214,39 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Each host/container you expose\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up"
+            "callout": "note",
+            "title": "Two ways in — pick the subnet router",
+            "html": "<p><strong>Subnet router (recommended):</strong> one Tailscale node advertises the whole LAN, and <em>every</em> service — Plex, Frigate, HA, AMP, Grafana, Proxmox, PBS, the Arrs — becomes reachable remotely by its normal IP/name with nothing installed on them. <strong>Per-service</strong> (the alternative below) installs Tailscale inside each box; only worth it if you want per-service Tailscale ACLs, and it means the tun shim for every unprivileged LXC and the Tailscale add-on for HAOS.</p>"
           },
           {
-            "callout": "note",
-            "title": "Context",
-            "html": "<p>Install on the hosts or containers you want reachable remotely (Plex, custom apps):</p>"
+            "cmd": "# @where: an ALWAYS-ON host (a NUC — not something you power down) · host shell\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up --advertise-routes=192.168.1.0/24 --accept-dns=false"
           },
           {
             "manual": {
-              "where": "Tailscale",
+              "where": "Tailscale admin console + your devices",
               "steps": [
-                "Authenticate via the printed URL.",
-                "Plex and custom apps are then reachable by Tailscale name from anywhere, with no port forwarding."
+                "Authenticate the router via the printed URL.",
+                "Admin console → <strong>Machines</strong> → the router host → <strong>approve</strong> the <code class=\"inline\">192.168.1.0/24</code> subnet route (routes aren't active until approved).",
+                "Admin console → <strong>DNS</strong> → add nameserver <code class=\"inline\">192.168.1.4</code> (the Pi) as a <strong>split DNS</strong> route for <code class=\"inline\">home.alexjenkinson.com</code>. Remote devices then resolve <code class=\"inline\">frigate.home.alexjenkinson.com</code>, <code class=\"inline\">homeassistant.home.alexjenkinson.com</code>, etc. — those point at LAN IPs the route reaches.",
+                "On each device you roam with: <code class=\"inline\">tailscale up</code>. The whole LAN is now reachable by name, no port forwarding."
               ]
             }
           },
           {
+            "callout": "gotcha",
+            "title": "Plex won't connect over Tailscale until you set custom access URLs",
+            "html": "<p>Plex clients locate the server through plex.tv, which only knows your public IP — so over Tailscale they see no reachable URL and fall back to relay or just fail (\"can't access unless IPs are set\"). Fix it in <strong>Plex → Settings → Network</strong>:</p><ul><li><strong>Custom server access URLs:</strong> <code class=\"inline\">http://192.168.1.22:32400,http://plex-lxc.home.alexjenkinson.com:32400</code> — advertises the LAN address the subnet route reaches.</li><li><strong>LAN Networks:</strong> <code class=\"inline\">192.168.1.0/24,100.64.0.0/10</code> — treats your LAN <em>and</em> the Tailscale range (<code class=\"inline\">100.64.0.0/10</code>) as local, so tailnet clients get direct, full-quality streams instead of relayed ones.</li></ul>"
+          },
+          {
             "callout": "note",
-            "title": "For any future custom-app LXC",
-            "html": "If it's unprivileged and runs Tailscale directly (as <code class=\"inline\">plex.sh</code> already does), it needs <code class=\"inline\">configs/lxc/_tailscale-tun.sh</code>'s <code class=\"inline\">apply_tailscale_tun</code> too. Unprivileged containers have no <code class=\"inline\">/dev/net/tun</code> by default, and Tailscale without it either fails outright or falls back to a mode only the <code class=\"inline\">tailscale</code> CLI itself can reach."
+            "title": "Alternative — per-service Tailscale (only for per-service ACLs)",
+            "html": "<p>Install inside each box you want to give its own tailnet identity. Plex's LXC already does this (<code class=\"inline\">plex.sh</code>). Any other unprivileged LXC needs <code class=\"inline\">configs/lxc/_tailscale-tun.sh</code>'s <code class=\"inline\">apply_tailscale_tun</code> first — unprivileged containers have no <code class=\"inline\">/dev/net/tun</code>, and Tailscale without it fails or falls back to a mode only the <code class=\"inline\">tailscale</code> CLI can reach. HAOS uses the Tailscale add-on.</p>"
+          },
+          {
+            "cmd": "# @where: Each host/container you expose (per-service alternative)\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up"
           }
         ],
-        "device": "Each host/container you expose"
+        "device": "An always-on host (NUC)"
       },
       {
         "id": "I2",
