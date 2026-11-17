@@ -1586,7 +1586,18 @@ var STAGES = [
           {
             "callout": "manual",
             "title": "At the installer's prompts",
-            "html": "<p>Let it create the <code class=\"inline\">amp</code> user and install the <strong>ADS</strong> (AMP's controller). When it asks for a licence, paste your AMP key — the free tier covers one instance (sign up at <a href=\"https://cubecoders.com/AMP\">cubecoders.com/AMP</a>). Finish, <code class=\"inline\">exit</code> the container, and note the panel URL it prints (default <code class=\"inline\">http://&lt;amp-ip&gt;:8080</code>). Give AMP a DHCP reservation + AdGuard rewrite and add it to network.md (R13).</p><p><strong>Key answers:</strong> <code class=\"inline\">N</code> to <em>install Docker</em> (LXC 230 is unprivileged with no nesting — Docker won't run; AMP runs instances natively, fine for a single user); <code class=\"inline\">N</code> to <em>Enable HTTPS</em> (it would install its own nginx and want public ports 80/443 against your external IP — that breaks R23; nginx 240 fronts AMP with the wildcard cert instead). Java / SteamCMD prompts are harmless flexibility — <code class=\"inline\">y</code> is fine.</p>"
+            "html": "<p>Let it create the <code class=\"inline\">amp</code> user and install the <strong>ADS</strong> (AMP's controller), and paste your AMP licence key when asked — the free tier covers one instance (sign up at <a href=\"https://cubecoders.com/AMP\">cubecoders.com/AMP</a>). Its yes/no prompts, in order:</p><ul><li><strong>Minecraft servers?</strong> (installs Java) → <code class=\"inline\">y</code> — harmless, keeps flexibility.</li><li><strong>SteamCMD apps?</strong> (Rust, ARK, CS2, Palworld — 32-bit libs) → <code class=\"inline\">y</code> — harmless, keeps flexibility.</li><li><strong>Install Docker?</strong> → <code class=\"inline\">N</code> — LXC 230 is unprivileged with no nesting, so Docker won't run; AMP runs instances natively (fine for one user).</li><li><strong>Enable HTTPS?</strong> → <code class=\"inline\">N</code> — it would install its own nginx and open public ports 80/443 against your external IP (breaks R23); nginx 240 fronts AMP with the wildcard cert instead.</li></ul><p>When it finishes, <code class=\"inline\">exit</code> the container and note the panel URL (default <code class=\"inline\">http://&lt;amp-ip&gt;:8080</code>).</p>"
+          },
+          {
+            "callout": "manual",
+            "title": "Give AMP its name — reservation + DNS (R13)",
+            "html": "<p>AMP is already in network.md as <code class=\"inline\">amp.home.alexjenkinson.com</code> → <code class=\"inline\">192.168.1.23</code> (reached directly on :8080). Two steps make it real:</p><ol><li><strong>DHCP reservation</strong> — get the container's MAC (first command), then in your <strong>router's admin UI</strong> add a reservation mapping that MAC to <code class=\"inline\">192.168.1.23</code>. The reservation is a router setting, not a command.</li><li><strong>AdGuard rewrite</strong> — push it from network.md on the Pi (second command). It's already listed there, so this just applies it.</li></ol>"
+          },
+          {
+            "cmd": "# @where: NUC-1 · host shell — AMP's MAC for the router reservation:\npct config 230 | grep -oP 'hwaddr=\\K[0-9A-Fa-f:]+'"
+          },
+          {
+            "cmd": "# @where: Pi · shell — push amp.home.alexjenkinson.com -> 192.168.1.23:\ncd ~/home-server && git pull && ./configs/pi/adguard-rewrites.py --apply"
           }
         ],
         "verify": [

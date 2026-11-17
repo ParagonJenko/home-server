@@ -30,7 +30,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | nginx — LXC 240 | reserved | `192.168.1.20` | TBD | — | **Every front name resolves to this IP.** Fill first |
 | media-pipeline — LXC 210 | reserved | `192.168.1.21` | TBD | media-pipeline.home.alexjenkinson.com (sonarr/radarr/bazarr/prowlarr/qbittorrent.home.alexjenkinson.com) | Never proxied under its own name; it is Nginx's backend target |
 | plex — LXC 220 | reserved | `192.168.1.22` | TBD | plex-lxc.home.alexjenkinson.com (front: plex.home.alexjenkinson.com) | Backend name points here; front points at Nginx |
-| amp — LXC 230 | reserved | `192.168.1.23` | TBD | amp.home.alexjenkinson.com (add when installed) | |
+| amp — LXC 230 | reserved | `192.168.1.23` | TBD | amp.home.alexjenkinson.com | Reached directly on :8080 (not proxied). Proxy later via an nginx server block if you want it under the wildcard |
 | frigate — LXC 111 (nuc2, privileged) | reserved | `192.168.1.24` | TBD | frigate-lxc.home.alexjenkinson.com (front: frigate.home.alexjenkinson.com) | Port 5000 is unauthenticated — never proxy/expose |
 | homeassistant — VM 910 (nuc2) | reserved | `192.168.1.25` | TBD | homeassistant.home.alexjenkinson.com | Accessed directly on :8123 (not proxied). Proxying needs `use_x_forwarded_for` + `trusted_proxies` in HA's config |
 | cam-living-room | reserved | `192.168.1.30` | TBD | cam-living-room.home.alexjenkinson.com | Frigate opens RTSP by name — a lost reservation breaks recording |
@@ -44,7 +44,7 @@ Three groups — nothing resolves without all three. `configs/pi/adguard-rewrite
 
 1. **Front names → Nginx's IP** (`.20`): `plex.home.alexjenkinson.com`, `frigate.home.alexjenkinson.com`, `sonarr.home.alexjenkinson.com`, `radarr.home.alexjenkinson.com`, `bazarr.home.alexjenkinson.com`, `prowlarr.home.alexjenkinson.com`, `qbittorrent.home.alexjenkinson.com`.
 2. **Backend names → the container's own IP**: `plex-lxc.home.alexjenkinson.com`, `frigate-lxc.home.alexjenkinson.com`, `media-pipeline.home.alexjenkinson.com`.
-3. **Hosts & cameras → their own IP**: `cam-*.home.alexjenkinson.com`, `homeassistant.home.alexjenkinson.com`, `nuc1`, `nuc2`, `pbs`, `pi.home.alexjenkinson.com`.
+3. **Hosts & cameras → their own IP**: `amp.home.alexjenkinson.com`, `cam-*.home.alexjenkinson.com`, `homeassistant.home.alexjenkinson.com`, `nuc1`, `nuc2`, `pbs`, `pi.home.alexjenkinson.com`.
 
 ## Resolver policy
 
