@@ -40,6 +40,43 @@ even when DNS is down — which is exactly when you need it.
 - **Home Assistant:** `asquared ssh ha` (HAOS SSH on port 22222), or the HA UI, or manage config from nuc2 with `./configs/homeassistant/ha-config.sh`.
 - **A VM's screen:** Proxmox web UI → the VM → Console (the only way into HAOS/PBS before SSH).
 
+## SSH from a machine without `asquared`
+
+`asquared ssh <box>` is the shortcut; under it, every box takes a plain SSH by IP as **root**:
+
+```
+ssh root@192.168.1.4     # pi    (also .2 nuc1, .3 nuc2, .5 pbs)
+ssh root@192.168.1.25 -p 22222   # ha  (HAOS SSH add-on)
+```
+
+**The key lives in 1Password** (vault *Home Server*), served by the 1Password SSH agent — nothing
+is written into `~/.ssh`. To use it on a new machine:
+
+1. **Enable the agent** in 1Password → Settings → Developer → *Use the SSH agent*, and list the vault
+   in `agent.toml` so it offers that key:
+   ```
+   [[ssh-keys]]
+   vault = "Home Server"
+   ```
+   (Windows config: `~\.config\1Password\ssh\agent.toml`; macOS/Linux: `~/.config/1password/ssh/agent.toml`.)
+   Restart 1Password, then `ssh-add -l` should list the Home Server key.
+2. **Authorise the key on the box** (first time only). From a machine already in, or via the Proxmox/PBS
+   console, append the public key (1Password → the SSH item → *public key*) to `/root/.ssh/authorized_keys`:
+   ```
+   install -d -m700 /root/.ssh
+   echo 'ssh-ed25519 AAAA... home-server' >> /root/.ssh/authorized_keys
+   chmod 600 /root/.ssh/authorized_keys
+   ```
+
+### Gotchas (what actually bit me)
+- **Connected but "Permission denied" / no route:** a VPN (Mullvad, etc.) is swallowing LAN traffic.
+  Turn on the client's **"Local network sharing"** so `192.168.1.0/24` is reachable.
+- **`Permission denied (publickey)`:** the agent isn't offering the Home Server key — it's serving a
+  *different* vault's key. Fix `agent.toml` (step 1) and restart 1Password; confirm with `ssh-add -l`.
+- **Bootstrapping a new machine with no key yet:** password login as root is blocked by default
+  (`PermitRootLogin prohibit-password`). Get in from a machine that already works, or the VM console,
+  and authorise the new key as in step 2 — don't try to re-enable root password SSH.
+
 ## Routine maintenance
 
 - **Health at a glance:** `asquared status` on each box. Grafana's *Homelab overview* dashboard; alerts arrive in Discord.
