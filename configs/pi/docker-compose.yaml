@@ -56,7 +56,7 @@ services:
     network_mode: host
     environment:
       PLEX_SERVER: http://plex-lxc.home.alexjenkinson.com:32400
-      PLEX_TOKEN: ${PLEX_TOKEN}
+      PLEX_TOKEN: ${PLEX_TOKEN:-}
     restart: unless-stopped
 
   # qBittorrent: global up/down speed, torrent counts by state, ratio. Needs WebUI creds. :9238
@@ -66,8 +66,8 @@ services:
     environment:
       QBITTORRENT_HOST: media-pipeline.home.alexjenkinson.com
       QBITTORRENT_PORT: 8080
-      QBITTORRENT_USER: ${QBIT_USER}
-      QBITTORRENT_PASS: ${QBIT_PASS}
+      QBITTORRENT_USER: ${QBIT_USER:-}
+      QBITTORRENT_PASS: ${QBIT_PASS:-}
       EXPORTER_PORT: 9238
     restart: unless-stopped
 
@@ -76,19 +76,19 @@ services:
     image: ghcr.io/onedr0p/exportarr:latest
     command: ["sonarr"]
     network_mode: host
-    environment: { PORT: 9707, URL: "http://media-pipeline.home.alexjenkinson.com:8989", APIKEY: "${SONARR_API_KEY}" }
+    environment: { PORT: 9707, URL: "http://media-pipeline.home.alexjenkinson.com:8989", APIKEY: "${SONARR_API_KEY:-}" }
     restart: unless-stopped
   exportarr-radarr:
     image: ghcr.io/onedr0p/exportarr:latest
     command: ["radarr"]
     network_mode: host
-    environment: { PORT: 9708, URL: "http://media-pipeline.home.alexjenkinson.com:7878", APIKEY: "${RADARR_API_KEY}" }
+    environment: { PORT: 9708, URL: "http://media-pipeline.home.alexjenkinson.com:7878", APIKEY: "${RADARR_API_KEY:-}" }
     restart: unless-stopped
   exportarr-prowlarr:
     image: ghcr.io/onedr0p/exportarr:latest
     command: ["prowlarr"]
     network_mode: host
-    environment: { PORT: 9710, URL: "http://media-pipeline.home.alexjenkinson.com:9696", APIKEY: "${PROWLARR_API_KEY}" }
+    environment: { PORT: 9710, URL: "http://media-pipeline.home.alexjenkinson.com:9696", APIKEY: "${PROWLARR_API_KEY:-}" }
     restart: unless-stopped
 
   # PBS: datastore usage, snapshot counts, backup success — reads the PBS API with a read-only
@@ -99,8 +99,8 @@ services:
     environment:
       PBS_ENDPOINT: "https://pbs.home.alexjenkinson.com:8007"
       PBS_USERNAME: "root@pam"
-      PBS_API_TOKEN_NAME: "${PBS_TOKEN_NAME}"
-      PBS_API_TOKEN: "${PBS_TOKEN_VALUE}"
+      PBS_API_TOKEN_NAME: "${PBS_TOKEN_NAME:-monitoring}"
+      PBS_API_TOKEN: "${PBS_TOKEN_VALUE:-}"
       PBS_INSECURE: "true"
     restart: unless-stopped
 
@@ -108,14 +108,14 @@ services:
   # exporter talks to 127.0.0.1. Admin creds in .env. Listens :9617.
   # (Frigate needs no exporter — it serves Prometheus metrics natively; see prometheus.yml.)
   adguard-exporter:
-    image: ghcr.io/ebrianne/adguard-exporter:latest
+    image: ebrianne/adguard-exporter:latest
     network_mode: host
     environment:
       ADGUARD_PROTOCOL: http
       ADGUARD_HOSTNAME: 127.0.0.1
       ADGUARD_PORT: 8081
-      ADGUARD_USERNAME: ${ADGUARD_USER}
-      ADGUARD_PASSWORD: ${ADGUARD_PASS}
+      ADGUARD_USERNAME: ${ADGUARD_USER:-}
+      ADGUARD_PASSWORD: ${ADGUARD_PASS:-}
       SERVER_PORT: 9617
       INTERVAL: 30s
     restart: unless-stopped

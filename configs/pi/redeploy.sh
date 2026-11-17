@@ -20,7 +20,9 @@ cp ./docker-compose.yaml /opt/pi-stack/
 mkdir -p /opt/monitoring && cp ../monitoring/alerts.yml /opt/monitoring/ 2>/dev/null || true
 
 cd /opt/pi-stack
-docker compose up -d                                # recreate containers whose spec changed (blackbox/node_exporter)
+docker compose up -d \
+  || echo "!! some containers failed to start/pull (see above) — continuing to reload core configs" >&2
+# ^ non-fatal: a single unpullable/unconfigured exporter must NOT block reloading the core stack below.
 docker compose restart prometheus blackbox grafana alertmanager  # reload mounted configs:
                                                     # prometheus (scrape+rules), blackbox (probe modules),
                                                     # grafana (datasource + dashboard PROVIDERS — only
