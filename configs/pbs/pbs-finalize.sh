@@ -93,7 +93,7 @@ datastore() {
     # Candidate = a whole disk with nothing mounted anywhere in its tree (not the root disk,
     # not an already-mounted datastore). The fresh 2TB passthrough is the one with no mounts.
     local lines; lines="$(_ssh bash -s <<'REMOTE'
-for d in $(lsblk -dn -e 1,7 -o NAME 2>/dev/null); do
+for d in $(lsblk -dn -e 1,7 -o NAME,TYPE 2>/dev/null | awk '$2=="disk"{print $1}'); do   # disks only, no cdrom
   dev="/dev/$d"
   lsblk -no MOUNTPOINT "$dev" 2>/dev/null | grep -q . && continue   # skip if anything under it is mounted
   printf '%s|%s|%s\n' "$d" "$(lsblk -dno SIZE "$dev" 2>/dev/null)" "$(lsblk -dno MODEL "$dev" 2>/dev/null)"
@@ -118,8 +118,11 @@ REMOTE
     fi
     warn "  This FORMATS /dev/${disk} (ext4) and mounts it at ${DATASTORE_PATH}. All data on it is lost."
     confirm "  Format /dev/${disk} and create the '${DATASTORE}' datastore?" || { echo "  skipped."; return 1; }
+    # A reused disk (old partition table / filesystem) makes PBS refuse it as "already in use".
+    # Clear the signatures first — the confirm above already authorised the wipe.
+    _ssh "wipefs -a /dev/${disk} >/dev/null 2>&1; blockdev --rereadpt /dev/${disk} >/dev/null 2>&1; true"
     _ssh "proxmox-backup-manager disk fs create ${DATASTORE} --disk ${disk} --filesystem ext4 --add-datastore true" \
-      || { err "  disk fs create failed — check the PBS console."; return 1; }
+      || { err "  disk fs create failed — if it still says 'already in use', check lsblk /dev/${disk} on the PBS console."; return 1; }
     ok "  /dev/${disk} formatted, mounted at ${DATASTORE_PATH}, datastore '${DATASTORE}' created."
   fi
 
