@@ -2207,7 +2207,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Context",
-            "html": "<p>The base stack (node_exporter, blackbox, SMART) watches the <em>infrastructure</em>. These exporters add <em>application</em> visibility: per-VM/LXC resource use (pve-exporter), qBittorrent + the Arrs, PBS backup state and AdGuard DNS stats run as containers in the Pi stack; <strong>Plex</strong> runs on nuc1 and <strong>Frigate</strong> is parked (see the gotchas). Every credential lives only in the gitignored <code class=\"inline\">.env</code> (R21). Full reference: <code class=\"inline\">runbooks/monitoring-exporters.md</code>.</p>"
+            "html": "<p>The base stack (node_exporter, blackbox, SMART) watches the <em>infrastructure</em>. These exporters add <em>application</em> visibility: per-VM/LXC resource use (pve-exporter), qBittorrent + the Arrs, PBS backup state and AdGuard DNS stats run as containers in the Pi stack; <strong>Plex</strong> runs on nuc1, <strong>Frigate</strong> via a metrics-only sidecar, and <strong>Home Assistant</strong> via its native integration (step H6 next). Every credential lives only in the gitignored <code class=\"inline\">.env</code> (R21). Full reference: <code class=\"inline\">runbooks/monitoring-exporters.md</code>.</p>"
           },
           {
             "cmd": "# @where: Pi · shell — interactive wizard: creates the PVE/PBS monitoring tokens, reads the\n# Plex token + Arr API keys off the boxes, prompts for the two WebUI passwords, and writes it all\n# into /opt/pi-stack/.env. Then deploy the exporters + dashboards.\ncd ~/home-server && git pull\n./configs/pi/gather-exporter-creds.sh\n./configs/pi/redeploy.sh"
