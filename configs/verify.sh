@@ -89,6 +89,12 @@ case "$STEP" in
       || no_ "Prometheus targets — none UP yet (datasource/scrape config?)"
     ;;
   H2)
+    # Per-NUC check: the local node_exporter must expose the LVM thin-pool metric.
+    # A box with no pve/data thin-pool (the Pi) can't have it — skip rather than FAIL.
+    if ! lvs pve/data >/dev/null 2>&1; then
+      echo "  SKIP  no local pve/data thin-pool — H2 is a per-NUC check; run it on nuc1/nuc2"
+      exit 0
+    fi
     curl -s localhost:9100/metrics 2>/dev/null | grep -q lvm_thinpool \
       && yes_ "node_exporter exposes lvm_thinpool" || no_ "lvm_thinpool metric (node_exporter + check-thinpool.sh)"
     ;;
