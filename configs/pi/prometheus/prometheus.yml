@@ -109,9 +109,11 @@ scrape_configs:
       - { source_labels: [__param_target], target_label: instance }
       - { target_label: __address__, replacement: localhost:9221 }
 
-  # ---- Media stack exporters (all on the Pi, host networking) ----
-  # (no 'plex' job: the Plex exporter is amd64-only and can't run on the arm64 Pi. When you run it on
-  #  an amd64 box next to Plex, add: - job_name: plex / static_configs: [{ targets: ['<host>:9000'] }])
+  # ---- Media stack exporters ----
+  # Plex exporter runs on the Plex LXC (220, amd64), NOT the Pi (its image is amd64-only). Scraped
+  # across the LAN at plex-lxc:9000. See runbooks/monitoring-exporters.md "Plex — runs on nuc1".
+  - job_name: plex
+    static_configs: [ { targets: ['plex-lxc.home.alexjenkinson.com:9000'] } ]
   - job_name: qbittorrent
     static_configs: [ { targets: ['localhost:9238'] } ]
   - job_name: sonarr
