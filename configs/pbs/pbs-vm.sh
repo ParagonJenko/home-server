@@ -50,3 +50,13 @@ qm set 900 --scsi1 "${USB_BY_ID},backup=0"
 qm start 900
 
 ok "PBS VM 900 created and started (booting the installer ISO)."
+cat <<EOF
+
+Next:
+  1. Proxmox UI -> VM ${VMID} -> Console: run the PBS installer (static 192.168.1.5, gateway .1,
+     DNS 192.168.1.4). This graphical install is the one interactive step.
+  2. Then finish the rest from this host — no console needed:
+       ./configs/pbs/pbs-finalize.sh setup-ssh   # once: authorise an SSH key into PBS
+       ./configs/pbs/pbs-finalize.sh finalize      # boot-switch + datastore + retention
+  3. Verify:  ./configs/pbs/verify-pbs.sh
+EOF

@@ -609,7 +609,7 @@ var FIELDS = [
   { key: "DAS_2", label: "second-DAS-disk", hint: "Second DAS disk device. Check both against the internal SSD before running anything.", ph: "/dev/sdb" },
   { key: "ISO", label: "ISO_FILENAME", hint: "PBS ISO name as it appears in local:iso on NUC-2.", ph: "proxmox-backup-server_4.0-1.iso" },
   { key: "USB_ID", label: "usb-hdd-by-id", hint: "Stable by-id path for the 2TB USB HDD: ls -l /dev/disk/by-id/ | grep -- '-> ../../sda$' (swap sda for its NAME from lsblk)", ph: "/dev/disk/by-id/usb-..." },
-  { key: "DATASTORE_PATH", label: "DATASTORE_PATH", hint: "Where the USB HDD mounts inside the PBS VM. Edited into configs/pbs/datastore-setup.sh.", ph: "/mnt/datastore/backups" },
+  { key: "DATASTORE_PATH", label: "DATASTORE_PATH", hint: "Where the USB HDD mounts inside the PBS VM. pbs-finalize.sh sets this automatically (disk fs create mounts here) and seds it into datastore-setup.sh.", ph: "/mnt/datastore/backups" },
   { key: "PBS_FP", label: "PBS_FINGERPRINT", hint: "PBS web UI → Certificates. The server itself is pbs.home.alexjenkinson.com, never an IP.", ph: "AA:BB:CC:..." }
 ];
 
@@ -1796,21 +1796,21 @@ var STAGES = [
           },
           {
             "callout": "manual",
-            "title": "Manual",
-            "html": "Install PBS via the VM console. Give it the static address from the plan — <code class=\"inline\">192.168.1.5/24</code>, gateway <code class=\"inline\">192.168.1.1</code>, DNS <code class=\"inline\">1.1.1.1</code> for now — same reason as the Proxmox hosts: the installer writes it into config rather than taking a lease."
+            "title": "Manual — the only interactive step: install PBS",
+            "html": "Install PBS via the VM console (Proxmox UI → VM 900 → Console). Give it the static address from the plan — <code class=\"inline\">192.168.1.5/24</code>, gateway <code class=\"inline\">192.168.1.1</code>, DNS <code class=\"inline\">1.1.1.1</code> for now — same reason as the Proxmox hosts: the installer writes it into config rather than taking a lease. Everything after this runs from the NUC-2 host — no more console."
           },
           {
-            "callout": "danger",
-            "title": "Switch the boot order off the ISO before rebooting",
-            "html": "<p>The script sets <code class=\"inline\">--boot order=ide2</code> so the VM boots the installer the first time. Leave it, and every subsequent reboot lands back in the installer instead of PBS.</p>"
+            "callout": "note",
+            "title": "Finish from the host — pbs-finalize.sh",
+            "html": "<p>The boot-order switch and the datastore used to be manual; <code class=\"inline\">pbs-finalize.sh</code> does both over SSH (PBS has no agent-exec channel we rely on, so it uses a key — the same pattern as HA). Run <code class=\"inline\">setup-ssh</code> once — it copies nuc2's key using the PBS root password you just set (or prints a one-line console paste if it can't) — then <code class=\"inline\">finalize</code>:</p><ul><li><strong>boot-switch</strong> — <code class=\"inline\">qm set 900 --boot order=scsi0</code> + detach the ISO, so reboots go straight into PBS instead of the installer.</li><li><strong>datastore</strong> — finds the unmounted 2TB disk inside the VM, confirms (it formats the disk), creates it ext4 and mounts it at <code class=\"inline\">{{DATASTORE_PATH}}</code> via <code class=\"inline\">proxmox-backup-manager disk fs create</code>, then pushes and runs <code class=\"inline\">datastore-setup.sh</code> for retention (<code class=\"inline\">keep-daily=7, keep-weekly=4, keep-monthly=6</code> — never <code class=\"inline\">keep-all</code>).</li></ul>"
           },
           {
-            "cmd": "# @where: NUC-2 · host shell\nqm set 900 --boot order=scsi0\nqm set 900 --ide2 none"
+            "cmd": "# @where: NUC-2 · host shell\n./configs/pbs/pbs-finalize.sh setup-ssh   # once: authorise an SSH key into PBS\n./configs/pbs/pbs-finalize.sh finalize"
           },
           {
-            "callout": "manual",
-            "title": "Manual — the datastore",
-            "html": "Copy <code class=\"inline\">configs/pbs/datastore-setup.sh</code> to the PBS VM and run it there — it creates the datastore and sets retention (<code class=\"inline\">keep-daily=7, keep-weekly=4, keep-monthly=6</code> — never <code class=\"inline\">keep-all</code>). Copy just that one file; it's deliberately self-contained, since the rest of the repo isn't on the PBS VM. Its <code class=\"inline\">DATASTORE_PATH</code> is <code class=\"inline\">{{DATASTORE_PATH}}</code>."
+            "callout": "gotcha",
+            "title": "Run finalize AFTER the install finishes",
+            "html": "<code class=\"inline\">finalize</code> needs PBS up and SSH answering on <code class=\"inline\">192.168.1.5</code>. Run it once the installer has rebooted into PBS and the UI answers on <code class=\"inline\">:8007</code> — not before. The datastore encryption key (printed by <code class=\"inline\">datastore-setup.sh</code>) is still a deliberate manual R21 step: create it on each NUC and copy it to your vault."
           }
         ],
         "verify": [

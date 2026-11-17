@@ -30,7 +30,7 @@ fi
 echo "== boot order =="
 boot="$(qm config "$VMID" 2>/dev/null | grep '^boot:')"
 if echo "$boot" | grep -q 'ide2'; then
-  warn "boot still includes the installer ISO (ide2) — switch to scsi0 after install (qm set ${VMID} --boot order=scsi0 ; qm set ${VMID} --ide2 none), or every reboot re-enters the installer"
+  warn "boot still includes the installer ISO (ide2) — run ./configs/pbs/pbs-finalize.sh boot-switch after install, or every reboot re-enters the installer"
 else
   pass "boots from the system disk, not the installer ISO"
 fi
