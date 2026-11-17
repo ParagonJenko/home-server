@@ -12,8 +12,11 @@ global:
 
 route:
   receiver: discord
-  group_by: ['alertname', 'instance']
-  group_wait: 30s
+  # One embed PER alert (so each can be emoji-reacted): group by every distinguishing label, so no two
+  # distinct alerts ever share a group -> each gets its own Discord message. group_wait 10s so a burst
+  # (e.g. 3 disks) still arrives as 3 separate messages promptly rather than batched.
+  group_by: ['alertname', 'instance', 'device', 'service', 'mountpoint', 'job']
+  group_wait: 10s
   group_interval: 5m
   repeat_interval: 4h
 
@@ -33,6 +36,4 @@ receivers:
           🔍 **What** — {{ .Annotations.cause }}
           🛠️ **Fix** — {{ .Annotations.fix }}
           📍 **Where** — {{ .Annotations.where }}
-          {{ end }}
-          ━━━━━━━━━━━━━━━
-          {{ end -}}
+          {{ end }}{{ end -}}

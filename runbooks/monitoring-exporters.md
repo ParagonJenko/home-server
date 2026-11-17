@@ -65,26 +65,47 @@ PVE_VERIFY_SSL=false
 
 ---
 
-## Media stack — Plex, qBittorrent, Arrs  ✅
+## Media stack — qBittorrent, Arrs (+ Plex, see note)  ✅
 
-Five exporters, all scraping services in LXC 210/220 over the LAN.
+Exporters scraping services in LXC 210/220 over the LAN.
 
 | Exporter | Port | `.env` keys | Gives |
 |---|---|---|---|
-| plex-exporter | 9000 | `PLEX_TOKEN` | active streams, bandwidth, library counts |
 | qbittorrent-exporter | 9238 | `QBIT_USER`, `QBIT_PASS` | up/down speed, torrents by state, ratio |
 | exportarr-sonarr | 9707 | `SONARR_API_KEY` | queue, series, missing, health |
 | exportarr-radarr | 9708 | `RADARR_API_KEY` | queue, movies, missing, health |
 | exportarr-prowlarr | 9710 | `PROWLARR_API_KEY` | indexers, grabs, health |
 
-**Getting the keys:** Plex token — open any item in Plex web → ⋯ → Get Info → View XML, copy the
-`X-Plex-Token=` from the URL. qBittorrent — its WebUI login. Arrs — each app → Settings → General → API Key.
+**Getting the keys:** qBittorrent — its WebUI login. Arrs — each app → Settings → General → API Key.
+(`gather-exporter-creds.sh` reads the Arr keys for you.)
 
-**Dashboard:** Grafana → **Media stack** (Plex / Downloads / Library automation sections).
+**Dashboard:** Grafana → **Media stack** (Downloads / Library automation sections; Plex section fills in once Plex is wired — see below).
 **Alert:** `ArrHealthIssue` (warning) fires when Sonarr/Radarr/Prowlarr reports a self-health problem.
-**Metric-name caveat:** Plex exporter metric names vary by version — if the Plex panels show *No data*,
-`curl -s localhost:9000/metrics | grep -i plex` and adjust the queries in `media.json`. qBittorrent/Arr
-names are stable.
+
+### Plex — runs on nuc1, not the Pi ⚠️
+
+The common Plex exporter image (`jsclayton/prometheus-plex-exporter`) is **amd64-only**, and the Pi is
+**arm64**, so it can't run in the Pi stack. Run it on an **amd64 box next to Plex** instead — the Plex
+LXC (220) on nuc1. Add this service to **LXC 220's** docker compose (not the Pi's):
+
+```yaml
+  plex-exporter:
+    image: ghcr.io/jsclayton/prometheus-plex-exporter:latest
+    network_mode: host                     # binds :9000 on the Plex LXC
+    environment:
+      PLEX_SERVER: http://localhost:32400
+      PLEX_TOKEN: <your Plex token>         # the wizard still collects PLEX_TOKEN into the Pi .env
+    restart: unless-stopped
+```
+
+Then add a scrape job to `configs/pi/prometheus/prometheus.yml` pointing at the Plex LXC:
+```yaml
+  - job_name: plex
+    static_configs: [ { targets: ['plex-lxc.home.alexjenkinson.com:9000'] } ]
+```
+`./configs/pi/redeploy.sh` to reload Prometheus. The **Media stack** dashboard's Plex panels then
+populate (metric names vary by exporter version — if *No data*, `curl -s plex-lxc…:9000/metrics | grep -i plex`
+and adjust `media.json`). A multi-arch alternative is Tautulli + a Tautulli exporter.
 
 ---
 

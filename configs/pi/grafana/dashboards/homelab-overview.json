@@ -76,6 +76,74 @@
         { "refId": "A", "expr": "lvm_thinpool_data_percent", "legendFormat": "{{instance}} data" },
         { "refId": "B", "expr": "lvm_thinpool_metadata_percent", "legendFormat": "{{instance}} meta" }
       ]
+    },
+
+    { "id": 12, "type": "row", "title": "🧩 Services & guests", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 }, "panels": [] },
+    {
+      "id": 13, "type": "stat", "title": "Guests running",
+      "description": "Populates once pve-exporter is configured.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 24 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "count(pve_up{id=~\"(qemu|lxc)/.*\"} == 1)" } ]
+    },
+    {
+      "id": 14, "type": "stat", "title": "HTTP services up",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 24 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "count(probe_success{job=\"blackbox-http\"} == 1)" } ]
+    },
+    {
+      "id": 15, "type": "stat", "title": "Cameras up",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 24 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "count(probe_success{job=\"blackbox-cameras\"} == 1) or vector(0)" } ]
+    },
+    {
+      "id": 16, "type": "stat", "title": "qBittorrent download",
+      "description": "Populates once qbittorrent-exporter is configured.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "targets": [ { "refId": "A", "expr": "qbittorrent_dl_info_speed" } ]
+    },
+
+    { "id": 17, "type": "row", "title": "🗄️ Backups & DNS", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 28 }, "panels": [] },
+    {
+      "id": 18, "type": "stat", "title": "PBS datastore used %",
+      "description": "Populates once pbs-exporter is configured.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 29 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 75 }, { "color": "red", "value": 85 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "max(100 * pbs_used / pbs_size)" } ]
+    },
+    {
+      "id": 19, "type": "stat", "title": "PBS snapshots",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 29 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "sum(pbs_snapshot_count)" } ]
+    },
+    {
+      "id": 20, "type": "stat", "title": "AdGuard block rate %",
+      "description": "Populates once adguard-exporter is configured.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 29 },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "100 * rate(adguard_num_blocked_filtering[5m]) / rate(adguard_num_dns_queries[5m])" } ]
+    },
+    {
+      "id": 21, "type": "stat", "title": "AdGuard queries/sec",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 29 },
+      "fieldConfig": { "defaults": { "unit": "qps", "decimals": 1 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" },
+      "targets": [ { "refId": "A", "expr": "rate(adguard_num_dns_queries[5m])" } ]
     }
   ]
 }

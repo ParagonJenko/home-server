@@ -50,14 +50,10 @@ services:
     env_file: .env
     restart: unless-stopped
 
-  # Plex: active streams, bandwidth, library counts. Needs a Plex token (PLEX_TOKEN in .env). :9000
-  plex-exporter:
-    image: ghcr.io/jsclayton/prometheus-plex-exporter:latest
-    network_mode: host
-    environment:
-      PLEX_SERVER: http://plex-lxc.home.alexjenkinson.com:32400
-      PLEX_TOKEN: ${PLEX_TOKEN:-}
-    restart: unless-stopped
+  # NB: the Plex exporter is NOT here. The common image (jsclayton/prometheus-plex-exporter) is
+  # amd64-only and this Pi is arm64, so it can't run here. Run it on an amd64 box next to Plex
+  # (nuc1 / LXC 220) and add a 'plex' scrape job for that host — see runbooks/monitoring-exporters.md.
+  # PLEX_TOKEN stays in .env for when you wire that up.
 
   # qBittorrent: global up/down speed, torrent counts by state, ratio. Needs WebUI creds. :9238
   qbittorrent-exporter:
