@@ -1527,7 +1527,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "1 · Install AMP (CubeCoders)",
-            "html": "<p>AMP is a web control panel for running game servers (Minecraft, etc.). Enter the container and run CubeCoders' installer:</p>"
+            "html": "<p>AMP is a web control panel for running game servers (Minecraft, etc.). Enter the container and run CubeCoders' installer. <code class=\"inline\">amp-nginx.sh</code> installs <code class=\"inline\">curl</code> in the container for this; if you built it earlier, run <code class=\"inline\">apt-get update &amp;&amp; apt-get install -y curl ca-certificates</code> inside it first.</p>"
           },
           {
             "cmd": "# @where: NUC-1 · host shell\npct enter 230"

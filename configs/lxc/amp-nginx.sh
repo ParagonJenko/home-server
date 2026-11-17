@@ -53,6 +53,8 @@ echo "   Store the Cloudflare token in your vault (R21)."
 # --- AMP 230: game-server panel (CubeCoders, vendor-managed) ----------------
 create_ct 230 amp 40 2048
 pct start 230 2>/dev/null || true
+# CubeCoders' installer is fetched with curl — the base template has none.
+pct exec 230 -- bash -c 'command -v curl >/dev/null || { apt-get update && apt-get install -y curl ca-certificates; }'
 pct exec 230 -- mkdir -p /opt/amp
 pct push 230 ../amp/verify-amp.sh /opt/amp/verify-amp.sh
 pause "AMP uses CubeCoders' own interactive installer — run it inside the container:
