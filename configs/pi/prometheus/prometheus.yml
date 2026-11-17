@@ -108,3 +108,15 @@ scrape_configs:
       - { source_labels: [__address__], target_label: __param_target }
       - { source_labels: [__param_target], target_label: instance }
       - { target_label: __address__, replacement: localhost:9221 }
+
+  # ---- Media stack exporters (all on the Pi, host networking) ----
+  - job_name: plex
+    static_configs: [ { targets: ['localhost:9000'] } ]
+  - job_name: qbittorrent
+    static_configs: [ { targets: ['localhost:9238'] } ]
+  - job_name: sonarr
+    static_configs: [ { targets: ['localhost:9707'] } ]
+  - job_name: radarr
+    static_configs: [ { targets: ['localhost:9708'] } ]
+  - job_name: prowlarr
+    static_configs: [ { targets: ['localhost:9710'] } ]

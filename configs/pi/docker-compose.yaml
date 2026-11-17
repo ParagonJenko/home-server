@@ -49,5 +49,46 @@ services:
     network_mode: host
     env_file: .env
     restart: unless-stopped
+
+  # Plex: active streams, bandwidth, library counts. Needs a Plex token (PLEX_TOKEN in .env). :9000
+  plex-exporter:
+    image: ghcr.io/jsclayton/prometheus-plex-exporter:latest
+    network_mode: host
+    environment:
+      PLEX_SERVER: http://plex-lxc.home.alexjenkinson.com:32400
+      PLEX_TOKEN: ${PLEX_TOKEN}
+    restart: unless-stopped
+
+  # qBittorrent: global up/down speed, torrent counts by state, ratio. Needs WebUI creds. :9238
+  qbittorrent-exporter:
+    image: ghcr.io/esanchezm/prometheus-qbittorrent-exporter:latest
+    network_mode: host
+    environment:
+      QBITTORRENT_HOST: media-pipeline.home.alexjenkinson.com
+      QBITTORRENT_PORT: 8080
+      QBITTORRENT_USER: ${QBIT_USER}
+      QBITTORRENT_PASS: ${QBIT_PASS}
+      EXPORTER_PORT: 9238
+    restart: unless-stopped
+
+  # The Arrs (exportarr, one container each): queue depth, missing, health, indexers.
+  exportarr-sonarr:
+    image: ghcr.io/onedr0p/exportarr:latest
+    command: ["sonarr"]
+    network_mode: host
+    environment: { PORT: 9707, URL: "http://media-pipeline.home.alexjenkinson.com:8989", APIKEY: "${SONARR_API_KEY}" }
+    restart: unless-stopped
+  exportarr-radarr:
+    image: ghcr.io/onedr0p/exportarr:latest
+    command: ["radarr"]
+    network_mode: host
+    environment: { PORT: 9708, URL: "http://media-pipeline.home.alexjenkinson.com:7878", APIKEY: "${RADARR_API_KEY}" }
+    restart: unless-stopped
+  exportarr-prowlarr:
+    image: ghcr.io/onedr0p/exportarr:latest
+    command: ["prowlarr"]
+    network_mode: host
+    environment: { PORT: 9710, URL: "http://media-pipeline.home.alexjenkinson.com:9696", APIKEY: "${PROWLARR_API_KEY}" }
+    restart: unless-stopped
 volumes:
   grafana-data:

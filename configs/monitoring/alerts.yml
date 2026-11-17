@@ -187,3 +187,14 @@ groups:
           cause: "speedtest.sh hasn't written a result in over 3h (it runs every 2h)."
           fix: "asquared ssh pi: run /usr/local/bin/speedtest.sh by hand; crontab -l has the 2h entry? Ookla CLI installed (speedtest --version)?"
           where: "Host pi. Script /usr/local/bin/speedtest.sh."
+
+      - alert: ArrHealthIssue             # Sonarr/Radarr/Prowlarr is reporting a health warning
+        expr: sum by(job) ({__name__=~"(sonarr|radarr|prowlarr)_system_health_issues"}) > 0
+        for: 30m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.job }} reporting a health issue"
+          impact: "{{ $labels.job }} has a self-reported problem — downloads, indexers or imports may be failing silently."
+          cause: "{{ $labels.job }} system health count is {{ $value | humanize }}."
+          fix: "Open {{ $labels.job }} → System → Status to read the issue (indexer down, download client unreachable, root folder missing, update available…)."
+          where: "The app UI (https://{{ $labels.job }}.home.alexjenkinson.com). Grafana → Media stack → Arr health issues."
