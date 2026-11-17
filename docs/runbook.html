@@ -2052,6 +2052,14 @@ var STAGES = [
             "html": "<p>Grafana <code class=\"inline\">pi.home.alexjenkinson.com:3000</code>, Prometheus <code class=\"inline\">:9090</code>, Alertmanager <code class=\"inline\">:9093</code>.</p>"
           },
           {
+            "callout": "gotcha",
+            "title": "Prometheus/Alertmanager crash-loop with \"no such file or directory\"",
+            "html": "<p>The compose bind-mounts <code class=\"inline\">./prometheus</code>, <code class=\"inline\">./alertmanager</code>, <code class=\"inline\">./grafana</code>, <code class=\"inline\">./blackbox</code> from the repo. If those config files aren't in <code class=\"inline\">/opt/pi-stack</code>, Docker silently creates an <em>empty directory</em> at the mount point and the service exits on a missing config — while <code class=\"inline\">docker compose ps</code> still lists it (as <code class=\"inline\">Restarting</code>). Deploy comes from the repo via <code class=\"inline\">setup-pi.sh</code>, so pull and redeploy:</p>"
+          },
+          {
+            "cmd": "# @where: Pi · shell — pull the configs + redeploy (keeps your .env + webhook):\ncd ~/home-server && git pull\nsudo cp -r configs/pi/prometheus configs/pi/blackbox configs/pi/grafana /opt/pi-stack/\nsudo cp configs/pi/alertmanager/alertmanager.yml /opt/pi-stack/alertmanager/\nsudo cp configs/pi/docker-compose.yaml /opt/pi-stack/\ncd /opt/pi-stack && sudo docker compose up -d"
+          },
+          {
             "callout": "note",
             "title": "The dashboard is a file, not a click",
             "html": "The Prometheus datasource and the <strong>Homelab overview</strong> dashboard are provisioned from <code class=\"inline\">configs/pi/grafana/</code>, so a rebuilt Pi comes back with both. Editing that dashboard in the UI does nothing permanent — Grafana overwrites it from the file. To keep a change, export the JSON and commit it back."
