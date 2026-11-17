@@ -1,7 +1,8 @@
 # Operations runbook (day-2)
 
 Running the homelab after it's built: getting onto each box, routine maintenance, adding
-guests, DNS/DHCP changes, backups and health checks. For power-off/on and boot problems see
+guests, DNS/DHCP changes, backups and health checks. For every tool's URL/IP at a glance see
+[`quick-reference.md`](../quick-reference.md); for power-off/on and boot problems see
 `power-cycle.md`; for the full build see `docs/runbook.html`.
 
 ## The `asquared` CLI
