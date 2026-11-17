@@ -83,6 +83,7 @@ is written into `~/.ssh`. To use it on a new machine:
 - **Updates:** `asquared update` per box. On a Proxmox host, `reboot` if the kernel changed. Do one box at a time and check it's back before the next.
 - **Backups are running:** `./configs/pbs/verify-backups.sh` on each NUC, and the PBS UI → the datastore → Content. A manual one: `asquared backup <id>`.
 - **Storage headroom:** `asquared status` shows the thin-pool data/metadata %. The *ThinPoolMetadataHigh* alert (80%) is the one closest to unrecoverable — act on it.
+- **Adding or re-provisioning a camera:** see [`cameras.md`](cameras.md) — RTSP → DHCP reservation (.30–.33) → AdGuard rewrite → Frigate `.env`. `configs/frigate/find-cameras.sh` discovers MACs.
 
 ## Add a new container (LXC)
 
