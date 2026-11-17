@@ -175,8 +175,19 @@ case "$STEP" in
       && yes_ "smartmon metrics present" || no_ "smartmon metrics (smartmon.sh cron)"
     ;;
   J4)
-    command -v unattended-upgrade >/dev/null 2>&1 && unattended-upgrade --dry-run >/dev/null 2>&1 \
-      && yes_ "unattended-upgrade dry-run OK" || no_ "unattended-upgrade configured"
+    # Config-presence checks only — a live `unattended-upgrade --dry-run` grabs the apt lock and
+    # hits the repos, so it hangs when apt is busy or a repo is slow. Not worth it here.
+    if dpkg -l unattended-upgrades 2>/dev/null | grep -q '^ii'; then
+      yes_ "unattended-upgrades installed"
+    else
+      no_ "unattended-upgrades not installed (apt -y install unattended-upgrades)"
+    fi
+    grep -rqs 'Unattended-Upgrade "1"' /etc/apt/apt.conf.d/ \
+      && yes_ "auto-upgrade enabled (APT::Periodic::Unattended-Upgrade)" \
+      || no_ "auto-upgrade not enabled — set it in /etc/apt/apt.conf.d/20auto-upgrades"
+    [ -f /etc/apt/apt.conf.d/50unattended-upgrades ] \
+      && yes_ "50unattended-upgrades present" \
+      || no_ "50unattended-upgrades config missing"
     ;;
   K2)
     command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1 \
