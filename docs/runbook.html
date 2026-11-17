@@ -1959,7 +1959,7 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Context",
-            "html": "<p>Restore into a spare VMID (<code class=\"inline\">8210</code>) so the running container is untouched. The volid is grabbed automatically — no copy-paste. The clone is given DHCP and has its <code class=\"inline\">/data</code> bind mount dropped so it can't fight the live 210 for its IP or mount.</p>"
+            "html": "<p><code class=\"inline\">verify-restore.sh</code> does the whole proof and leaves nothing behind: finds the latest <code class=\"inline\">ct/210</code> backup, restores it into a throwaway CT <code class=\"inline\">8210</code> (DHCP + no bind mount, so it can't clash with the live 210), boots it, checks <code class=\"inline\">status: running</code>, then tears it down. The live container is never touched. Pass another guest id as the argument to test a different one.</p>"
           },
           {
             "callout": "gotcha",
@@ -1967,7 +1967,7 @@ var STAGES = [
             "html": "Take one backup by hand first, or <code class=\"inline\">pvesm list</code> comes back empty and the restore has no source."
           },
           {
-            "cmd": "# @where: NUC-1 · host shell — grab the latest ct/210 backup volid automatically (no placeholder to paste):\nVOLID=$(pvesm list pbs-backup | awk '/ct\\/210\\//{print $1}' | tail -1)\necho \"restoring $VOLID -> CT 8210\"\npct restore 8210 \"$VOLID\" --storage local-lvm\npct set 8210 --net0 name=eth0,bridge=vmbr0,ip=dhcp   # don't clash with the live 210's IP\npct set 8210 --delete mp0 2>/dev/null || true         # drop the /data bind mount on the clone\npct start 8210 && pct status 8210\npct stop 8210 && pct destroy 8210                      # bin the test once it's proven"
+            "cmd": "# @where: NUC-1 · host shell — restore the latest backup to a throwaway CT, boot it, destroy it:\n./configs/pbs/verify-restore.sh 210"
           },
           {
             "callout": "note",
