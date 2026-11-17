@@ -61,6 +61,22 @@ The pool refusing to mount is the safety net working, **not** a fault.
 - Reconnect it, then on NUC-1: `mount -a`.
 - `systemctl status mnt-media.mount` for the reason if it still won't mount.
 
+## Boot hangs: "Timed out waiting for device … Media-disk"
+
+**Symptom:** a host won't come back after a power-cycle — unreachable over the network and the Proxmox web UI — and its **console** shows `Timed out waiting for device …` naming the media disk (a systemd device unit like `dev-disk-by\x2dlabel-media\x2ddisk1.device`), or `A start job is running for … /mnt/media`. It sits on that for ~90s, then may drop to an emergency shell. Pinging the host from elsewhere gives *"Destination host unreachable"* (your own machine, not the host, answering).
+
+**Cause:** the **DAS/NAS (the media disk) was powered off or unplugged** when the host booted. The branch mounts depend on the disk's device unit (`x-systemd.requires=`); with the disk absent that unit never appears, so the mount — and the boot — wait on it and time out. This is the same safety net that stops the pool unioning off the host SSD, just hit at boot time rather than at `mount`.
+
+**Fix:**
+1. Power the DAS/NAS back on; check its data (USB) cable is seated.
+2. Wait for the disks to spin up and enumerate (`lsblk` on another box won't help — go to the affected host).
+3. **Reboot the host** — it now finds the device, mounts the branches by LABEL, mounts the pool, and continues.
+4. If it's sitting at an **emergency shell** instead: confirm the disk is present (`blkid -L media-disk1`), then `mount -a` and `systemctl default`. A clean reboot is simpler.
+
+**Prevent:** follow the power-ON order (R18) — reconnect and power the disks **before** the hosts. DAS on before NUC-1; USB HDD on before NUC-2.
+
+**Optional hardening (R9 — the host should boot even with a data disk missing):** if you'd rather the host always come up reachable (so you can fix a missing disk remotely instead of needing a monitor), add `nofail,x-systemd.device-timeout=30s` to the branch mounts in the fstab snippet. The host then boots in ~30s without the pool (the mergerfs mount and the media containers stay down until the disk returns) instead of hanging. Trade-off: a genuinely missing disk fails quietly at boot rather than loudly refusing. Not applied yet — decide and apply deliberately.
+
 ## Never
 
 - Pull the mains on a running box (until the UPS + NUT is in place — and even then, let NUT trigger the shutdown).
