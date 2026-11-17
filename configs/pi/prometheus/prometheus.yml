@@ -131,9 +131,11 @@ scrape_configs:
   - job_name: adguard
     static_configs: [ { targets: ['localhost:9617'] } ]
 
-  # ---- Frigate native Prometheus metrics (camera/detection FPS, inference, storage) ----
-  # Frigate serves /metrics UNauthenticated on its main port :8971 (the internal :5000 is
-  # localhost-only by design; /api/metrics on :8971 is the authed one, 401). LAN scrape only.
-  - job_name: frigate
-    metrics_path: /metrics
-    static_configs: [ { targets: ['frigate-lxc.home.alexjenkinson.com:8971'] } ]
+  # ---- Frigate (PARKED — no clean unauthenticated metrics path) ----
+  # Frigate's Prometheus endpoint is /api/metrics on :8971 but it's AUTH-walled (401); :8971/metrics
+  # returns the web UI's HTML (not metrics); and the unauth :5000/metrics is localhost-only inside the
+  # container. To enable, pick one and re-add a 'frigate' job:
+  #   (a) expose :5000 on the LAN from LXC 111's Frigate compose and scrape frigate-lxc:5000/metrics
+  #       (weakens the "never expose :5000" stance in services.md — LAN-only, your call), or
+  #   (b) give Prometheus a Frigate credential to scrape :8971/api/metrics.
+  # See runbooks/monitoring-exporters.md "Frigate".
