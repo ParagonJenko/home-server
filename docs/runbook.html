@@ -1521,40 +1521,57 @@ var STAGES = [
           },
           {
             "callout": "note",
-            "title": "Context",
-            "html": "<p>Run <code class=\"inline\">amp-nginx.sh</code> (AMP 230, Nginx 240 — neither needs the media mount), then:</p>"
-          },
-          {
-            "list": [
-              "Install AMP via <a href=\"https://cubecoders.com/AMP\">CubeCoders' installer</a> inside the container.",
-              "Nginx: <code class=\"inline\">amp-nginx.sh</code> fills the resolver line (the Pi, 192.168.1.4) and deploys <code class=\"inline\">homelab.conf</code> automatically — nothing to edit."
-            ]
+            "title": "What this does",
+            "html": "<p>Creates Nginx (240) and AMP (230) — native installs, no Docker, neither needs the media mount. Nginx comes up serving its default page; it does <strong>not</strong> switch to HTTPS here, because the wildcard cert needs your Cloudflare token (step 2). AMP is installed by hand (step 1) — its installer is interactive and vendor-managed, which is also why it isn't pinned.</p>"
           },
           {
             "callout": "note",
-            "title": "Why nginx -t passing isn't enough",
-            "html": "AMP isn't pinned because the vendor changes its installer over time. And a passing <code class=\"inline\">nginx -t</code> does not mean routing works — the resolver is only consulted at request time, so without the Pi every proxied hostname 502s while the config tests clean."
+            "title": "1 · Install AMP (CubeCoders)",
+            "html": "<p>AMP is a web control panel for running game servers (Minecraft, etc.). Enter the container and run CubeCoders' installer:</p>"
           },
           {
-            "callout": "danger",
-            "title": "The proxy is HTTP-only, on port 80",
-            "html": "<p><code class=\"inline\">.home</code> is not a public TLD, so no public CA can ever issue a certificate for it — <code class=\"inline\">certbot --dns-cloudflare -d \"*.home.alexjenkinson.com\"</code> cannot work, whatever the DNS provider. An internal CA would mean installing a root cert on every phone, laptop and TV, including clients that can't be made to trust one.</p><p>Accepted tradeoff: <strong>LAN logins to these UIs travel in the clear</strong>, and Tailscale is the encrypted path from outside. Port 80 must never be forwarded through the venue router.</p>"
+            "cmd": "# @where: NUC-1 · host shell\npct enter 230"
+          },
+          {
+            "cmd": "# inside the container — CubeCoders' installer (interactive):\nbash <(curl -fsSL https://cubecoders.com/getamp.sh)"
+          },
+          {
+            "callout": "manual",
+            "title": "At the installer's prompts",
+            "html": "<p>Let it create the <code class=\"inline\">amp</code> user and install the <strong>ADS</strong> (AMP's controller). When it asks for a licence, paste your AMP key — the free tier covers one instance (sign up at <a href=\"https://cubecoders.com/AMP\">cubecoders.com/AMP</a>). Finish, <code class=\"inline\">exit</code> the container, and note the panel URL it prints (default <code class=\"inline\">http://&lt;amp-ip&gt;:8080</code>). Give AMP a DHCP reservation + AdGuard rewrite and add it to network.md (R13).</p>"
+          },
+          {
+            "callout": "note",
+            "title": "2 · Turn on HTTPS (wildcard cert)",
+            "html": "<p>Nginx is staged but still plain HTTP. One Cloudflare token issues a Let's Encrypt wildcard for <code class=\"inline\">*.home.alexjenkinson.com</code> and flips the proxy to 443 (80 redirects up); acme.sh then auto-renews and reloads nginx. In Cloudflare → <em>My Profile → API Tokens → Create Token</em>, use the <strong>Edit zone DNS</strong> template scoped to <code class=\"inline\">alexjenkinson.com</code> (Zone → DNS → Edit), and copy the token.</p>"
+          },
+          {
+            "cmd": "# @where: NUC-1 · host shell — issue the cert + go live (replace <token>):\npct exec 240 -- env CF_Token=<token> bash /opt/nginx/enable-tls.sh"
+          },
+          {
+            "callout": "manual",
+            "title": "Save the token",
+            "html": "<p><span class=save>Put the Cloudflare token in your vault (R21)</span> — the cert reissues from it on any rebuild. The cert's private key lives on the nginx LXC and is regenerable, so the token is the thing that must survive.</p>"
           },
           {
             "callout": "note",
             "title": "Every proxied service needs two DNS names",
-            "html": "<p><code class=\"inline\">plex.home.alexjenkinson.com</code> resolves to Nginx — that's how Host-header routing works — so Nginx cannot proxy to <code class=\"inline\">plex.home.alexjenkinson.com</code> without looping back to itself. The container gets a second name, <code class=\"inline\">plex-lxc.home.alexjenkinson.com</code>, pointing at its own IP, and that's what <code class=\"inline\">proxy_pass</code> targets. Add both rewrites in AdGuard at D1 when adding a service. Containers that are never proxied — <code class=\"inline\">media-pipeline</code> — need only one name.</p>"
+            "html": "<p><code class=\"inline\">plex.home.alexjenkinson.com</code> resolves to Nginx — that's how Host-header routing works — so Nginx can't proxy to it without looping back to itself. The container gets a second name, <code class=\"inline\">plex-lxc.home.alexjenkinson.com</code>, pointing at its own IP, and that's what <code class=\"inline\">proxy_pass</code> targets. Add both rewrites in AdGuard (Stage D) when adding a service. Never-proxied containers — <code class=\"inline\">media-pipeline</code> — need only one name.</p>"
           },
           {
             "callout": "gotcha",
             "title": "Don't simplify the proxy_pass pattern",
-            "html": "<code class=\"inline\">set $backend; proxy_pass http://$backend:port;</code> looks redundant next to a bare <code class=\"inline\">proxy_pass http://media-pipeline.home.alexjenkinson.com:8989;</code>, but nginx caches a bare hostname's IP forever once resolved and ignores DNS TTL entirely. A DHCP lease renewal on a backend LXC would silently strand nginx on the old IP until someone noticed and reloaded it. The variable form is what forces nginx to honor the resolver's TTL."
+            "html": "<code class=\"inline\">set $backend; proxy_pass http://$backend:port;</code> looks redundant next to a bare <code class=\"inline\">proxy_pass http://media-pipeline.home.alexjenkinson.com:8989;</code>, but nginx caches a bare hostname's IP forever once resolved and ignores DNS TTL. A DHCP renewal on a backend LXC would silently strand nginx on the old IP. The variable form forces nginx to honour the resolver's TTL."
+          }
+        ],
+        "verify": [
+          {
+            "cmd": "# @where: NUC-1 · host shell — proxy + TLS health:\npct exec 240 -- bash /opt/nginx/verify-nginx.sh"
           },
           {
-            "callout": "note",
-            "title": "Custom apps",
-            "html": "Custom apps deploy from their own repo, VMID 250+."
-          }
+            "cmd": "# AMP health:\npct exec 230 -- bash /opt/amp/verify-amp.sh"
+          },
+          "verify-nginx confirms the cert covers the wildcard and every front name redirects 80→443 and serves valid TLS; a 502 there means TLS is fine but that service's container is down. A passing <code class=\"inline\">nginx -t</code> alone only means syntax — routing still needs the Pi resolving the names."
         ]
       }
     ]

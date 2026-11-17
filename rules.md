@@ -62,7 +62,7 @@ Status markers: **ON HOLD** (deferred), **PARTIAL** (physically possible now, fu
 
 ### R21 — Every secret survives a bare-metal rebuild
 - **Why:** R17's "rebuild from docs + PBS" is false if a secret exists only as a gitignored file on a box that just died.
-- **Verify:** each secret — Grafana admin, AdGuard admin, Discord webhook, Eufy RTSP, AMP/Plex, Recyclarr, Arr/Prowlarr API keys, root/PBS logins, PBS datastore encryption key, PBS fingerprint, Proxmox API token, every SSH key, Tailscale auth, offsite crypt key — has an off-box copy in a password manager or encrypted vault, and a rebuild restores them from there, not from a surviving box. Rotate anything that ever touched git history.
+- **Verify:** each secret — Grafana admin, AdGuard admin, Discord webhook, Eufy RTSP, AMP/Plex, Recyclarr, Arr/Prowlarr API keys, root/PBS logins, PBS datastore encryption key, PBS fingerprint, Proxmox API token, every SSH key, Tailscale auth, Cloudflare DNS API token (reissues the wildcard TLS cert), offsite crypt key — has an off-box copy in a password manager or encrypted vault, and a rebuild restores them from there, not from a surviving box. Rotate anything that ever touched git history.
 
 ### R25 — Software stays patched, and a bad update rolls back
 - **Why:** a clean install has no story for month six; unpatched services are the slow attack surface, and an update with no rollback is a gamble.

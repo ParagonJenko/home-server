@@ -37,5 +37,6 @@ Routes by `Host:` header. Backends are addressed by name, through the Pi resolve
 
 ## Notes
 
-- The proxy is **HTTP-only on port 80** — `.home` is not a public TLD, so no CA can issue a cert. LAN logins travel in the clear; Tailscale is the encrypted path from outside (R20). Port 80 must never be forwarded.
+- The proxy serves **HTTPS on 443** with a Let's Encrypt **wildcard cert for `*.home.alexjenkinson.com`** (issued by `configs/nginx/enable-tls.sh` via Cloudflare DNS-01, auto-renewed by acme.sh). Port 80 redirects to 443. The names resolve only on the LAN (split-horizon via AdGuard) and nothing is port-forwarded; Tailscale remains the path from outside (R20).
+- nginx→backend hops stay plain HTTP on the LAN — TLS terminates at the proxy. Home Assistant (`:8123`) and AMP are reached directly, not through nginx, so they're not covered by the wildcard yet.
 - The Arrs share LXC 210 and resolve each other by Docker service name on Compose's own network, not via Pi DNS.
