@@ -40,8 +40,10 @@ EOF
 chmod 600 pve/pve.yml
 if [ -z "$tv" ]; then echo "!! PVE_TOKEN_VALUE is empty in .env — pve-exporter will fail auth until you add it (gather-exporter-creds.sh)" >&2; fi
 
-docker compose up -d \
+docker compose up -d --remove-orphans \
   || echo "!! some containers failed to start/pull (see above) — continuing to reload core configs" >&2
+# --remove-orphans clears containers for services dropped from the compose (e.g. plex-exporter, which
+# moved to nuc1). It only touches THIS project's orphans, never other stacks.
 # ^ non-fatal: a single unpullable/unconfigured exporter must NOT block reloading the core stack below.
 docker compose restart prometheus blackbox grafana alertmanager  # reload mounted configs:
                                                     # prometheus (scrape+rules), blackbox (probe modules),
