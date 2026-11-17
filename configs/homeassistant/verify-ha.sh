@@ -52,20 +52,12 @@ if [ "$target" != "$NAME" ] || getent hosts "$NAME" >/dev/null 2>&1; then
   esac
 fi
 
-echo "== backups (R4) =="
-# A guest is only protected if a backup job selects it — but before PBS + the backup
-# job exist (Stage G), that's a 'not yet', not a failure.
-if [ ! -s /etc/pve/jobs.cfg ] || ! grep -q 'vzdump' /etc/pve/jobs.cfg 2>/dev/null; then
-  warn "no PBS backup job yet — add VM ${VMID} once PBS is up (Stage G, R4)"
-elif grep -rsqE "(^|[:, ])${VMID}([,: ]|$)|all: 1|all:1" /etc/pve/jobs.cfg 2>/dev/null; then
-  pass "a backup job covers VM ${VMID} (or backs up all guests)"
-else
-  fail "a backup job exists but doesn't select VM ${VMID} — add it (R4)"
-fi
+# NOTE: backup coverage (is VM 910 in the PBS job?) is an R4 check that belongs with
+# the backup stage — it's verified there, after PBS and the job exist, not here.
 
 echo
 if [ "$fails" = 0 ]; then
-  echo "${G}ALL CHECKS PASSED — Home Assistant is up, auto-starts, and is backed up.${Z}"; exit 0
+  echo "${G}ALL CHECKS PASSED — Home Assistant is up and auto-starts.${Z}"; exit 0
 else
   echo "${R}${fails} check(s) failed${Z} — inspect the failing item above."; exit 1
 fi
