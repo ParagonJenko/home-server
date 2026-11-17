@@ -2411,12 +2411,15 @@ var STAGES = [
         ],
         "body": [
           {
-            "cmd": "# @where: Each NUC · host shell\napt -y install smartmontools\n# smartd.conf: schedule short + long self-tests on every disk\n# cron: write smartmon metrics into the collector dir from H2\ncp configs/monitoring/smartmon.sh /usr/local/bin/"
+            "cmd": "# @where: Each NUC · host shell\ncd ~/home-server\napt -y install smartmontools jq\nsystemctl enable --now smartd        # default DEVICESCAN schedules self-tests on every disk\n# export SMART to the node_exporter textfile collector (from H2), every 15 min + once now\ncp configs/monitoring/smartmon.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/smartmon.sh\" ) | crontab -\n/usr/local/bin/smartmon.sh           # run once so the metric exists before verify"
           },
           {
             "callout": "note",
             "title": "Context",
-            "html": "<p>On both NUCs: enable smartd self-tests and export SMART to Prometheus via the textfile collector from H2:</p>"
+            "html": "<p>On both NUCs: enable smartd self-tests and export SMART to Prometheus via the textfile collector from H2. <code class=\"inline\">smartmon.sh</code> needs <code class=\"inline\">jq</code>, runs on a 15-min cron, and is run once here so the metric exists immediately. The <strong>Disks &amp; SMART</strong> Grafana dashboard graphs it.</p>"
+          },
+          {
+            "cmd": "# @where: Pi · host shell — same export on the Pi (its node_exporter now has the textfile collector)\ncd ~/home-server\napt -y install smartmontools jq\nmkdir -p /var/lib/node_exporter/textfile_collector\ncp configs/monitoring/smartmon.sh /usr/local/bin/\n( crontab -l 2>/dev/null; echo \"*/15 * * * * /usr/local/bin/smartmon.sh\" ) | crontab -\n/usr/local/bin/smartmon.sh    # NVMe reports SMART; a microSD-only Pi writes nothing (expected)"
           },
           {
             "callout": "note",
@@ -2436,11 +2439,11 @@ var STAGES = [
         ],
         "verify": [
           {
-            "cmd": "# @where: Each NUC · host shell\n./configs/verify.sh J3"
+            "cmd": "# @where: Each NUC + Pi · host shell\n./configs/verify.sh J3"
           },
-          "Expect every line PASS."
+          "Expect every line PASS. The Pi needs its pi-stack redeployed once (for the node_exporter textfile collector) before its SMART metric appears."
         ],
-        "device": "Each NUC"
+        "device": "Each NUC + Pi"
       },
       {
         "id": "J4",
