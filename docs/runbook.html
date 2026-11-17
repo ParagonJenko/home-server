@@ -2216,17 +2216,17 @@ var STAGES = [
           {
             "callout": "note",
             "title": "Two ways in — pick the subnet router",
-            "html": "<p><strong>Subnet router (recommended):</strong> one Tailscale node advertises the whole LAN, and <em>every</em> service — Plex, Frigate, HA, AMP, Grafana, Proxmox, PBS, the Arrs — becomes reachable remotely by its normal IP/name with nothing installed on them. <strong>Per-service</strong> (the alternative below) installs Tailscale inside each box; only worth it if you want per-service Tailscale ACLs, and it means the tun shim for every unprivileged LXC and the Tailscale add-on for HAOS.</p>"
+            "html": "<p><strong>Subnet router (recommended):</strong> advertise the whole LAN from <strong>both NUCs</strong> (one active, one standby — automatic failover), and <em>every</em> service — Plex, Frigate, HA, AMP, Grafana, Proxmox, PBS, the Arrs — becomes reachable remotely by its normal IP/name with nothing installed on them. <strong>Per-service</strong> (the alternative below) installs Tailscale inside each box; only worth it if you want per-service Tailscale ACLs, and it means the tun shim for every unprivileged LXC and the Tailscale add-on for HAOS.</p>"
           },
           {
-            "cmd": "# @where: an ALWAYS-ON host (a NUC — not something you power down) · host shell\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up --advertise-routes=192.168.1.0/24 --accept-dns=false"
+            "cmd": "# @where: BOTH NUCs · host shell — run on each; Tailscale makes one active and\n# fails over to the other if that box goes down, so remote access survives either NUC.\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up --advertise-routes=192.168.1.0/24 --accept-dns=false"
           },
           {
             "manual": {
               "where": "Tailscale admin console + your devices",
               "steps": [
-                "Authenticate the router via the printed URL.",
-                "Admin console → <strong>Machines</strong> → the router host → <strong>approve</strong> the <code class=\"inline\">192.168.1.0/24</code> subnet route (routes aren't active until approved).",
+                "Authenticate <strong>each NUC</strong> via its printed URL.",
+                "Admin console → <strong>Machines</strong> → for <strong>both</strong> NUCs, <strong>approve</strong> the <code class=\"inline\">192.168.1.0/24</code> subnet route (routes aren't active until approved). With both approved, Tailscale runs one as primary and auto-fails-over to the other — so remote access, including to troubleshoot a wedged NUC, survives either box going down.",
                 "Admin console → <strong>DNS</strong> → add nameserver <code class=\"inline\">192.168.1.4</code> (the Pi) as a <strong>split DNS</strong> route for <code class=\"inline\">home.alexjenkinson.com</code>. Remote devices then resolve <code class=\"inline\">frigate.home.alexjenkinson.com</code>, <code class=\"inline\">homeassistant.home.alexjenkinson.com</code>, etc. — those point at LAN IPs the route reaches.",
                 "On each device you roam with: <code class=\"inline\">tailscale up</code>. The whole LAN is now reachable by name, no port forwarding."
               ]
@@ -2246,7 +2246,7 @@ var STAGES = [
             "cmd": "# @where: Each host/container you expose (per-service alternative)\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up"
           }
         ],
-        "device": "An always-on host (NUC)"
+        "device": "Both NUCs"
       },
       {
         "id": "I2",
