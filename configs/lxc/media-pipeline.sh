@@ -69,14 +69,4 @@ say "start the core apps (qBittorrent + Arr stack)"
 pct exec "$CTID" -- bash -c 'cd /opt/media-pipeline && docker compose up -d \
   qbittorrent sonarr radarr bazarr prowlarr flaresolverr'
 
-IP="$(pct exec "$CTID" -- hostname -I | awk '{print $1}')"
-ok "Core stack up. Once nginx (LXC 240) + AdGuard rewrites are in, reach them by name:"
-echo "     qbittorrent.home.alexjenkinson.com  sonarr.home.alexjenkinson.com  radarr.home.alexjenkinson.com  bazarr.home.alexjenkinson.com  prowlarr.home.alexjenkinson.com"
-echo "   Until DNS resolves, use this LXC's IP directly:"
-echo "     qBittorrent http://${IP}:8080   Sonarr http://${IP}:8989   Radarr http://${IP}:7878"
-echo "     Prowlarr    http://${IP}:9696   Bazarr http://${IP}:6767"
-echo "   Phase 2 — set a qBittorrent password in its WebUI (http://${IP}:8080) first, then:"
-echo "     pct exec ${CTID} -- bash /opt/media-pipeline/fill-arr-keys.sh    # Arr keys -> .env"
-echo "     ./configs/media-pipeline/set-qbit-pass.sh                        # record that password -> .env"
-echo "     pct exec ${CTID} -- bash -c 'cd /opt/media-pipeline && docker compose up -d --force-recreate recyclarr decluttarr qbit_manage'"
-echo "     pct exec ${CTID} -- bash -c 'cd /opt/media-pipeline && python3 arr-setup.py --apply'"
+ok "Core apps up — qBittorrent + Arr stack running (phase 2 is manual; recyclarr/decluttarr/qbit_manage wait for .env keys)."

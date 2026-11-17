@@ -16,12 +16,7 @@ if (cd /opt/pi-stack && docker compose up -d adguardhome >/dev/null 2>&1); then
   ok "  adguardhome container up"
 else warn "  docker compose up failed"; FAIL=1; fi
 
-PI_IP="$(hostname -I | awk '{print $1}')"
-pause "AdGuard wizard — open http://${PI_IP}:3000 and:
-   1. set the admin interface to PORT 8081 (Grafana owns 3000)
-   2. create an admin username + password
-   3. set upstream DNS to 1.1.1.1
-   Press Enter when the wizard is finished."
+pause "Finish the AdGuard first-run wizard (runbook D3), then press Enter to push the rewrites."
 
 say "push the DNS rewrites from network.md over the API (no typing 18 entries by hand)"
 ask ADGUARD_USERNAME "AdGuard admin username (the one you just set in the wizard)"

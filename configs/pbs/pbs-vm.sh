@@ -32,6 +32,4 @@ say "attach the USB HDD ($USB_BY_ID) as scsi1, backup=0"
 qm set 900 --scsi1 "${USB_BY_ID},backup=0"
 qm start 900
 
-echo "Now install PBS from the VM console (static 192.168.1.5). Then switch boot off the ISO:"
-echo "  qm set 900 --boot order=scsi0 ; qm set 900 --ide2 none"
-echo "Then copy configs/pbs/datastore-setup.sh to the PBS VM and run it there."
+ok "PBS VM 900 created and started (booting the installer ISO)."
