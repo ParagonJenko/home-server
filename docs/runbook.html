@@ -2181,9 +2181,19 @@ var STAGES = [
             "callout": "gotcha",
             "title": "A bad webhook looks healthy",
             "html": "Alertmanager validates the URL per-notification, not at startup, so the container comes up fine either way. If nothing arrives, read <code class=\"inline\">docker compose logs alertmanager</code> — the failure is in there, not in the container's state."
+          },
+          {
+            "callout": "gotcha",
+            "title": "\"permission denied\" reading the webhook file",
+            "html": "<p>If the log shows <code class=\"inline\">read webhook_url_file: ... permission denied</code>, the file is <code class=\"inline\">root:root 600</code> but the <code class=\"inline\">prom/alertmanager</code> container runs as uid <strong>65534 (nobody)</strong>, so it can't read it. <code class=\"inline\">setup-pi.sh</code> now chowns it to 65534; if you hit it on an older deploy, fix it in place (keeps 600):</p><p><code class=\"inline\">chown 65534:65534 /opt/pi-stack/alertmanager/discord-webhook-url</code> — then fire the test alert again (no restart needed; the file is read per-notification).</p>"
           }
         ],
-        "verify": "The message reaches Discord within ~30s, and a resolved notice follows when it expires. Then check Prometheus → Alerts lists DiskUsageHigh, ThinPoolMetadataHigh, ServiceDown, ProbeFailed and InternalDNSBroken.",
+        "verify": [
+          {
+            "cmd": "# @where: Pi · shell — fires a REAL test alert to Discord, then checks delivery:\n./configs/verify.sh H4"
+          },
+          "Checks Prometheus loaded all five rules (DiskUsageHigh, ThinPoolMetadataHigh, ServiceDown, ProbeFailed, InternalDNSBroken), fires a test alert, and confirms Alertmanager delivered it to Discord with <strong>no failed notifications</strong> (<code class=\"inline\">alertmanager_notifications_failed_total</code> stays 0 — i.e. the webhook returned 2xx). The one thing it can't check is your eyes: confirm the message actually appears in the Discord channel, and that a resolved notice follows when it expires."
+        ],
         "device": "Pi"
       }
     ]

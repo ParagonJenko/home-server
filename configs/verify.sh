@@ -92,6 +92,27 @@ case "$STEP" in
     curl -s localhost:9100/metrics 2>/dev/null | grep -q lvm_thinpool \
       && yes_ "node_exporter exposes lvm_thinpool" || no_ "lvm_thinpool metric (node_exporter + check-thinpool.sh)"
     ;;
+  H4)
+    # Sends a REAL test alert to your Discord channel — that's the point of this check.
+    AM=http://localhost:9093; PROM=http://localhost:9090
+    COMPOSE="docker compose -f /opt/pi-stack/docker-compose.yaml"
+    # 1. Prometheus loaded every alert rule
+    rules="$(curl -s "${PROM}/api/v1/rules" 2>/dev/null)"
+    for a in DiskUsageHigh ThinPoolMetadataHigh ServiceDown ProbeFailed InternalDNSBroken; do
+      printf '%s' "$rules" | grep -q "\"$a\"" && yes_ "rule ${a} loaded" || no_ "rule ${a} NOT loaded in Prometheus"
+    done
+    # 2. Fire a test alert, confirm Alertmanager accepts it and delivers to Discord with no failure
+    fail0="$(curl -s "${AM}/metrics" 2>/dev/null | awk '/^alertmanager_notifications_failed_total.*discord/{s+=$2} END{print s+0}')"
+    $COMPOSE exec -T alertmanager amtool alert add alertname=VerifyH4 severity=warning instance=pi \
+      --alertmanager.url="$AM" >/dev/null 2>&1
+    sleep 10
+    curl -s "${AM}/api/v2/alerts" 2>/dev/null | grep -q VerifyH4 \
+      && yes_ "test alert accepted by Alertmanager" || no_ "test alert not visible in Alertmanager (amtool/compose ok?)"
+    sent="$(curl -s "${AM}/metrics" 2>/dev/null | awk '/^alertmanager_notifications_total.*discord/{s+=$2} END{print s+0}')"
+    fail1="$(curl -s "${AM}/metrics" 2>/dev/null | awk '/^alertmanager_notifications_failed_total.*discord/{s+=$2} END{print s+0}')"
+    awk "BEGIN{exit !(${sent:-0}>0)}"            && yes_ "Discord notifications recorded (total=${sent})" || no_ "no Discord notification sent — is the webhook pasted into discord-webhook-url?"
+    awk "BEGIN{exit !(${fail1:-0}<=${fail0:-0})}" && yes_ "no new failed Discord deliveries"            || no_ "Discord delivery FAILED (failed ${fail0} -> ${fail1}) — bad webhook URL; see: docker compose logs alertmanager"
+    ;;
   J3)
     curl -s localhost:9100/metrics 2>/dev/null | grep -q smartmon \
       && yes_ "smartmon metrics present" || no_ "smartmon metrics (smartmon.sh cron)"

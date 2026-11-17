@@ -70,6 +70,9 @@ say "secrets — Grafana password (generated here) + Discord webhook (pasted her
       warn "  skipped — paste it into /opt/pi-stack/alertmanager/discord-webhook-url before H1"
     fi
   fi
+  # The alertmanager container runs as uid 65534 (nobody) and reads this file at notify time.
+  # A root:root 600 file gives it "permission denied" — hand ownership to the container user.
+  chown 65534:65534 alertmanager/discord-webhook-url 2>/dev/null || true
 ) || FAIL=1
 
 echo
