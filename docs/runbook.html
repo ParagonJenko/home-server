@@ -2267,22 +2267,11 @@ var STAGES = [
           },
           {
             "callout": "note",
-            "title": "Context",
-            "html": "<p>Then the no-literal-IPs check, from the repo root:</p>"
-          },
-          {
-            "callout": "note",
-            "title": "What may appear",
-            "html": "In <code class=\"inline\">configs/</code> (service configs): only the Pi (nginx resolver, <code class=\"inline\">--nameserver</code>) and the gateway; <code class=\"inline\">127.0.0.1</code> is fine (go2rtc's local restream). The static infra IPs — NUC <code class=\"inline\">.2</code>/<code class=\"inline\">.3</code>, PBS <code class=\"inline\">.5</code> — are device/install config, not service config: expected in <code class=\"inline\">/etc/network/interfaces</code> or the installer, but a literal to remove if the grep finds one inside <code class=\"inline\">configs/</code>."
-          },
-          {
-            "cmd": "# @where: Each NUC · host shell\ngrep -rnE '\\b([0-9]{1,3}\\.){3}[0-9]{1,3}\\b' configs/ | grep -v '127\\.0\\.0\\.1'"
-          },
-          {
-            "cmd": "# @where: Each NUC · host shell\n# R8: reserved-blocks actually set (don't assume) — root + container storage + DAS + USB HDD\ntune2fs -l $(findmnt -no SOURCE /) | grep -i 'reserved block count'\nlsblk -f    # then tune2fs -l each data filesystem to confirm its -m"
+            "title": "What verify.sh I2 covers",
+            "html": "<p>One command now checks the lot per host: rootfs size caps (R6); no rootfs on the media pool, plus the mergerfs headroom, branch-dependency and container mount-dependency guardrails where the pool exists (R8/R9); reserved blocks on every mounted ext4 filesystem (R8); and no unexpected literal IPs in <code class=\"inline\">configs/</code> (R13).</p><p>The R13 check allows the known literals — the Pi resolver (<code class=\"inline\">.4</code>), gateway, <code class=\"inline\">127.0.0.1</code>, <code class=\"inline\">1.1.1.1</code>, network CIDRs, and the static-infra bootstrap IPs (NUCs <code class=\"inline\">.2</code>/<code class=\"inline\">.3</code>, PBS <code class=\"inline\">.5</code>, HA <code class=\"inline\">.25</code>, Plex <code class=\"inline\">.22</code>) — and FAILs only on a new one that should be a DNS name.</p>"
           }
         ],
-        "verify": "<code class=\"inline\">verify.sh I2</code> is all PASS/n-a on each host — on NUC-2 the media-pool and media-container checks read <em>n/a</em> (not FAIL), because that stack lives on NUC-1. The IP grep returns only the Pi and the gateway; reserved blocks confirmed on each data filesystem.",
+        "verify": "<code class=\"inline\">verify.sh I2</code> is all PASS/n-a on each host — NUC-2's media-pool and media-container checks read <em>n/a</em>, not FAIL. It now also scripts the two checks that used to be eyeballed: no unexpected literal IPs in <code class=\"inline\">configs/</code> (R13) and reserved blocks on each ext4 filesystem (R8).",
         "device": "Each NUC"
       },
       {

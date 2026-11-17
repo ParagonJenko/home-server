@@ -145,6 +145,30 @@ case "$STEP" in
         || no_ "CT ${id} would start against an empty dir — apply_requires_mount (R9)"
     done
     [ -z "$mfound" ] && yes_ "no media-mount containers on this host — check n/a"
+    # R13: no UNEXPECTED literal IPs in configs/. Allowed: the Pi resolver (.4, the documented
+    # exception), gateway (.1), localhost, public DNS 1.1.1.1 (install-time + AdGuard upstream),
+    # network CIDRs, and the static-infra bootstrap IPs reached before DNS is guaranteed
+    # (NUCs .2/.3, PBS .5, HA .25, Plex custom-URL .22).
+    ALLOW="127.0.0.1 1.1.1.1 192.168.1.1 192.168.1.4 192.168.1.0 100.64.0.0 192.168.1.2 192.168.1.3 192.168.1.5 192.168.1.22 192.168.1.25"
+    badip=""
+    while IFS= read -r ip; do
+      case " $ALLOW " in *" $ip "*) continue;; esac
+      badip="${badip} ${ip}"
+    done < <(grep -rhoE '([0-9]{1,3}\.){3}[0-9]{1,3}' configs/ 2>/dev/null | sort -u)
+    [ -z "$badip" ] && yes_ "no unexpected literal IPs in configs/ (only Pi/gateway/infra-bootstrap) (R13)" \
+      || no_ "unexpected literal IP(s) in configs/ — should be DNS names (R13):${badip}  (grep -rn to find them)"
+    # R8: reserved blocks set on each mounted ext4 filesystem (root + DAS -m1), so a full data
+    # disk still leaves root headroom.
+    while read -r src tgt fst; do
+      [ "$fst" = ext4 ] || continue
+      rb="$(tune2fs -l "$src" 2>/dev/null | awk -F: '/Reserved block count/{gsub(/ /,"",$2);print $2}')"
+      bc="$(tune2fs -l "$src" 2>/dev/null | awk -F: '/Block count/ && !/Reserved/{gsub(/ /,"",$2);print $2; exit}')"
+      if [ -n "$rb" ] && [ "$rb" -gt 0 ] 2>/dev/null; then
+        yes_ "reserved blocks set on ${tgt} ($(awk "BEGIN{printf \"%.1f%%\", ($rb/${bc:-1})*100}"))"
+      else
+        no_ "NO reserved blocks on ${tgt} (${src}) — set with: tune2fs -m 1 ${src} (R8)"
+      fi
+    done < <(findmnt -rno SOURCE,TARGET,FSTYPE 2>/dev/null)
     ;;
   J3)
     curl -s localhost:9100/metrics 2>/dev/null | grep -q smartmon \
