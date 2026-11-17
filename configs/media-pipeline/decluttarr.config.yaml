@@ -12,8 +12,14 @@ instances:
   radarr:
     - base_url: http://radarr:7878
       api_key: !ENV RADARR_API_KEY
+
+# The download client goes in its own section (NOT under instances). 'name' matches the
+# qBittorrent client name Sonarr/Radarr use, so decluttarr can read torrent state for the
+# qBit-aware jobs (metadata-missing, stalled).
+download_clients:
   qbittorrent:
     - base_url: http://qbittorrent:8080
+      name: qBittorrent
       username: !ENV QBIT_USER
       password: !ENV QBIT_PASS
 
