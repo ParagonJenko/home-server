@@ -1,0 +1,87 @@
+{
+  "uid": "home-assistant",
+  "title": "Home Assistant",
+  "tags": ["homelab", "home-assistant"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    { "id": 1, "type": "row", "title": "💡 Lights (Hue)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
+    {
+      "id": 2, "type": "stat", "title": "Lights on",
+      "description": "If HA panels are No data, enable the Prometheus integration + token (see monitoring-exporters.md) and check: curl -s -H \"Authorization: Bearer <token>\" http://homeassistant.home.alexjenkinson.com/api/prometheus | grep homeassistant_",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "text", "value": null }, { "color": "yellow", "value": 1 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "targets": [ { "refId": "A", "expr": "sum(homeassistant_light_state) or vector(0)" } ]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Light states",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 20, "x": 4, "y": 1 },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "OFF", "color": "dark-blue" }, "1": { "text": "ON", "color": "yellow" } } } ] }, "overrides": [] },
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
+      "targets": [ { "refId": "A", "expr": "homeassistant_light_state", "legendFormat": "{{friendly_name}}" } ]
+    },
+
+    { "id": 4, "type": "row", "title": "🌡️ Climate & environment", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "panels": [] },
+    {
+      "id": 5, "type": "timeseries", "title": "Temperature",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "fieldConfig": { "defaults": { "unit": "celsius" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "homeassistant_sensor_temperature_celsius", "legendFormat": "{{friendly_name}}" } ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Humidity",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "homeassistant_sensor_humidity_percent", "legendFormat": "{{friendly_name}}" } ]
+    },
+
+    { "id": 7, "type": "row", "title": "🔋 Batteries & power", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 }, "panels": [] },
+    {
+      "id": 8, "type": "bargauge", "title": "Battery levels",
+      "description": "Low batteries surface in red. Metric is homeassistant_battery_level_percent (device_class battery).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 20 }, { "color": "green", "value": 50 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal", "displayMode": "gradient" },
+      "targets": [ { "refId": "A", "expr": "homeassistant_battery_level_percent", "legendFormat": "{{friendly_name}}" } ]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Power draw",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "fieldConfig": { "defaults": { "unit": "watt" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "homeassistant_sensor_power_w", "legendFormat": "{{friendly_name}}" } ]
+    },
+
+    { "id": 10, "type": "row", "title": "🗑️ Waste collection", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 }, "panels": [] },
+    {
+      "id": 11, "type": "stat", "title": "Next collection (days)",
+      "description": "Matches sensors whose name mentions bin/waste/recycling/refuse and report a number of days. If No data, your bin integration may report a date (non-numeric, not exported) or a different name — adjust the regex.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "d", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 2 }, { "color": "green", "value": 4 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
+      "targets": [ { "refId": "A", "expr": "{__name__=~\"homeassistant_sensor_unit_days|homeassistant_sensor_days\", friendly_name=~\"(?i).*(bin|waste|collect|recycl|rubbish|refuse|garbage).*\"}", "legendFormat": "{{friendly_name}}" } ]
+    },
+
+    { "id": 12, "type": "row", "title": "🚪 Doors, motion & presence", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 }, "panels": [] },
+    {
+      "id": 13, "type": "stat", "title": "Binary sensors",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 30 },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "Clear", "color": "green" }, "1": { "text": "Active", "color": "orange" } } } ] }, "overrides": [] },
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
+      "targets": [ { "refId": "A", "expr": "homeassistant_binary_sensor_state{friendly_name=~\"(?i).*(door|motion|window|presence|occup|leak|smoke).*\"}", "legendFormat": "{{friendly_name}}" } ]
+    }
+  ]
+}

@@ -156,6 +156,34 @@ Then on the Pi `./configs/pi/redeploy.sh` so Prometheus picks up the `frigate` j
 
 ---
 
+## Home Assistant — native Prometheus integration  ✅
+
+HA exposes `/api/prometheus` (lights, sensors, climate, binary sensors, switches…) behind a bearer token
+— no separate exporter container. Two steps:
+
+**1. Enable it in HA.** Add the block in `configs/homeassistant/prometheus-snippet.yaml` to HA's
+`configuration.yaml` (via the File editor / Studio Code Server add-on, or HAOS SSH on :22222), then
+restart HA. The `filter.include_domains` keeps the metric set to the domains the dashboard uses.
+
+**2. Make a token + deploy.** HA → your profile (bottom-left) → **Security** → **Long-lived access
+tokens** → **Create**. Put it in `.env` as `HA_TOKEN` (the creds wizard prompts for it as step 9).
+`redeploy.sh` writes it to `/etc/prometheus/ha_token` (chowned to Prometheus's uid) and the
+`home_assistant` scrape job reads it as a bearer.
+
+**Dashboard:** Grafana → **Home Assistant** (Lights / Climate / Batteries & power / Waste collection /
+Doors & motion).
+**Verify:** Prometheus → Targets → `home_assistant` UP; `curl -s -H "Authorization: Bearer <token>" http://homeassistant.home.alexjenkinson.com/api/prometheus | grep homeassistant_ | head`.
+**Tuning:**
+- The **Waste collection** panel matches sensors named bin/waste/recycling/refuse that report a *number
+  of days*. If your bin integration reports a *date* (non-numeric → not exported) or a different name,
+  check the metric names in that `curl` and adjust the regex in `home-assistant.json`.
+- The **Binary sensors** panel filters to door/motion/window/presence/leak/smoke by name — widen or
+  narrow the regex to taste.
+- Battery metric is `homeassistant_battery_level_percent`; if empty, your HA version may use
+  `homeassistant_sensor_battery_percent` — adjust the panel.
+
+---
+
 ## Adding another exporter later
 
 1. Add the service to `configs/pi/docker-compose.yaml` (host networking, a free port).

@@ -121,6 +121,10 @@ echo "[8] AdGuard"
 ask        ADGUARD_USER "AdGuard username" "${SUG[ADGUARD_USER]:-}"
 ask_secret ADGUARD_PASS "AdGuard password"
 
+# --- 9. Home Assistant -----------------------------------------------------
+echo "[9] Home Assistant  (enable the Prometheus integration in HA first — see monitoring-exporters.md)"
+ask_secret HA_TOKEN "HA long-lived token (HA profile -> Security -> Long-lived access tokens -> Create)"
+
 echo
 echo "All saved to $ENV."
 if yn "Restart the stack now (docker compose up -d)?"; then

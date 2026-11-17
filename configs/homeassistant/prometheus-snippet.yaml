@@ -1,0 +1,21 @@
+# homeassistant/prometheus-snippet.yaml — add this block to Home Assistant's configuration.yaml to
+# expose metrics at /api/prometheus (lights, sensors, climate, binary sensors, switches…). Prometheus
+# scrapes it with the HA_TOKEN bearer (see configs/pi/prometheus/prometheus.yml job home_assistant).
+#
+# Edit configuration.yaml via the HA UI (Settings → Add-ons → File editor / Studio Code Server) or
+# HAOS SSH (port 22222), paste this, then Developer Tools → YAML → Restart (or Quick reload where it
+# offers it). Verify: Developer Tools → Template, or just curl /api/prometheus with the token.
+#
+# 'filter' keeps the metric set sane — include the domains you actually want on the dashboard. Add or
+# drop domains to taste; without a filter HA exports *every* entity (noisy).
+
+prometheus:
+  namespace: homeassistant        # metrics come out as homeassistant_* (what the dashboard expects)
+  filter:
+    include_domains:
+      - light                     # Hue + any other lights
+      - sensor                    # temperature, humidity, battery, power, waste-collection days, …
+      - binary_sensor            # doors, motion, presence
+      - switch
+      - climate                   # thermostats / TRVs
+      - device_tracker

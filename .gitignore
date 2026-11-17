@@ -61,3 +61,7 @@ configs/pi/adguard.creds
 
 # pve-exporter rendered config (holds the token)
 **/pve/pve.yml
+
+# Home Assistant bearer token rendered for Prometheus
+configs/pi/prometheus/ha_token
+**/prometheus/ha_token

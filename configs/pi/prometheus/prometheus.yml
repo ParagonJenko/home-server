@@ -138,3 +138,15 @@ scrape_configs:
   - job_name: frigate
     metrics_path: /metrics
     static_configs: [ { targets: ['frigate-lxc.home.alexjenkinson.com:9101'] } ]
+
+  # ---- Home Assistant (native Prometheus integration) ----
+  # HA exposes /api/prometheus (lights, sensors, climate, binary sensors…) behind a bearer token.
+  # redeploy.sh renders /etc/prometheus/ha_token from HA_TOKEN in .env; enable the integration in HA
+  # (configs/homeassistant/prometheus-snippet.yaml). See runbooks/monitoring-exporters.md "Home Assistant".
+  - job_name: home_assistant
+    metrics_path: /api/prometheus
+    scheme: http
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/ha_token
+    static_configs: [ { targets: ['homeassistant.home.alexjenkinson.com:80'] } ]

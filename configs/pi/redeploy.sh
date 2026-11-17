@@ -40,6 +40,15 @@ EOF
 chmod 600 pve/pve.yml
 if [ -z "$tv" ]; then echo "!! PVE_TOKEN_VALUE is empty in .env — pve-exporter will fail auth until you add it (gather-exporter-creds.sh)" >&2; fi
 
+# Home Assistant bearer token for the home_assistant scrape. Prometheus needs credentials_file to
+# EXIST at config load (else it won't start), so always write the file — empty = HA scrape 401s but
+# Prometheus still runs. prom/prometheus runs as uid 65534, so chown it so the container can read it.
+ht=$(grep -m1 '^HA_TOKEN=' .env 2>/dev/null | cut -d= -f2- | sed 's/^"//; s/"$//' || true)
+printf '%s' "${ht:-}" > prometheus/ha_token
+chmod 640 prometheus/ha_token
+chown 65534:65534 prometheus/ha_token 2>/dev/null || true
+[ -n "$ht" ] || echo "!! HA_TOKEN is empty in .env — the home_assistant scrape will 401 until you add it (gather-exporter-creds.sh)" >&2
+
 docker compose up -d --remove-orphans \
   || echo "!! some containers failed to start/pull (see above) — continuing to reload core configs" >&2
 # --remove-orphans clears containers for services dropped from the compose (e.g. plex-exporter, which
