@@ -39,7 +39,8 @@ ask_secret() { # ask_secret KEY "Label"  (hidden input)
   read -rsp "  $label (blank = skip): " input; echo
   if [ -n "$input" ]; then set_env "$key" "$input"; echo "    ✓ $key saved"; else echo "    – $key skipped"; fi
 }
-yn() { local a; read -rp "  $1 [Y/n]: " a; [ "${a:-y}" != "n" ] && [ "${a:-y}" != "N" ]; }
+yn() {    local a; read -rp "  $1 [Y/n]: " a; [ "${a:-y}" != "n" ] && [ "${a:-y}" != "N" ]; }   # default YES
+yn_no() { local a; read -rp "  $1 [y/N]: " a; [ "${a:-n}"  = "y" ] || [ "${a:-n}"  = "Y" ]; }   # default NO
 
 echo "=== Exporter credential setup ===  (writes to $ENV)"
 echo "Reading what I can off the boxes first..."
@@ -65,7 +66,14 @@ echo
 
 # --- 1. Proxmox token ------------------------------------------------------
 echo "[1] Proxmox (pve-exporter)"
-if yn "Create/rotate the PVE monitoring token on nuc1 now?"; then
+pve_exists=$($S "root@$NUC1" "pveum user token list claude@pve --output-format json 2>/dev/null | grep -q '\"monitoring\"' && echo yes || echo no" 2>/dev/null)
+pve_go=0
+case "$pve_exists" in
+  no)  echo "    no PVE monitoring token yet — creating it."; pve_go=1 ;;
+  yes) if yn_no "PVE monitoring token already exists — rotate it (recreate for a fresh value)?"; then pve_go=1; else echo "    – keeping the existing PVE token"; fi ;;
+  *)   echo "    !! couldn't reach nuc1 to check."; ask PVE_TOKEN_VALUE "Paste an existing PVE token value" ;;
+esac
+if [ "$pve_go" = 1 ]; then
   v=$($S "root@$NUC1" bash -s <<'REMOTE' 2>/dev/null
 pveum user token remove claude@pve monitoring >/dev/null 2>&1
 pveum user token add claude@pve monitoring --privsep 0 --output-format json 2>/dev/null | grep -oP '"value"\s*:\s*"\K[^"]+'
@@ -73,8 +81,6 @@ pveum acl modify / --roles PVEAuditor --tokens 'claude@pve!monitoring' >/dev/nul
 REMOTE
 )
   [ -n "$v" ] && { set_env PVE_TOKEN_VALUE "$v"; echo "    ✓ PVE_TOKEN_VALUE saved ($v)"; } || echo "    !! token creation failed — does claude@pve exist?"
-else
-  ask PVE_TOKEN_VALUE "Paste an existing PVE token value"
 fi
 
 # --- 2. Plex ---------------------------------------------------------------
@@ -93,7 +99,14 @@ ask_secret QBIT_PASS "qBittorrent password"
 
 # --- 7. PBS token ----------------------------------------------------------
 echo "[7] PBS (pbs-exporter)"
-if yn "Create/rotate the PBS monitoring token now?"; then
+pbs_exists=$($S "root@$PBS" "proxmox-backup-manager user list-tokens root@pam 2>/dev/null | grep -q monitoring && echo yes || echo no" 2>/dev/null)
+pbs_go=0
+case "$pbs_exists" in
+  no)  echo "    no PBS monitoring token yet — creating it."; pbs_go=1 ;;
+  yes) if yn_no "PBS monitoring token already exists — rotate it (recreate for a fresh value)?"; then pbs_go=1; else echo "    – keeping the existing PBS token"; fi ;;
+  *)   echo "    !! couldn't reach PBS to check."; ask PBS_TOKEN_VALUE "Paste an existing PBS token value" ;;
+esac
+if [ "$pbs_go" = 1 ]; then
   v=$($S "root@$PBS" bash -s <<'REMOTE' 2>/dev/null
 proxmox-backup-manager user delete-token root@pam monitoring >/dev/null 2>&1
 proxmox-backup-manager user generate-token root@pam monitoring 2>/dev/null | grep -oP '"value"\s*:\s*"\K[^"]+'
@@ -101,8 +114,6 @@ proxmox-backup-manager acl update / Audit --auth-id 'root@pam!monitoring' >/dev/
 REMOTE
 )
   [ -n "$v" ] && { set_env PBS_TOKEN_VALUE "$v"; echo "    ✓ PBS_TOKEN_VALUE saved ($v)"; } || echo "    !! token creation failed"
-else
-  ask PBS_TOKEN_VALUE "Paste an existing PBS token value"
 fi
 
 # --- 8. AdGuard ------------------------------------------------------------
