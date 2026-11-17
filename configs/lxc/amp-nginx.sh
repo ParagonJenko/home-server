@@ -42,13 +42,7 @@ rm -f "$TMP"
 pct push 240 ../nginx/ssl.conf        /opt/nginx/ssl.conf
 pct push 240 ../nginx/enable-tls.sh   /opt/nginx/enable-tls.sh
 pct push 240 ../nginx/verify-nginx.sh /opt/nginx/verify-nginx.sh
-ok "nginx 240 up (serving its default site). TLS is one manual step away:"
-echo "   1. Cloudflare -> My Profile -> API Tokens -> Create Token:"
-echo "      'Edit zone DNS' template, Zone -> DNS -> Edit, scoped to alexjenkinson.com."
-echo "   2. Issue the wildcard + go live (replace <token>):"
-echo "      pct exec 240 -- env CF_Token=<token> bash /opt/nginx/enable-tls.sh"
-echo "   3. Verify:  pct exec 240 -- bash /opt/nginx/verify-nginx.sh"
-echo "   Store the Cloudflare token in your vault (R21)."
+ok "nginx 240 up (serving its default site). TLS is a manual step — follow Stage E3 in the runbook to issue the Cloudflare wildcard cert and go live."
 
 # --- AMP 230: game-server panel (CubeCoders, vendor-managed) ----------------
 create_ct 230 amp 40 2048
@@ -57,13 +51,4 @@ pct start 230 2>/dev/null || true
 pct exec 230 -- bash -c 'command -v curl >/dev/null || { apt-get update && apt-get install -y curl ca-certificates; }'
 pct exec 230 -- mkdir -p /opt/amp
 pct push 230 ../amp/verify-amp.sh /opt/amp/verify-amp.sh
-pause "AMP uses CubeCoders' own interactive installer — run it inside the container:
-   1. pct enter 230
-   2. bash <(curl -fsSL https://cubecoders.com/getamp.sh)
-   3. Answer the prompts: let it create the 'amp' user and install the ADS (the controller).
-   4. When asked for a licence, paste your AMP key (free tier covers one instance —
-      sign up at cubecoders.com/AMP). Then let it finish and 'exit' the container.
-   5. Note the panel URL it prints (default http://<amp-ip>:8080).
-   6. Give amp a DHCP reservation + AdGuard rewrite, and add it to network.md (R13).
-   Verify:  pct exec 230 -- bash /opt/amp/verify-amp.sh"
-ok "amp-nginx done. Finish AMP in its installer, then issue the nginx cert (steps above)."
+ok "AMP container 230 ready (curl + verify script in place). Install AMP and issue the nginx cert per Stage E3 in the runbook."
