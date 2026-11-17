@@ -4,7 +4,7 @@ services:
   frigate:
     image: ghcr.io/blakeblackshear/frigate:stable   # ENTER: pin a version tag (don't leave :stable)
     privileged: true
-    shm_size: "256mb"
+    shm_size: "512mb"        # scales with camera count + resolution; 4 cams need >256mb (Frigate warns <370)
     devices:
       - /dev/dri/renderD128:/dev/dri/renderD128
     env_file: .env            # Eufy RTSP creds (gitignored)
