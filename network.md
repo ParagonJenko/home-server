@@ -27,10 +27,10 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | pbs — VM 900 | static | `192.168.1.5` | TBD | pbs.home.alexjenkinson.com | `pvesm add pbs --server pbs.home.alexjenkinson.com` uses the name, never this IP |
 | switch — managed | static | `192.168.1.6` | TBD | — | Management address only |
 | ap — access point(s) | static | `192.168.1.7` | TBD | — | DHCP-issued DNS must also be the Pi (R14) |
-| nginx — LXC 240 | reserved | `192.168.1.20` | TBD | — | **Every front name resolves to this IP.** Fill first |
-| media-pipeline — LXC 210 | reserved | `192.168.1.21` | TBD | media-pipeline.home.alexjenkinson.com (sonarr/radarr/bazarr/prowlarr/qbittorrent.home.alexjenkinson.com) | Never proxied under its own name; it is Nginx's backend target |
-| plex — LXC 220 | reserved | `192.168.1.22` | TBD | plex-lxc.home.alexjenkinson.com (front: plex.home.alexjenkinson.com) | Backend name points here; front points at Nginx |
-| amp — LXC 230 | reserved | `192.168.1.23` | TBD | amp.home.alexjenkinson.com | Reached directly on :8080 (not proxied). Proxy later via an nginx server block if you want it under the wildcard |
+| nginx — LXC 240 | reserved | `192.168.1.20` | BC:24:11:18:CB:C0 | — | **Every front name resolves to this IP.** Fill first |
+| media-pipeline — LXC 210 | reserved | `192.168.1.21` | BC:24:11:D8:99:DD | media-pipeline.home.alexjenkinson.com (sonarr/radarr/bazarr/prowlarr/qbittorrent.home.alexjenkinson.com) | Never proxied under its own name; it is Nginx's backend target |
+| plex — LXC 220 | reserved | `192.168.1.22` | BC:24:11:2B:4B:45 | plex-lxc.home.alexjenkinson.com (front: plex.home.alexjenkinson.com) | Backend name points here; front points at Nginx |
+| amp — LXC 230 | reserved | `192.168.1.23` | BC:24:11:07:4E:37 | amp.home.alexjenkinson.com | Reached directly on :8080 (not proxied). Proxy later via an nginx server block if you want it under the wildcard |
 | frigate — LXC 111 (nuc2, privileged) | reserved | `192.168.1.24` | TBD | frigate-lxc.home.alexjenkinson.com (front: frigate.home.alexjenkinson.com) | Port 5000 is unauthenticated — never proxy/expose |
 | homeassistant — VM 910 (nuc2) | reserved | `192.168.1.25` | TBD | homeassistant.home.alexjenkinson.com | Accessed directly on :8123 (not proxied). Proxying needs `use_x_forwarded_for` + `trusted_proxies` in HA's config |
 | cam-living-room | reserved | `192.168.1.30` | TBD | cam-living-room.home.alexjenkinson.com | Frigate opens RTSP by name — a lost reservation breaks recording |
