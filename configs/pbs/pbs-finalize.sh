@@ -34,23 +34,51 @@ need_ssh(){ ssh_ok || { err "Can't SSH to ${PBS_USER}@${PBS_HOST} — run: $0 se
 # -- 1. boot order (host-side) ------------------------------------------------
 boot_switch() {
   need_vm
-  # Guard: never eject the ISO unless PBS is actually installed and answering. Otherwise we'd
-  # point boot at a blank disk and the VM lands in "unknown filesystem" at the next reboot.
-  if ! curl -sk -o /dev/null --max-time 5 "https://${PBS_HOST}:8007/" 2>/dev/null; then
-    err "PBS isn't answering on ${PBS_HOST}:8007 — the install hasn't finished."
-    warn "Run the PBS installer in the VM console first (target the 16G disk), then re-run this."
-    warn "Ejecting the ISO now would leave the VM booting a blank disk ('unknown filesystem')."
-    return 1
-  fi
-  hdr "boot order: switch off the installer ISO"
   local boot; boot="$(qm config "$VMID" 2>/dev/null | awk -F': ' '/^boot:/{print $2}')"
-  if echo "$boot" | grep -q ide2; then
-    qm set "$VMID" --boot order=scsi0
-    qm set "$VMID" --ide2 none
-    ok "boot now from scsi0; installer ISO detached — reboots go straight into PBS."
-  else
+  if ! echo "$boot" | grep -q ide2; then
     ok "already booting from the system disk (boot: ${boot:-unset}) — nothing to do."
+    return 0
   fi
+
+  # Boot is still on the installer ISO. Switching is safe only once PBS is installed on scsi0, and
+  # the host can't see that directly. If PBS answers on :8007 it's clearly installed. If not, it's
+  # EITHER not installed yet OR freshly installed and looping back into the installer (both look the
+  # same from here), so ask — switching before any install would boot a blank disk.
+  local running=0
+  if curl -sk -o /dev/null --max-time 5 "https://${PBS_HOST}:8007/" 2>/dev/null; then
+    running=1; say "PBS is answering on :8007 — installed."
+  else
+    warn "PBS isn't answering on ${PBS_HOST}:8007 yet."
+    warn "Right after install that's normal — the VM reboots back into the installer because boot"
+    warn "still points at the ISO. But if you haven't installed yet, switching now boots a blank"
+    warn "disk ('unknown filesystem')."
+    confirm "Has the PBS installer FINISHED (clicked all the way through)?" || {
+      err "Not switching — finish the installer in the VM console first, then re-run."
+      return 1
+    }
+  fi
+
+  hdr "boot order: switch off the installer ISO"
+  qm set "$VMID" --boot order=scsi0
+  qm set "$VMID" --ide2 none
+  ok "boot set to scsi0; installer ISO detached."
+
+  if [ "$running" = 1 ]; then
+    ok "PBS already running — no restart needed."
+    return 0
+  fi
+  say "restarting the VM so it boots PBS from the system disk..."
+  qm stop "$VMID" 2>/dev/null; sleep 2; qm start "$VMID" >/dev/null
+  printf "waiting for PBS on :8007"
+  local i
+  for i in $(seq 1 40); do
+    curl -sk -o /dev/null --max-time 3 "https://${PBS_HOST}:8007/" 2>/dev/null && { echo; ok "PBS is up on ${PBS_HOST}:8007."; return 0; }
+    printf "."; sleep 3
+  done
+  echo
+  err "PBS still not answering after ~2min. Check the VM console: a 'pbs login:' prompt means it's"
+  err "up but the network is wrong (should be ${PBS_HOST}); the installer screen means it didn't install."
+  return 1
 }
 
 # -- 2. datastore (over SSH, inside the PBS VM) -------------------------------
