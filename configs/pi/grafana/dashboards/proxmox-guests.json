@@ -1,0 +1,68 @@
+{
+  "uid": "proxmox-guests",
+  "title": "Proxmox guests",
+  "tags": ["homelab", "proxmox"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    { "id": 1, "type": "row", "title": "🖥️ Guests (VMs & containers)", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
+    {
+      "id": 2, "type": "stat", "title": "Guest status",
+      "description": "Running (UP) / stopped (DOWN) per VM and LXC. A guest you deliberately stopped shows DOWN — expected.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } } ] }, "overrides": [] },
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
+      "targets": [ { "refId": "A", "expr": "pve_up{id=~\"(qemu|lxc)/.*\"} * on(id) group_left(name) pve_guest_info", "legendFormat": "{{name}}" } ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Guest CPU %",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "100 * pve_cpu_usage_ratio{id=~\"(qemu|lxc)/.*\"} * on(id) group_left(name) pve_guest_info", "legendFormat": "{{name}}" } ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Guest memory %",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "100 * (pve_memory_usage_bytes{id=~\"(qemu|lxc)/.*\"} / pve_memory_size_bytes) * on(id) group_left(name) pve_guest_info", "legendFormat": "{{name}}" } ]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Guest disk % (LXC rootfs; VMs need the guest agent)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 14 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "100 * (pve_disk_usage_bytes{id=~\"(qemu|lxc)/.*\"} / pve_disk_size_bytes > 0) * on(id) group_left(name) pve_guest_info", "legendFormat": "{{name}}" } ]
+    },
+
+    { "id": 6, "type": "row", "title": "🧱 Nodes & storage", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 }, "panels": [] },
+    {
+      "id": 7, "type": "timeseries", "title": "Node CPU %",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 22 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "100 * pve_cpu_usage_ratio{id=~\"node/.*\"}", "legendFormat": "{{id}}" } ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Node memory %",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 22 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "100 * pve_memory_usage_bytes{id=~\"node/.*\"} / pve_memory_size_bytes{id=~\"node/.*\"}", "legendFormat": "{{id}}" } ]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Storage used %",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 22 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "100 * pve_disk_usage_bytes{id=~\"storage/.*\"} / pve_disk_size_bytes{id=~\"storage/.*\"}", "legendFormat": "{{id}}" } ]
+    }
+  ]
+}

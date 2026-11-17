@@ -95,3 +95,16 @@ scrape_configs:
       - { source_labels: [__address__], target_label: __param_target }
       - { source_labels: [service],     target_label: instance }
       - { target_label: __address__,    replacement: localhost:9115 }
+
+  # ---- Proxmox pve-exporter (:9221): per-VM/LXC + node metrics. Multi-target like blackbox —
+  # Prometheus passes each node's IP as ?target=, the exporter queries that node's :8006 API.
+  - job_name: pve
+    metrics_path: /pve
+    params: { module: [default] }
+    static_configs:
+      - { targets: ['192.168.1.2'], labels: { node: nuc1 } }
+      - { targets: ['192.168.1.3'], labels: { node: nuc2 } }
+    relabel_configs:
+      - { source_labels: [__address__], target_label: __param_target }
+      - { source_labels: [__param_target], target_label: instance }
+      - { target_label: __address__, replacement: localhost:9221 }

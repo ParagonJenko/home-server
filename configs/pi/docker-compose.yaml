@@ -40,5 +40,14 @@ services:
     command: [ '--collector.textfile.directory=/var/lib/node_exporter/textfile_collector' ]
     volumes: [ /var/lib/node_exporter/textfile_collector:/var/lib/node_exporter/textfile_collector:ro ]
     restart: unless-stopped
+
+  # ---- application exporters (secrets all in .env; see runbooks/monitoring-exporters.md) ----
+  # per-VM/LXC CPU/mem/disk across both nodes. Multi-target: Prometheus passes ?target=<node ip>,
+  # the exporter connects to that node's :8006 API with the PVE_* token from .env. Binds :9221.
+  pve-exporter:
+    image: prompve/prometheus-pve-exporter:latest
+    network_mode: host
+    env_file: .env
+    restart: unless-stopped
 volumes:
   grafana-data:
