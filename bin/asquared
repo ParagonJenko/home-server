@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# hl — homelab CLI. Day-2 operations wrapper. Run it on whichever box; the box-specific
-# commands check where they are. Install once per box:  ln -s "$PWD/bin/hl" /usr/local/bin/hl
+# asquared — homelab CLI. Day-2 operations wrapper. Run it on whichever box; the box-specific
+# commands check where they are. Install once per box:  ln -s "$PWD/bin/asquared" /usr/local/bin/asquared
 # Full procedures (adding guests, DNS/DHCP changes, recovery) are in runbooks/operations.md.
 set -uo pipefail
 REPO="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
@@ -21,18 +21,18 @@ is_pi(){ [ -d /opt/pi-stack ]; }
 is_pbs(){ command -v proxmox-backup-manager >/dev/null 2>&1; }
 
 usage(){ cat <<EOF
-${B}hl${Z} — homelab ops CLI   (repo: ${REPO})
+${B}asquared${Z} — homelab ops CLI   (repo: ${REPO})
 
-  ${B}hl status${Z}              what's running here + reachability of the other boxes
-  ${B}hl ssh <box> [cmd]${Z}     ssh to pi|nuc1|nuc2|pbs|ha  (optionally run a command)
-  ${B}hl enter <id>${Z}          pct enter a container        (PVE host)
-  ${B}hl start|stop|restart <id>${Z}   control a guest        (PVE host)
-  ${B}hl logs <id|service>${Z}   guest console log, or a Pi docker service's logs
-  ${B}hl update${Z}              update this box (apt / docker), with confirm
-  ${B}hl backup <id>${Z}         back a guest up to PBS right now   (PVE host)
-  ${B}hl dns${Z}                 re-apply AdGuard rewrites from network.md   (Pi)
-  ${B}hl verify <STEP>${Z}       run ./configs/verify.sh <STEP>
-  ${B}hl help${Z}                this
+  ${B}asquared status${Z}              what's running here + reachability of the other boxes
+  ${B}asquared ssh <box> [cmd]${Z}     ssh to pi|nuc1|nuc2|pbs|ha  (optionally run a command)
+  ${B}asquared enter <id>${Z}          pct enter a container        (PVE host)
+  ${B}asquared start|stop|restart <id>${Z}   control a guest        (PVE host)
+  ${B}asquared logs <id|service>${Z}   guest console log, or a Pi docker service's logs
+  ${B}asquared update${Z}              update this box (apt / docker), with confirm
+  ${B}asquared backup <id>${Z}         back a guest up to PBS right now   (PVE host)
+  ${B}asquared dns${Z}                 re-apply AdGuard rewrites from network.md   (Pi)
+  ${B}asquared verify <STEP>${Z}       run ./configs/verify.sh <STEP>
+  ${B}asquared help${Z}                this
 
 Adding a VM/container, DNS/DHCP changes, recovery: ${B}runbooks/operations.md${Z}.
 EOF
@@ -67,10 +67,10 @@ cmd_ssh(){
 
 need_pve(){ is_pve || { err "this command runs on a Proxmox host (nuc1/nuc2)."; exit 1; }; }
 
-cmd_enter(){ need_pve; pct enter "${1:?usage: hl enter <ctid>}"; }
+cmd_enter(){ need_pve; pct enter "${1:?usage: asquared enter <ctid>}"; }
 
 cmd_ctl(){ # start|stop|restart <id>
-  need_pve; local act="$1" id="${2:?usage: hl ${1} <id>}"
+  need_pve; local act="$1" id="${2:?usage: asquared ${1} <id>}"
   local kind; if pct status "$id" >/dev/null 2>&1; then kind=pct; elif qm status "$id" >/dev/null 2>&1; then kind=qm; else err "no guest ${id} here"; exit 1; fi
   case "$act" in
     start)   $kind start "$id";;
@@ -80,7 +80,7 @@ cmd_ctl(){ # start|stop|restart <id>
 }
 
 cmd_logs(){ # container console, or Pi docker service
-  local t="${1:?usage: hl logs <ctid|vmid|service>}"
+  local t="${1:?usage: asquared logs <ctid|vmid|service>}"
   if is_pve && [[ "$t" =~ ^[0-9]+$ ]]; then
     if pct status "$t" >/dev/null 2>&1; then pct exec "$t" -- journalctl -n 100 --no-pager 2>/dev/null || journalctl -u "pve-container@${t}" -n 100 --no-pager
     else qm terminal "$t"; fi
@@ -102,7 +102,7 @@ cmd_update(){
   fi
 }
 
-cmd_backup(){ need_pve; local id="${1:?usage: hl backup <id>}"
+cmd_backup(){ need_pve; local id="${1:?usage: asquared backup <id>}"
   confirm "vzdump ${id} to pbs-backup now?" || exit 0
   vzdump "$id" --storage pbs-backup --mode snapshot
 }
@@ -112,7 +112,7 @@ cmd_dns(){ is_pi || { err "run this on the Pi (it holds AdGuard)."; exit 1; }
   "${REPO}/configs/pi/adguard-rewrites.py" --apply
 }
 
-cmd_verify(){ "${REPO}/configs/verify.sh" "${1:?usage: hl verify <STEP>}"; }
+cmd_verify(){ "${REPO}/configs/verify.sh" "${1:?usage: asquared verify <STEP>}"; }
 
 case "${1:-help}" in
   status)  cmd_status;;
