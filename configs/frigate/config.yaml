@@ -31,6 +31,23 @@ record:
       days: 14
       mode: motion
 
+# Object detection on the Intel iGPU (OpenVINO) — much faster than the CPU default, no extra hardware.
+# Uses the ssdlite_mobilenet_v2 model bundled in the Frigate image (verified present in /openvino-model);
+# /dev/dri is passed through by frigate.sh (privileged LXC). If the GPU ever fails to init, Frigate logs
+# the error and this is the first thing to check — a bad detector drops the whole config to safe mode.
+detectors:
+  ov:
+    type: openvino
+    device: GPU
+
+model:
+  width: 300
+  height: 300
+  input_tensor: nhwc
+  input_pixel_format: bgr
+  path: /openvino-model/ssdlite_mobilenet_v2.xml
+  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+
 # go2rtc restreams each camera once and Frigate pulls from it on localhost. Eufy RTSP is
 # finicky for ffmpeg to consume directly, so go2rtc sits in front (it also powers the live view).
 # The {VAR}s resolve from .env; the cam-*.home.alexjenkinson.com names must resolve FROM INSIDE
