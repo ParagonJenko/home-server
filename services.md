@@ -12,6 +12,7 @@ The service map and the Nginx routing table. Every proxied service has two DNS n
 | FlareSolverr | nuc1 | LXC 210 | 8191 | internal only |
 | Maintainerr | nuc1 | LXC 210 | 6246 | reached directly (add a front name later) |
 | Tdarr | nuc1 | LXC 210 | 8265 (UI), 8266 (node) | reached directly |
+| maintainerr-keeper (Discord bot) | nuc1 | LXC 210 | — (outbound gateway only) | — |
 | Plex | nuc1 | LXC 220 | 32400 | via front name |
 | AMP | nuc1 | LXC 230 | TBD | — |
 | Frigate | nuc2 | LXC 111 | 8971 (auth UI), 5000 (**unauth — never expose**) | via front name |

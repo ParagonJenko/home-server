@@ -114,3 +114,23 @@ services:
       - /data/.tdarr_cache:/temp         # transcode scratch — on the pool, not the capped rootfs
     mem_limit: 2g
     restart: unless-stopped
+
+  # maintainerr-keeper — Discord bot: puts 🟢 Keep / 🗑️ Delete buttons on Maintainerr cleanup
+  # candidates so anyone can protect or remove a title from Discord (configs/media-pipeline/
+  # maintainerr-keeper/bot.py). Gateway/outbound-only — no inbound ports (R20). Keep -> Maintainerr
+  # exclusion; Delete -> Radarr/Sonarr delete-with-files via the TMDB/TVDB id. Reaches maintainerr/
+  # radarr/sonarr by service name on this compose network. Token + channel id come from .env
+  # (gather-keeper-creds.sh); it reuses the RADARR_API_KEY/SONARR_API_KEY already there.
+  maintainerr-keeper:
+    image: python:3.12-slim                # ENTER: pin a digest if you want it reproducible
+    command: sh -c "pip install -q --no-cache-dir -r /app/requirements.txt && exec python -u /app/bot.py"
+    env_file: .env                         # DISCORD_BOT_TOKEN, DISCORD_CHANNEL_ID, RADARR/SONARR keys, DRY_RUN
+    environment:
+      MAINTAINERR_URL: "http://maintainerr:6246"
+      RADARR_URL: "http://radarr:7878"
+      SONARR_URL: "http://sonarr:8989"
+    volumes:
+      - /opt/maintainerr-keeper:/app       # bot.py + requirements.txt (pushed by media-pipeline.sh)
+      - /opt/maintainerr-keeper/data:/data # posted-state, so nothing is double-posted
+    mem_limit: 256m
+    restart: unless-stopped

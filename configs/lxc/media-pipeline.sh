@@ -79,6 +79,12 @@ pct exec "$CTID" -- bash -c 'mkdir -p /opt/maintainerr/data /opt/tdarr/server /o
 # /data/.tdarr_cache owned by 1000. (mkdir -p via `pct exec` here fails: Permission denied.)
 mkdir -p /mnt/media/.tdarr_cache && chown 1000:1000 /mnt/media/.tdarr_cache
 
+# maintainerr-keeper (Discord Keep/Delete bot). Deploy its code now; it is NOT started here — it
+# needs the bot token first (gather-keeper-creds.sh), so starting it blind just crash-loops it.
+pct exec "$CTID" -- mkdir -p /opt/maintainerr-keeper/data
+pct push "$CTID" ../media-pipeline/maintainerr-keeper/bot.py /opt/maintainerr-keeper/bot.py
+pct push "$CTID" ../media-pipeline/maintainerr-keeper/requirements.txt /opt/maintainerr-keeper/requirements.txt
+
 # Phase 1: bring up only the apps that need no secrets. recyclarr/decluttarr/qbit_manage
 # read .env (API keys + qBit creds) and have nothing to do until those exist, so they're
 # started in phase 2 after the keys are filled — starting them now just crash-loops them.
@@ -87,3 +93,4 @@ pct exec "$CTID" -- bash -c 'cd /opt/media-pipeline && docker compose up -d \
   qbittorrent sonarr radarr bazarr prowlarr flaresolverr maintainerr tdarr'
 
 ok "Core apps up — qBittorrent + Arr stack running (phase 2 is manual; recyclarr/decluttarr/qbit_manage wait for .env keys)."
+say "maintainerr-keeper deployed but NOT started — run ./configs/media-pipeline/gather-keeper-creds.sh to add the Discord bot token, which starts it."
