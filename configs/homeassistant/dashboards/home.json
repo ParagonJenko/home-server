@@ -296,6 +296,53 @@
               }
             }
           ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Cleaning",
+              "icon": "mdi:robot-vacuum"
+            },
+            {
+              "type": "custom:mushroom-vacuum-card",
+              "entity": "vacuum.robovac",
+              "name": "RoboVac",
+              "icon": "mdi:robot-vacuum",
+              "commands": [
+                "start_pause",
+                "stop",
+                "locate",
+                "return_home"
+              ],
+              "fill_container": true,
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "custom:mushroom-chips-card",
+              "chips": [
+                {
+                  "type": "template",
+                  "entity": "vacuum.robovac",
+                  "icon": "mdi:battery",
+                  "content": "{{ state_attr(\"vacuum.robovac\",\"battery_level\") | default(\"?\") }}%"
+                },
+                {
+                  "type": "template",
+                  "entity": "vacuum.robovac",
+                  "icon": "mdi:robot-vacuum",
+                  "content": "{{ states(\"vacuum.robovac\") | title }}",
+                  "icon_color": "{{ \"red\" if is_state(\"vacuum.robovac\",\"error\") else \"blue\" }}"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
         }
       ]
     },
