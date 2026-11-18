@@ -141,6 +141,7 @@ services:
     network_mode: host
     environment:
       TDARR_URL: "http://media-pipeline.home.alexjenkinson.com:8265"
+      TDARR_API_KEY: "${TDARR_API_KEY:-}"   # Tdarr's API key — cruddb/stats return 401 without it
       PROMETHEUS_PORT: "9114"
     restart: unless-stopped
 
