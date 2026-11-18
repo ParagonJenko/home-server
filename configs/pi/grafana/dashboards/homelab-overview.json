@@ -4,11 +4,16 @@
   "tags": ["homelab"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "30s",
   "time": { "from": "now-6h", "to": "now" },
   "templating": { "list": [] },
   "annotations": { "list": [] },
+  "links": [
+    { "title": "Tdarr transcoding", "type": "link", "url": "/d/tdarr", "icon": "external link", "tooltip": "", "targetBlank": false, "keepTime": true, "includeVars": false, "asDropdown": false, "tags": [] },
+    { "title": "Maintainerr cleanup", "type": "link", "url": "/d/maintainerr", "icon": "external link", "tooltip": "", "targetBlank": false, "keepTime": true, "includeVars": false, "asDropdown": false, "tags": [] },
+    { "title": "All homelab dashboards", "type": "dashboards", "icon": "apps", "tooltip": "", "targetBlank": false, "keepTime": true, "includeVars": false, "asDropdown": true, "tags": ["homelab"] }
+  ],
   "panels": [
     { "id": 1, "type": "row", "title": "✅ Health", "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "panels": [] },
     {
