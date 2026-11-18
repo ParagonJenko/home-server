@@ -100,3 +100,59 @@
       data:
         tag: litter_full
         group: home
+- id: '1795040260037'
+  alias: 'Bin day: Monday heads-up'
+  description: Every Monday at 12:00, tell Alex which bin is out this week (next collection within 5 days).
+  mode: single
+  triggers:
+  - trigger: time
+    at: '12:00:00'
+  conditions:
+  - condition: time
+    weekday:
+    - mon
+  actions:
+  - action: calendar.get_events
+    target:
+      entity_id: calendar.waste_collection_schedule_cheshire_east_council
+    data:
+      start_date_time: '{{ now() }}'
+      end_date_time: '{{ now() + timedelta(days=5) }}'
+    response_variable: ev
+  - variables:
+      items: '{{ ev[''calendar.waste_collection_schedule_cheshire_east_council''].events }}'
+  - condition: template
+    value_template: '{{ items | count > 0 }}'
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 🗑️ Bin this week
+      message: This week's bin is {{ items[0].summary }} — out Wednesday.
+      data:
+        tag: bin_week
+        group: home
+- id: '1795040260770'
+  alias: 'Bin day: night-before reminder'
+  description: At 20:00 the evening before a collection, remind Alex to put the right bin out.
+  mode: single
+  triggers:
+  - trigger: time
+    at: '20:00:00'
+  actions:
+  - action: calendar.get_events
+    target:
+      entity_id: calendar.waste_collection_schedule_cheshire_east_council
+    data:
+      start_date_time: '{{ today_at(''23:00'') }}'
+      end_date_time: '{{ today_at(''23:00'') + timedelta(days=1) }}'
+    response_variable: ev
+  - variables:
+      items: '{{ ev[''calendar.waste_collection_schedule_cheshire_east_council''].events }}'
+  - condition: template
+    value_template: '{{ items | count > 0 }}'
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 🌙 Bin night
+      message: Put the {{ items[0].summary }} out tonight — collection tomorrow morning.
+      data:
+        tag: bin_night
+        group: home
