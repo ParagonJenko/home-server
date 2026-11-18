@@ -51,6 +51,7 @@ PREFIXES = [p.strip() for p in os.environ.get("COLLECTION_PREFIXES", "Clear —,
 POLL_SECONDS = int(os.environ.get("POLL_SECONDS", "300"))
 STATE_FILE = os.environ.get("STATE_FILE", "/data/posted.json")
 DRY_RUN = os.environ.get("DRY_RUN", "0") not in ("0", "", "false", "False")
+SELFTEST = os.environ.get("SELFTEST", "0") not in ("0", "", "false", "False")
 
 CID = "mk"  # custom_id namespace
 
@@ -194,6 +195,14 @@ class Keeper(discord.Client):
                                      custom_id=f"{CID}|del|{cid}|{rg}|{plex_id}|{dtype}"))
         return v
 
+    def test_buttons(self):
+        v = discord.ui.View(timeout=None)
+        v.add_item(discord.ui.Button(label="Keep (test)", style=discord.ButtonStyle.success, emoji="🟢",
+                                     custom_id=f"{CID}|tkeep|0|0|0|1"))
+        v.add_item(discord.ui.Button(label="Delete (test)", style=discord.ButtonStyle.danger, emoji="🗑️",
+                                     custom_id=f"{CID}|tdel|0|0|0|1"))
+        return v
+
     async def poll_loop(self):
         await self.wait_until_ready()
         channel = self.get_channel(CHANNEL_ID) or await self.fetch_channel(CHANNEL_ID)
@@ -209,6 +218,13 @@ class Keeper(discord.Client):
             colour=0x2ECC71)
         try:
             await channel.send(embed=hello)
+            if SELFTEST:
+                await channel.send(embed=discord.Embed(
+                    title="🧪 Button self-test",
+                    description="Click either button. It proves the click → response → edit path works. "
+                                "These are **test** buttons — they never touch Maintainerr or your files, "
+                                "even in LIVE mode. Set SELFTEST=0 and restart to stop showing this.",
+                    colour=0x3498DB), view=self.test_buttons())
         except Exception as e:
             log("could not send startup message:", e)
         while not self.is_closed():
@@ -235,7 +251,10 @@ class Keeper(discord.Client):
         coll, rg, plex_id, dtype = int(coll), int(rg), int(plex_id), int(dtype)
         who = interaction.user.mention
         await interaction.response.defer()
-        if action == "keep":
+        if action in ("tkeep", "tdel"):   # self-test buttons — never call any API
+            label = "Keep" if action == "tkeep" else "Delete"
+            msg = f"✅ Button works — {label} (test only, nothing changed), by {who}"
+        elif action == "keep":
             if DRY_RUN:
                 msg = f"✅ (dry-run) would Keep — by {who}"
             else:
