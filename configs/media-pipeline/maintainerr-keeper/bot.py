@@ -197,6 +197,20 @@ class Keeper(discord.Client):
     async def poll_loop(self):
         await self.wait_until_ready()
         channel = self.get_channel(CHANNEL_ID) or await self.fetch_channel(CHANNEL_ID)
+        # One-time startup ping so you can confirm the channel + permissions are right. This also
+        # proves posting works before any real candidate exists (those need a cleanup group to run).
+        hello = discord.Embed(
+            title="🟢 maintainerr-keeper connected",
+            description=(f"**Mode:** {'DRY-RUN (buttons only log)' if DRY_RUN else 'LIVE'}\n"
+                         f"**Watching collections:** {', '.join(PREFIXES)}\n"
+                         f"**Checking every:** {POLL_SECONDS}s\n\n"
+                         "Cleanup candidates will appear here with 🟢 Keep / 🗑️ Delete buttons once a "
+                         "Maintainerr group has run and put items in its collection."),
+            colour=0x2ECC71)
+        try:
+            await channel.send(embed=hello)
+        except Exception as e:
+            log("could not send startup message:", e)
         while not self.is_closed():
             try:
                 cols = await maintainerr_collections(self.session)
