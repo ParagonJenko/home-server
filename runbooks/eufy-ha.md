@@ -102,23 +102,36 @@ RTSP-discovery mechanics: `cameras.md`.
 ## Stage 4 — Frigate into HA (the camera entities + detection)
 
 **go2rtc is NOT a separate HA install** — it's inside Frigate; the Frigate integration is all HA
-needs. Two pieces:
+needs. **MQTT has TWO separate halves in HA — the broker add-on AND the MQTT integration — and you
+need both.** Four pieces:
 
-1. **MQTT broker** — HA → Settings → Add-ons → **Mosquitto broker** → install + start. In HA add a
-   user (Settings → People/Users, or the add-on's `logins:`), e.g. `frigate` / a password. This is
-   what carries Frigate's detection events to HA; without it you get the camera streams but no
-   `binary_sensor.*_motion/_person`.
-2. **Frigate MQTT creds** — the `mqtt:` block in `config.yaml` is **disabled by default** (so the
+1. **MQTT broker (add-on)** — HA → Settings → Add-ons → **Mosquitto broker** → install + start. Add a
+   user (Settings → People/Users, or the add-on's `logins:`), e.g. `frigate` / a password. This is the
+   broker itself; without it you get camera streams but no `binary_sensor.*_motion/_person`.
+2. **MQTT integration (HA subscribes to the broker)** — **this is a distinct step from installing the
+   add-on, and skipping it is the #1 gotcha.** Settings → Devices & Services → look for a *Discovered:
+   MQTT* card → **Configure**; if there's none, **Add Integration → MQTT** → broker `core-mosquitto`
+   (or `localhost`), port `1883`, username/password the `frigate` user. Installing the broker add-on
+   does NOT auto-subscribe HA — until this integration shows **Connected**, the Frigate integration
+   creates only `update.frigate` / `update.frigate_server` (it can reach Frigate's HTTP API) but **ZERO
+   camera entities** (no MQTT discovery). That exact symptom = this step was skipped.
+   *Verify the path:* MQTT integration → **Configure → Listen to a topic** → `frigate/#` → Start — you
+   should see `frigate/available` → `online` and stats. Messages flowing = broker + integration + Frigate
+   all aligned on the same broker.
+3. **Frigate MQTT creds** — the `mqtt:` block in `config.yaml` is **disabled by default** (so the
    cameras load even before Mosquitto exists). Once the broker + MQTT user are up: **tell Claude to
    flip `mqtt.enabled: true` in the repo and push** (boxes pull only — a box can't push that edit),
    then run `./configs/frigate/enable-mqtt.sh` on NUC-2 to store the MQTT user/password in the
    gitignored `.env`, `git pull`, and redeploy with `frigate.sh`.
-   (Order matters: Mosquitto first, then the flag, or Frigate boots to safe mode / logs "can't reach broker".)
-3. **Frigate integration** — HACS → install **Frigate** (`blakeblackshear/frigate-hass-integration`)
+   (Order: Mosquitto first, then the flag. `MQTT Not authorized` in Frigate's logs = the user/pass in
+   `.env` doesn't match the broker user — re-run `enable-mqtt.sh` and force-recreate.)
+4. **Frigate integration** — HACS → install **Frigate** (`blakeblackshear/frigate-hass-integration`)
    → restart HA → Settings → Devices & Services → Add Integration → **Frigate** → URL
-   `http://frigate-lxc.home.alexjenkinson.com:8971` (or `:5000`). It auto-discovers the cameras via
-   MQTT and creates `camera.<room>`, `binary_sensor.<room>_motion`, `binary_sensor.<room>_person`
-   (occupancy), fps sensors, and the clips in Media.
+   `http://frigate-lxc.home.alexjenkinson.com:8971` (or `:5000`). With the MQTT integration (step 2)
+   connected, it auto-discovers the cameras via MQTT and creates `camera.<room>`,
+   `binary_sensor.<room>_motion`, `binary_sensor.<room>_person` (occupancy), fps sensors, and clips in
+   Media. If it was added *before* step 2 was connected, reload it (⋮ → Reload) or restart HA so the
+   cameras populate.
 
 **Live view:** the integration's `camera.*` entities work in any picture card. For a low-latency live
 feed, install the **Frigate Lovelace card** (HACS) — it uses Frigate's own go2rtc/WebRTC. Optional.
