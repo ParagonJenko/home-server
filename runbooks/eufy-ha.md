@@ -16,22 +16,34 @@ on-demand P2P stream — and turn it into one stable stream that Frigate consume
 
 **The one hard constraint is a *continuous* stream:**
 
-| Camera | Continuous stream? | Path |
+The cameras here are all Eufy (living-room + the others at `.30`–`.33`). Eufy support for a
+continuous stream is **per-model**, so the model decides the path:
+
+| Camera type | Continuous stream? | Path |
 |---|---|---|
-| Non-Eufy cam (living-room `10:2C:B1…`) with native RTSP | yes | straight into Frigate — ideal |
-| Wired Eufy cam / wired doorbell | yes (go2rtc holds the eufy-security-ws stream open) | camera → go2rtc → Frigate → HA |
-| **Battery** Eufy cam | **no — it sleeps to save battery** | fall back to `eufy_security` integration (on-demand view + Eufy's own motion events), NOT Frigate |
+| Wired Eufy with in-app **RTSP** (Indoor Cam, Floodlight, wired SoloCam, wired doorbell) | yes — native RTSP | `rtsp://…` straight into Frigate — ideal |
+| Wired Eufy without RTSP, on a HomeBase | maybe — go2rtc holds the eufy-security-ws stream open | camera → eufy-security-ws → go2rtc → Frigate |
+| **Battery** Eufy (eufyCam 2/3/S3, battery SoloCam/doorbell) | **no — sleeps to save battery** | `eufy_security` integration on-demand only, NOT Frigate |
 | Eufy RoboVac | n/a | `bmccluskey/robovac` HACS integration → `vacuum.*` |
 
-So: Frigate is the hub for anything that streams continuously (RTSP cams + wired Eufy). Battery Eufy
-cams physically can't do 24/7 detection — for those the `eufy_security` integration gives on-demand
-view + Eufy-side motion, which is the best achievable. Know which of your Eufy cams are wired vs
-battery — that decides which go through Frigate.
+So Frigate is the hub for any Eufy cam that streams continuously — **wired models, ideally ones with
+the in-app RTSP toggle** (Settings → the cam → *RTSP*). Battery cams physically can't do 24/7
+detection; for those `eufy_security` on-demand view + Eufy-side motion is the best achievable.
+**The camera model is what decides this** — get the models before wiring Frigate.
 
-## Stage 1 — eufy-security-ws + the eufy_security integration
+## This home's split (decided)
 
-This stage is needed either way: it's the **stream source** Frigate/go2rtc pulls wired Eufy cams
-from, *and* the on-demand fallback for battery cams that can't go through Frigate.
+- **4 indoor cams — all wired, all native RTSP → Frigate.** The Frigate config is already written
+  (`configs/frigate/config.yaml`, Stage 3). No eufy-security-ws needed for these — they stream RTSP
+  directly, go2rtc just restreams.
+- **Doorbell — battery → `eufy_security` integration** (Stage 1). Sleeps, so it can't go in Frigate;
+  the integration gives the press event, on-demand view and motion.
+- **RoboVac → `bmccluskey/robovac`** (Stage 2).
+
+## Stage 1 — eufy-security-ws + the eufy_security integration (for the battery doorbell)
+
+Needed for the battery doorbell (press events, motion, on-demand view) and any other Eufy device the
+Frigate path doesn't cover.
 
 **Prereq: make a SECONDARY Eufy account.** The integration holds a login session; if it uses your
 main account you get logged out of the phone app constantly and hit 2FA churn. In the Eufy app
@@ -64,23 +76,30 @@ RoboVacs are **not** part of eufy_security — they're local Tuya devices.
 3. You get a `vacuum.*` entity (start/stop/return/clean) + battery/status — it goes on a new
    **Cleaning** dashboard card.
 
-## Stage 3 — Frigate as the hub (LXC 111, nuc2)
+## Stage 3 — Frigate (LXC 111, nuc2) — the 4 indoor cams
 
-Each continuous-stream camera goes into Frigate's `config.yml` via its built-in **go2rtc**:
-- **Non-Eufy RTSP cams** (living-room `10:2C:B1:…`) — enable RTSP in their own app, get
-  `rtsp://user:pass@<ip>:554/<path>`, add it as a go2rtc stream, point a Frigate camera at it.
-- **Wired Eufy cams** — go2rtc pulls the stream from **eufy-security-ws** (Stage 1). The
-  eufy_security integration registers the cam with go2rtc when the livestream starts; Frigate's
-  go2rtc references that so the stream stays up for detection. Wired only — a battery cam sleeps and
-  the stream drops.
-- **Battery Eufy cams** — not in Frigate; the eufy_security integration handles them on-demand.
+`configs/frigate/config.yaml` is **already written** for the 4 wired indoor cams: each is a go2rtc
+stream `rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-<room>.home.alexjenkinson.com:554/live0`,
+and Frigate detects+records off go2rtc on localhost. What's left is turning RTSP on and pointing DNS:
 
-Pattern per camera: **detect on a low-res substream, record on the main stream** (keeps CPU/RAM sane
-on the Frigate LXC). The HA **Frigate integration** then surfaces `camera.<name>`,
-`binary_sensor.<name>_motion` / `_person`, snapshots and clips — which slot straight into the
-dashboard's Security tab. RTSP-discovery + substream mechanics are in `cameras.md`; this file is the
-Eufy/HA-specific layer. I'll write the actual `config.yml` camera blocks once we know each camera's
-real stream URL (wired vs battery, RTSP available or not).
+1. **Enable RTSP on each indoor cam** — Eufy app → the camera → Settings → **RTSP** → enable. Eufy
+   lets you set a username + password; use the **same pair on all 4** (the config uses one credential
+   set). Confirm the stream path is `/live0` (most Eufy cams); if a cam differs, change only that
+   camera's go2rtc URL.
+2. **Credentials** → put `FRIGATE_RTSP_USER` + `FRIGATE_RTSP_PASSWORD` in `configs/frigate/.env`
+   (gitignored). The config has no secrets.
+3. **DNS** → each `cam-<room>.home.alexjenkinson.com` must resolve to the camera's IP from inside the
+   Frigate container. Add a DHCP reservation per cam (they were found at `.30`–`.33`) + an AdGuard
+   rewrite (Stage D). Check with `getent hosts cam-living-room.home.alexjenkinson.com`.
+4. **Deploy** → `./configs/lxc/frigate.sh` (or push config + restart) then `./configs/frigate/verify-frigate.sh`.
+5. **Names** → the config uses `cam-living-room/kitchen/bedroom/basement` as placeholders — rename to
+   your actual rooms in both the `go2rtc:` and `cameras:` blocks (and the DNS names) so they match.
+
+Tuning (later): detection runs on CPU by default — if the Frigate LXC has the iGPU passed through,
+add an OpenVINO detector; otherwise a Coral. For 4 cams, set a sane `detect:` resolution. The HA
+**Frigate integration** (HACS or core) then surfaces `camera.<name>`,
+`binary_sensor.<name>_motion` / `_person`, snapshots and clips → straight into the dashboard's
+Security tab. RTSP-discovery mechanics: `cameras.md`.
 
 **Build order:** Stage 1 → re-dump entities → I wire the Security tab + assess which cams have RTSP →
 Stage 3 Frigate config for those → Stage 2 RoboVac whenever. Each stage stands alone.
