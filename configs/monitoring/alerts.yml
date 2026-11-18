@@ -213,3 +213,16 @@ groups:
           cause: "Datastore {{ $labels.datastore }} is {{ $value | humanize }}% used."
           fix: "Check the PBS prune/GC schedule (keep-daily 7 / weekly 4 / monthly 6) ran; run GC: on PBS, proxmox-backup-manager garbage-collection start <datastore>. Consider a bigger datastore disk."
           where: "PBS UI https://pbs.home.alexjenkinson.com:8007. Grafana → PBS backups. storage.md."
+
+      - alert: GuestMemoryHigh            # any VM/LXC near its RAM ceiling (from pve-exporter). Catches
+        # the swap-thrash-into-504s failure early — e.g. media-pipeline (210) at a 2 GB cap. Warn before
+        # it thrashes so you can raise the ceiling or cap the greedy service, not after services fall over.
+        expr: (100 * pve_memory_usage_bytes{id=~"(qemu|lxc)/.*"} / pve_memory_size_bytes) * on(id) group_left(name) pve_guest_info > 90
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.name }} ({{ $labels.id }}) memory over 90%"
+          impact: "Guest {{ $labels.name }} is near its RAM ceiling — it will start swapping, and swap-thrash can make its services time out (504s)."
+          cause: "{{ $labels.name }} memory at {{ $value | humanize }}% of its allocation for 15m."
+          fix: "Diagnose + raise, per runbooks/alerts.md → GuestMemoryHigh: pct exec {{ $labels.id }} docker stats to find the hog; raise the ceiling (pct set <id> --memory <MB>) and/or cap the greedy container (mem_limit). Record the new size in storage.md + the create script."
+          where: "Grafana → Proxmox guests → Guest memory %. Runbook runbooks/alerts.md. Guest {{ $labels.name }}."

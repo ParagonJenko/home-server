@@ -16,9 +16,13 @@ if pct status "$CTID" >/dev/null 2>&1; then
   warn "CT ${CTID} already exists — skipping create (idmap/mount re-applied below)."
 else
   say "create CT ${CTID} — media-pipeline (qBittorrent + Arr stack)"
+  # 6 GB RAM, NOT 2 GB: Sonarr+Radarr+Bazarr+Prowlarr+qBittorrent+FlareSolverr spike past 2 GB (a Bazarr
+  # subtitle scan, or FlareSolverr spawning Chrome), spill to swap, and swap-thrash self-reinforces into
+  # 504s. Host has 15 GB; 6 GB leaves plenty for Plex/nginx/amp. Per-service mem_limits (R6/R9) are set
+  # in the stack's compose; this is the LXC-level ceiling above them.
   pct create "$CTID" "$(resolve_template)" \
     --hostname media-pipeline \
-    --cores 2 --memory 2048 --swap 512 \
+    --cores 2 --memory 6144 --swap 2048 \
     --rootfs "local-lvm:${ROOTFS_CAP}" \
     --mp0 /mnt/media,mp=/data \
     --unprivileged 1 --features nesting=1,keyctl=1 \

@@ -31,6 +31,17 @@ The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headr
 | Media library (`/data/library`) | mergerfs pool (~7.2T) | mergerfs `minfreespace` | — |
 | PBS datastore | USB HDD (2T) | retention: keep-daily 7, keep-weekly 4, keep-monthly 6 + prune/GC | Oldest pruned |
 
+## Guest RAM ceilings
+
+`--memory`/`--swap` per guest (set in each create script). The sum must stay under each node's RAM
+(nuc1 has 15 GB). Per-service `mem_limit`s inside a stack sit *under* its LXC ceiling.
+
+| Guest | RAM | Swap | Notes |
+|---|---|---|---|
+| media-pipeline (LXC 210) | **6 GB** | 2 GB | Was 2 GB — too tight for the 6-service Arr stack; a spike (Bazarr scan / FlareSolverr Chrome) swap-thrashed into 504s (2026-11-18). `GuestMemoryHigh` alert (>90%) now catches it early. |
+
+Other guests keep their defaults until a `GuestMemoryHigh` alert says otherwise — raise + record here.
+
 ## Reserved headroom (R8)
 
 - ext4 reserved-blocks ≥5% on host root and container storage — **read the live value** (`tune2fs -l`), don't assume.

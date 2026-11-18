@@ -22,6 +22,7 @@ warning**, **green = resolved** — so you can tell at a glance whether one need
 | InternetDown | 🔴 crit | triage | Check your modem first; else it's the ISP (wait) |
 | DiskUsageHigh | 🟧 warn | plan | Clear space or raise the cap — graceful at 80% |
 | PBSDatastoreFull | 🟧 warn | plan | Prune/GC runs itself; size up the disk if it recurs |
+| GuestMemoryHigh | 🟧 warn | soon | Raise the guest's RAM ceiling and/or cap the greedy container |
 | SmartUnreadable | 🟧 warn | usually no | Transient bridge blip; act only if 6h+ |
 | DiskTempHigh | 🟧 warn | maybe | Check airflow/fans; usually cooling not the disk |
 | SmartCollectorStale | 🟧 warn | soon | Re-run smartmon.sh — you're blind to SMART meanwhile |
@@ -94,6 +95,33 @@ A filesystem is over 80% full. Graceful by design (R7) — a heads-up, not an em
 The backup datastore is over 85%. Prune/GC (keep-daily 7 / weekly 4 / monthly 6) runs automatically.
 Act only if it recurs: on PBS run `proxmox-backup-manager garbage-collection start <datastore>`, or size
 up the USB HDD (`storage.md`). Offsite B2 is the deeper copy.
+
+## GuestMemoryHigh
+A VM or LXC is over **90%** of its RAM allocation for 15m. Left alone it starts swapping, and
+swap-thrash is self-reinforcing — the services inside slow to a crawl and start timing out (the
+media-pipeline 504s came from exactly this: a 2 GB cap for the whole Arr stack). Act before it thrashes.
+
+**Diagnose** (on the guest's host, from the alert's `id` e.g. `lxc/210`):
+```bash
+pct config 210 | grep -E 'memory|swap'                 # the current ceiling
+pct exec 210 -- free -h                                 # used vs free + swap
+pct exec 210 -- docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}'
+free -h                                                  # does the HOST have RAM to give?
+```
+
+**Fix — pick based on what you found:**
+1. **Ceiling too low + host has RAM** → raise it (applies live; restart the apps to clear the thrash):
+   ```bash
+   pct set 210 --memory 6144 --swap 2048
+   pct exec 210 -- sh -c 'docker restart $(docker ps -q)'
+   ```
+2. **One container is the hog** → cap it in its compose (`mem_limit: 1g`) so it can't starve the rest
+   (the proper R6/R9 guardrail), then `docker compose up -d` that container.
+3. **Host itself is out of RAM** → don't over-commit; cap the greediest services instead, or move a
+   guest to the other node.
+
+**Then make it permanent** so a rebuild doesn't recreate the trap: update the guest's `--memory` in its
+create script (e.g. `configs/lxc/media-pipeline.sh`) and record the size in `storage.md`.
 
 ## SmartUnreadable
 `smartctl` couldn't read a disk through its USB/DAS bridge — a **flag/cable** issue, **not** a failing
