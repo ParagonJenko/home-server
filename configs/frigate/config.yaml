@@ -3,6 +3,15 @@
 # separate retain blocks under alerts/detections. A config using record.retain.days won't load.
 mqtt:
   enabled: false
+  # MQTT carries Frigate's detection EVENTS to Home Assistant — the binary_sensor.*_motion/_person
+  # entities and clips come via MQTT, not the video stream. Recording works without it; HA events do
+  # not. To turn it on: install the Mosquitto broker add-on in HA, make a 'frigate' MQTT user, add
+  # FRIGATE_MQTT_USER/PASSWORD to .env, then replace `enabled: false` above with the four lines below
+  # and redeploy (runbooks/eufy-ha.md):
+  #   enabled: true
+  #   host: homeassistant.home.alexjenkinson.com
+  #   user: "{FRIGATE_MQTT_USER}"
+  #   password: "{FRIGATE_MQTT_PASSWORD}"
 
 tls:
   enabled: false          # Nginx fronts it; the login itself stays on

@@ -96,10 +96,32 @@ and Frigate detects+records off go2rtc on localhost. What's left is turning RTSP
    your actual rooms in both the `go2rtc:` and `cameras:` blocks (and the DNS names) so they match.
 
 Tuning (later): detection runs on CPU by default — if the Frigate LXC has the iGPU passed through,
-add an OpenVINO detector; otherwise a Coral. For 4 cams, set a sane `detect:` resolution. The HA
-**Frigate integration** (HACS or core) then surfaces `camera.<name>`,
-`binary_sensor.<name>_motion` / `_person`, snapshots and clips → straight into the dashboard's
-Security tab. RTSP-discovery mechanics: `cameras.md`.
+add an OpenVINO detector; otherwise a Coral. For 4 cams, set a sane `detect:` resolution.
+RTSP-discovery mechanics: `cameras.md`.
+
+## Stage 4 — Frigate into HA (the camera entities + detection)
+
+**go2rtc is NOT a separate HA install** — it's inside Frigate; the Frigate integration is all HA
+needs. Two pieces:
+
+1. **MQTT broker** — HA → Settings → Add-ons → **Mosquitto broker** → install + start. In HA add a
+   user (Settings → People/Users, or the add-on's `logins:`), e.g. `frigate` / a password. This is
+   what carries Frigate's detection events to HA; without it you get the camera streams but no
+   `binary_sensor.*_motion/_person`.
+2. **Enable MQTT in Frigate** — put `FRIGATE_MQTT_USER` / `FRIGATE_MQTT_PASSWORD` in
+   `configs/frigate/.env`, flip the `mqtt:` block in `config.yaml` to the enabled form (commented
+   there), redeploy with `frigate.sh`.
+3. **Frigate integration** — HACS → install **Frigate** (`blakeblackshear/frigate-hass-integration`)
+   → restart HA → Settings → Devices & Services → Add Integration → **Frigate** → URL
+   `http://frigate-lxc.home.alexjenkinson.com:8971` (or `:5000`). It auto-discovers the cameras via
+   MQTT and creates `camera.<room>`, `binary_sensor.<room>_motion`, `binary_sensor.<room>_person`
+   (occupancy), fps sensors, and the clips in Media.
+
+**Live view:** the integration's `camera.*` entities work in any picture card. For a low-latency live
+feed, install the **Frigate Lovelace card** (HACS) — it uses Frigate's own go2rtc/WebRTC. Optional.
+
+Then re-run the `/api/states` dump → the dashboard's camera-ready Security tab gets the real cards
+(live tiles + motion/person chips per room).
 
 **Build order:** Stage 1 → re-dump entities → I wire the Security tab + assess which cams have RTSP →
 Stage 3 Frigate config for those → Stage 2 RoboVac whenever. Each stage stands alone.
