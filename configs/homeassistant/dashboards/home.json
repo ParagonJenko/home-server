@@ -682,14 +682,6 @@
               "heading_style": "title"
             },
             {
-              "type": "markdown",
-              "text_only": true,
-              "content": "_Tiles go live once RTSP is enabled on the Eufy cams. Motion & person detection already work._",
-              "grid_options": {
-                "columns": "full"
-              }
-            },
-            {
               "type": "picture-glance",
               "title": "Living Room",
               "camera_image": "camera.living_room_cam_living_room",
