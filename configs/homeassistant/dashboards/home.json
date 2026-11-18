@@ -1,101 +1,64 @@
 {
-  "title": "Home",
   "views": [
     {
       "title": "Home",
       "path": "home",
-      "icon": "mdi:home-heart",
       "type": "sections",
-      "max_columns": 3,
-      "header": {
-        "layout": "responsive",
-        "badges_position": "bottom",
-        "card": {
-          "type": "markdown",
-          "text_only": true,
-          "content": "{% set h = now().hour %}{% if h < 5 %}Still up?{% elif h < 12 %}Good morning{% elif h < 18 %}Good afternoon{% elif h < 22 %}Good evening{% else %}Good night{% endif %}, Alex\n# {% set h = now().hour %}{% if h < 5 %}🌙 Still up?{% elif h < 12 %}☀️ Good morning{% elif h < 18 %}🌤️ Good afternoon{% elif h < 22 %}🌆 Good evening{% else %}🌙 Good night{% endif %}\n### {{ now().strftime('%A %-d %B') }} · {{ states('weather.home') | replace('-',' ') | title }} · {{ state_attr('weather.home','temperature') | round(0) }}°"
-        }
-      },
-      "badges": [
-        {
-          "type": "entity",
-          "entity": "person.alex_jenkinson",
-          "show_name": true,
-          "color": "green"
-        },
-        {
-          "type": "entity",
-          "entity": "sensor.alexs_iphone_battery_level",
-          "show_name": false,
-          "name": "Phone"
-        },
-        {
-          "type": "entity",
-          "entity": "sensor.hue_motion_sensor_temperature",
-          "name": "Office",
-          "color": "amber"
-        },
-        {
-          "type": "entity",
-          "entity": "sun.sun",
-          "name": "Sun"
-        }
-      ],
+      "icon": "mdi:home-heart",
       "sections": [
         {
           "type": "grid",
           "cards": [
             {
-              "type": "heading",
-              "heading": "At a glance",
-              "icon": "mdi:eye"
-            },
-            {
-              "type": "weather-forecast",
-              "entity": "weather.home",
-              "forecast_type": "daily",
-              "show_current": true,
+              "type": "custom:mushroom-template-card",
+              "primary": "{% set h = now().hour %}{% if h < 5 %}Still up, Alex{% elif h < 12 %}Good morning, Alex{% elif h < 18 %}Good afternoon, Alex{% else %}Good evening, Alex{% endif %}",
+              "secondary": "{{ now().strftime('%A %-d %B') }}  ·  {{ states('weather.home') | replace('_',' ') | title }}, {{ state_attr('weather.home','temperature') | round }}°",
+              "icon": "mdi:hand-wave",
+              "icon_color": "amber",
+              "card_mod": {
+                "style": "ha-card { background: none; border: none; box-shadow: none; } .primary { font-size: 1.5rem !important; font-weight: 600 !important; }"
+              },
               "grid_options": {
-                "columns": "full"
+                "columns": 12
               }
             },
             {
               "type": "custom:mushroom-chips-card",
-              "alignment": "center",
+              "alignment": "start",
               "chips": [
                 {
-                  "type": "template",
+                  "type": "entity",
                   "entity": "person.alex_jenkinson",
-                  "icon": "mdi:map-marker-radius",
-                  "icon_color": "{{ 'green' if is_state('person.alex_jenkinson','home') else 'blue-grey' }}",
-                  "content": "{{ states('person.alex_jenkinson') | title }}",
-                  "tap_action": {
-                    "action": "more-info"
-                  }
-                },
-                {
-                  "type": "template",
-                  "entity": "sensor.alexs_iphone_battery_level",
-                  "icon": "mdi:cellphone",
-                  "icon_color": "{{ 'red' if states('sensor.alexs_iphone_battery_level')|int(100) < 20 else 'green' }}",
-                  "content": "{{ states('sensor.alexs_iphone_battery_level') }}%"
-                },
-                {
-                  "type": "template",
-                  "entity": "sensor.hue_motion_sensor_temperature",
-                  "icon": "mdi:thermometer",
-                  "icon_color": "amber",
-                  "content": "{{ states('sensor.hue_motion_sensor_temperature') }}°"
+                  "icon_color": "blue",
+                  "content_info": "state"
                 },
                 {
                   "type": "weather",
                   "entity": "weather.home",
                   "show_conditions": true,
                   "show_temperature": true
+                },
+                {
+                  "type": "entity",
+                  "entity": "sensor.hue_motion_sensor_temperature",
+                  "icon": "mdi:home-thermometer",
+                  "icon_color": "orange"
+                },
+                {
+                  "type": "entity",
+                  "entity": "vacuum.robovac",
+                  "icon": "mdi:robot-vacuum",
+                  "icon_color": "teal"
+                },
+                {
+                  "type": "entity",
+                  "entity": "sensor.alexs_iphone_steps",
+                  "icon": "mdi:shoe-print",
+                  "icon_color": "green"
                 }
               ],
               "grid_options": {
-                "columns": "full"
+                "columns": 12
               }
             }
           ]
@@ -105,137 +68,127 @@
           "cards": [
             {
               "type": "heading",
-              "heading": "Jump to",
-              "icon": "mdi:gesture-tap-button"
+              "heading": "Rooms",
+              "heading_style": "title",
+              "icon": "mdi:floor-plan"
             },
             {
-              "type": "custom:mushroom-template-card",
-              "primary": "Lights",
-              "secondary": "{{ states.light | selectattr('state','eq','on') | list | count }} on",
-              "icon": "mdi:lightbulb-group",
-              "icon_color": "amber",
-              "tap_action": {
-                "action": "navigate",
-                "navigation_path": "/dashboard-home/lights"
-              },
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Security",
-              "secondary": "4 cameras",
-              "icon": "mdi:cctv",
-              "icon_color": "blue",
-              "tap_action": {
-                "action": "navigate",
-                "navigation_path": "/dashboard-home/security"
-              },
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Media",
-              "secondary": "{{ states.media_player | selectattr('state','eq','playing') | list | count }} playing",
-              "icon": "mdi:speaker-wireless",
-              "icon_color": "indigo",
-              "tap_action": {
-                "action": "navigate",
-                "navigation_path": "/dashboard-home/media"
-              },
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Poe",
-              "secondary": "Litter: {{ states('sensor.carpeted_area_litter_tray_litter_level') }}%",
-              "icon": "mdi:cat",
-              "icon_color": "brown",
-              "tap_action": {
-                "action": "navigate",
-                "navigation_path": "/dashboard-home/poe"
-              },
-              "grid_options": {
-                "columns": 6
-              }
-            }
-          ]
-        },
-        {
-          "type": "grid",
-          "cards": [
-            {
-              "type": "heading",
-              "heading": "Lights",
-              "icon": "mdi:lightbulb",
-              "badges": [
-                {
-                  "type": "button",
-                  "icon": "mdi:lightbulb-off",
-                  "tap_action": {
-                    "action": "perform-action",
-                    "perform_action": "light.turn_off",
-                    "target": {
-                      "entity_id": [
-                        "light.living_room_living_room",
-                        "light.bedroom_bedroom",
-                        "light.office_office",
-                        "light.upstairs"
-                      ]
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "type": "custom:mushroom-light-card",
-              "entity": "light.living_room_living_room",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "name",
               "name": "Living Room",
               "icon": "mdi:sofa",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "collapsible_controls": true,
+              "entity": "light.living_room_living_room",
+              "show_state": true,
+              "scrolling_effect": false,
+              "button_action": {
+                "tap_action": {
+                  "action": "navigate",
+                  "navigation_path": "#living-room"
+                }
+              },
+              "card_layout": "large",
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-light-card",
-              "entity": "light.bedroom_bedroom",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "name",
               "name": "Bedroom",
               "icon": "mdi:bed",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "collapsible_controls": true,
+              "entity": "light.bedroom_bedroom",
+              "show_state": true,
+              "scrolling_effect": false,
+              "button_action": {
+                "tap_action": {
+                  "action": "navigate",
+                  "navigation_path": "#bedroom"
+                }
+              },
+              "card_layout": "large",
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-light-card",
-              "entity": "light.office_office",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "name",
               "name": "Office",
               "icon": "mdi:desk",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "collapsible_controls": true,
+              "entity": "light.office_office",
+              "show_state": true,
+              "scrolling_effect": false,
+              "button_action": {
+                "tap_action": {
+                  "action": "navigate",
+                  "navigation_path": "#office"
+                }
+              },
+              "card_layout": "large",
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-light-card",
-              "entity": "light.upstairs",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "name",
               "name": "Upstairs",
-              "icon": "mdi:stairs-up",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "collapsible_controls": true,
+              "icon": "mdi:stairs",
+              "entity": "light.upstairs",
+              "show_state": true,
+              "scrolling_effect": false,
+              "button_action": {
+                "tap_action": {
+                  "action": "navigate",
+                  "navigation_path": "#upstairs"
+                }
+              },
+              "card_layout": "large",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Quick",
+              "heading_style": "title",
+              "icon": "mdi:flash"
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
+              "entity": "switch.adaptive_lighting_adaptive_lighting",
+              "name": "Adaptive Lighting",
+              "icon": "mdi:theme-light-dark",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "name",
+              "name": "All lights off",
+              "icon": "mdi:lightbulb-group-off",
+              "button_action": {
+                "tap_action": {
+                  "action": "call-service",
+                  "service": "light.turn_off",
+                  "target": {
+                    "entity_id": "all"
+                  }
+                }
+              },
               "grid_options": {
                 "columns": 6
               }
@@ -248,51 +201,55 @@
             {
               "type": "heading",
               "heading": "Today",
-              "icon": "mdi:calendar-check"
+              "heading_style": "title",
+              "icon": "mdi:calendar-today"
             },
             {
-              "type": "custom:mushroom-template-card",
-              "primary": "Bin collection",
-              "secondary": "{{ state_attr('calendar.waste_collection_schedule_cheshire_east_council','message') or 'Nothing scheduled' }}",
-              "icon": "mdi:trash-can",
-              "icon_color": "teal",
-              "multiline_secondary": true,
-              "tap_action": {
-                "action": "more-info",
-                "entity": "calendar.waste_collection_schedule_cheshire_east_council"
-              },
-              "entity": "calendar.waste_collection_schedule_cheshire_east_council",
+              "type": "tile",
+              "entity": "sensor.waste_collection_schedule_mixed_recycling",
+              "name": "Recycling",
+              "icon": "mdi:recycle",
+              "color": "green",
               "grid_options": {
-                "columns": "full"
+                "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-chips-card",
-              "chips": [
+              "type": "tile",
+              "entity": "sensor.waste_collection_schedule_general_waste",
+              "name": "General waste",
+              "icon": "mdi:trash-can",
+              "color": "grey",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "vacuum.robovac",
+              "name": "RoboVac",
+              "icon": "mdi:robot-vacuum",
+              "features": [
                 {
-                  "type": "entity",
-                  "entity": "sun.sun",
-                  "icon": "mdi:weather-sunset"
-                },
-                {
-                  "type": "template",
-                  "entity": "sensor.alexs_iphone_steps",
-                  "icon": "mdi:walk",
-                  "content": "{{ states('sensor.alexs_iphone_steps') }} steps"
-                },
-                {
-                  "type": "template",
-                  "entity": "switch.adaptive_lighting_adaptive_lighting",
-                  "icon": "mdi:theme-light-dark",
-                  "icon_color": "{{ 'amber' if is_state('switch.adaptive_lighting_adaptive_lighting','on') else 'grey' }}",
-                  "content": "Adaptive",
-                  "tap_action": {
-                    "action": "toggle"
-                  }
+                  "type": "vacuum-commands",
+                  "commands": [
+                    "start_pause",
+                    "stop",
+                    "return_home"
+                  ]
                 }
               ],
               "grid_options": {
-                "columns": "full"
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.carpeted_area_litter_tray_litter_level",
+              "name": "Litter level",
+              "icon": "mdi:cat",
+              "grid_options": {
+                "columns": 6
               }
             }
           ]
@@ -302,45 +259,287 @@
           "cards": [
             {
               "type": "heading",
-              "heading": "Cleaning",
-              "icon": "mdi:robot-vacuum"
+              "heading": "Now",
+              "heading_style": "title",
+              "icon": "mdi:cctv"
             },
             {
-              "type": "custom:mushroom-vacuum-card",
-              "entity": "vacuum.robovac",
-              "name": "RoboVac",
-              "icon": "mdi:robot-vacuum",
-              "commands": [
-                "start_pause",
-                "stop",
-                "locate",
-                "return_home"
-              ],
-              "fill_container": true,
+              "type": "picture-entity",
+              "entity": "camera.living_room_cam_living_room",
+              "name": "Living Room",
+              "show_state": false,
+              "show_name": true,
+              "camera_view": "auto",
               "grid_options": {
-                "columns": "full"
+                "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-chips-card",
-              "chips": [
+              "type": "picture-entity",
+              "entity": "camera.bedroom_cam_bedroom",
+              "name": "Bedroom",
+              "show_state": false,
+              "show_name": true,
+              "camera_view": "auto",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "custom:bubble-card",
+              "card_type": "pop-up",
+              "hash": "#living-room",
+              "name": "Living Room",
+              "icon": "mdi:sofa",
+              "cards": [
                 {
-                  "type": "template",
-                  "entity": "vacuum.robovac",
-                  "icon": "mdi:battery",
-                  "content": "{{ state_attr(\"vacuum.robovac\",\"battery_level\") | default(\"?\") }}%"
+                  "type": "custom:bubble-card",
+                  "card_type": "button",
+                  "button_type": "slider",
+                  "entity": "light.living_room_living_room",
+                  "name": "Living Room",
+                  "icon": "mdi:floor-lamp"
                 },
                 {
-                  "type": "template",
-                  "entity": "vacuum.robovac",
-                  "icon": "mdi:robot-vacuum",
-                  "content": "{{ states(\"vacuum.robovac\") | title }}",
-                  "icon_color": "{{ \"red\" if is_state(\"vacuum.robovac\",\"error\") else \"blue\" }}"
+                  "type": "tile",
+                  "entity": "select.living_room_living_room_scene",
+                  "name": "Scene",
+                  "icon": "mdi:palette",
+                  "features": [
+                    {
+                      "type": "select-options"
+                    }
+                  ],
+                  "features_position": "bottom"
+                },
+                {
+                  "type": "custom:mushroom-media-player-card",
+                  "entity": "media_player.living_room_alexa",
+                  "name": "Living Room",
+                  "media_controls": [
+                    "play_pause_stop",
+                    "previous",
+                    "next"
+                  ],
+                  "volume_controls": [
+                    "volume_buttons"
+                  ],
+                  "use_media_info": true,
+                  "collapsible_controls": true
+                },
+                {
+                  "type": "tile",
+                  "entity": "binary_sensor.living_room_alexa_motion",
+                  "name": "Motion"
+                },
+                {
+                  "type": "picture-entity",
+                  "entity": "camera.living_room_cam_living_room",
+                  "name": "Living Room",
+                  "show_state": false,
+                  "show_name": true,
+                  "camera_view": "auto",
+                  "grid_options": {
+                    "columns": 6
+                  }
                 }
               ],
-              "grid_options": {
-                "columns": "full"
-              }
+              "entity": "light.living_room_living_room"
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "pop-up",
+              "hash": "#bedroom",
+              "name": "Bedroom",
+              "icon": "mdi:bed",
+              "cards": [
+                {
+                  "type": "custom:bubble-card",
+                  "card_type": "button",
+                  "button_type": "slider",
+                  "entity": "light.bedroom_bedroom",
+                  "name": "Bedroom",
+                  "icon": "mdi:ceiling-light"
+                },
+                {
+                  "type": "tile",
+                  "entity": "select.bedroom_bedroom_scene",
+                  "name": "Scene",
+                  "icon": "mdi:palette",
+                  "features": [
+                    {
+                      "type": "select-options"
+                    }
+                  ],
+                  "features_position": "bottom"
+                },
+                {
+                  "type": "custom:mushroom-media-player-card",
+                  "entity": "media_player.bedroom_alexa",
+                  "name": "Bedroom",
+                  "media_controls": [
+                    "play_pause_stop",
+                    "previous",
+                    "next"
+                  ],
+                  "volume_controls": [
+                    "volume_buttons"
+                  ],
+                  "use_media_info": true,
+                  "collapsible_controls": true
+                },
+                {
+                  "type": "tile",
+                  "entity": "binary_sensor.bedroom_alexa_motion",
+                  "name": "Motion"
+                },
+                {
+                  "type": "picture-entity",
+                  "entity": "camera.bedroom_cam_bedroom",
+                  "name": "Bedroom",
+                  "show_state": false,
+                  "show_name": true,
+                  "camera_view": "auto",
+                  "grid_options": {
+                    "columns": 6
+                  }
+                }
+              ],
+              "entity": "light.bedroom_bedroom"
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "pop-up",
+              "hash": "#office",
+              "name": "Office",
+              "icon": "mdi:desk",
+              "cards": [
+                {
+                  "type": "custom:bubble-card",
+                  "card_type": "button",
+                  "button_type": "slider",
+                  "entity": "light.office_office",
+                  "name": "Office",
+                  "icon": "mdi:desk-lamp"
+                },
+                {
+                  "type": "tile",
+                  "entity": "select.office_office_scene",
+                  "name": "Scene",
+                  "icon": "mdi:palette",
+                  "features": [
+                    {
+                      "type": "select-options"
+                    }
+                  ],
+                  "features_position": "bottom"
+                },
+                {
+                  "type": "custom:bubble-card",
+                  "card_type": "separator",
+                  "name": "Accents",
+                  "icon": "mdi:led-strip-variant"
+                },
+                {
+                  "type": "custom:bubble-card",
+                  "card_type": "button",
+                  "button_type": "switch",
+                  "entity": "light.office_backlights",
+                  "name": "Backlight",
+                  "icon": "mdi:television-ambient-light",
+                  "grid_options": {
+                    "columns": 4
+                  }
+                },
+                {
+                  "type": "custom:bubble-card",
+                  "card_type": "button",
+                  "button_type": "switch",
+                  "entity": "light.office_hue_play_1",
+                  "name": "Play 1",
+                  "icon": "mdi:lightbulb",
+                  "grid_options": {
+                    "columns": 4
+                  }
+                },
+                {
+                  "type": "custom:bubble-card",
+                  "card_type": "button",
+                  "button_type": "switch",
+                  "entity": "light.office_hue_play_2",
+                  "name": "Play 2",
+                  "icon": "mdi:lightbulb",
+                  "grid_options": {
+                    "columns": 4
+                  }
+                },
+                {
+                  "type": "custom:mushroom-media-player-card",
+                  "entity": "media_player.office_alexa",
+                  "name": "Office",
+                  "media_controls": [
+                    "play_pause_stop",
+                    "previous",
+                    "next"
+                  ],
+                  "volume_controls": [
+                    "volume_buttons"
+                  ],
+                  "use_media_info": true,
+                  "collapsible_controls": true
+                }
+              ],
+              "entity": "light.office_office"
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "pop-up",
+              "hash": "#upstairs",
+              "name": "Upstairs",
+              "icon": "mdi:stairs",
+              "cards": [
+                {
+                  "type": "custom:bubble-card",
+                  "card_type": "button",
+                  "button_type": "slider",
+                  "entity": "light.upstairs",
+                  "name": "Upstairs",
+                  "icon": "mdi:light-recessed"
+                },
+                {
+                  "type": "tile",
+                  "entity": "select.upstairs_scene",
+                  "name": "Scene",
+                  "icon": "mdi:palette",
+                  "features": [
+                    {
+                      "type": "select-options"
+                    }
+                  ],
+                  "features_position": "bottom"
+                },
+                {
+                  "type": "custom:mushroom-media-player-card",
+                  "entity": "media_player.upstairs",
+                  "name": "Upstairs",
+                  "media_controls": [
+                    "play_pause_stop",
+                    "previous",
+                    "next"
+                  ],
+                  "volume_controls": [
+                    "volume_buttons"
+                  ],
+                  "use_media_info": true,
+                  "collapsible_controls": true
+                }
+              ],
+              "entity": "light.upstairs"
             }
           ]
         }
@@ -349,9 +548,8 @@
     {
       "title": "Lights",
       "path": "lights",
-      "icon": "mdi:lightbulb-group",
       "type": "sections",
-      "max_columns": 3,
+      "icon": "mdi:lightbulb-group",
       "sections": [
         {
           "type": "grid",
@@ -359,73 +557,49 @@
             {
               "type": "heading",
               "heading": "Rooms",
-              "icon": "mdi:home-floor-g",
-              "badges": [
-                {
-                  "type": "button",
-                  "icon": "mdi:lightbulb-off",
-                  "tap_action": {
-                    "action": "perform-action",
-                    "perform_action": "light.turn_off",
-                    "target": {
-                      "entity_id": [
-                        "light.living_room_living_room",
-                        "light.bedroom_bedroom",
-                        "light.office_office",
-                        "light.upstairs"
-                      ]
-                    }
-                  }
-                }
-              ]
+              "heading_style": "title",
+              "icon": "mdi:floor-plan"
             },
             {
-              "type": "custom:mushroom-light-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "slider",
               "entity": "light.living_room_living_room",
               "name": "Living Room",
               "icon": "mdi:sofa",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "show_color_temp_control": true,
-              "collapsible_controls": true,
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-light-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "slider",
               "entity": "light.bedroom_bedroom",
               "name": "Bedroom",
               "icon": "mdi:bed",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "show_color_temp_control": true,
-              "collapsible_controls": true,
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-light-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "slider",
               "entity": "light.office_office",
               "name": "Office",
               "icon": "mdi:desk",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "show_color_temp_control": true,
-              "collapsible_controls": true,
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-light-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "slider",
               "entity": "light.upstairs",
               "name": "Upstairs",
-              "icon": "mdi:stairs-up",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "collapsible_controls": true,
+              "icon": "mdi:stairs",
               "grid_options": {
                 "columns": 6
               }
@@ -438,38 +612,109 @@
             {
               "type": "heading",
               "heading": "Office accents",
+              "heading_style": "title",
               "icon": "mdi:led-strip-variant"
             },
             {
-              "type": "custom:mushroom-light-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "light.office_backlights",
-              "name": "Backlights",
+              "name": "Backlight",
               "icon": "mdi:television-ambient-light",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "collapsible_controls": true,
               "grid_options": {
-                "columns": 6
+                "columns": 4
               }
             },
             {
-              "type": "custom:mushroom-light-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "light.office_hue_play_1",
-              "name": "Hue Play 1",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "collapsible_controls": true,
+              "name": "Play 1",
+              "icon": "mdi:lightbulb",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
+              "entity": "light.office_hue_play_2",
+              "name": "Play 2",
+              "icon": "mdi:lightbulb",
+              "grid_options": {
+                "columns": 4
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Scenes",
+              "heading_style": "title",
+              "icon": "mdi:palette"
+            },
+            {
+              "type": "tile",
+              "entity": "select.living_room_living_room_scene",
+              "name": "Living Room",
+              "icon": "mdi:palette",
+              "features": [
+                {
+                  "type": "select-options"
+                }
+              ],
+              "features_position": "bottom",
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-light-card",
-              "entity": "light.office_hue_play_2",
-              "name": "Hue Play 2",
-              "use_light_color": true,
-              "show_brightness_control": true,
-              "collapsible_controls": true,
+              "type": "tile",
+              "entity": "select.bedroom_bedroom_scene",
+              "name": "Bedroom",
+              "icon": "mdi:palette",
+              "features": [
+                {
+                  "type": "select-options"
+                }
+              ],
+              "features_position": "bottom",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "select.office_office_scene",
+              "name": "Office",
+              "icon": "mdi:palette",
+              "features": [
+                {
+                  "type": "select-options"
+                }
+              ],
+              "features_position": "bottom",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "select.upstairs_scene",
+              "name": "Upstairs",
+              "icon": "mdi:palette",
+              "features": [
+                {
+                  "type": "select-options"
+                }
+              ],
+              "features_position": "bottom",
               "grid_options": {
                 "columns": 6
               }
@@ -481,67 +726,28 @@
           "cards": [
             {
               "type": "heading",
-              "heading": "Scenes & lighting",
-              "icon": "mdi:palette"
+              "heading": "Adaptive",
+              "heading_style": "title",
+              "icon": "mdi:theme-light-dark"
             },
             {
-              "type": "tile",
-              "entity": "select.living_room_living_room_scene",
-              "name": "Living Room",
-              "icon": "mdi:palette-outline",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "select.bedroom_bedroom_scene",
-              "name": "Bedroom",
-              "icon": "mdi:palette-outline",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "select.office_office_scene",
-              "name": "Office",
-              "icon": "mdi:palette-outline",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "select.upstairs_scene",
-              "name": "Upstairs",
-              "icon": "mdi:palette-outline",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-entity-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "switch.adaptive_lighting_adaptive_lighting",
               "name": "Adaptive Lighting",
               "icon": "mdi:theme-light-dark",
-              "icon_color": "amber",
-              "tap_action": {
-                "action": "toggle"
-              },
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-entity-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "switch.adaptive_lighting_adaptive_lighting_sleep_mode",
-              "name": "Sleep Mode",
-              "icon": "mdi:weather-night",
-              "icon_color": "indigo",
-              "tap_action": {
-                "action": "toggle"
-              },
+              "name": "Sleep mode",
+              "icon": "mdi:power-sleep",
               "grid_options": {
                 "columns": 6
               }
@@ -553,121 +759,53 @@
     {
       "title": "Security",
       "path": "security",
-      "icon": "mdi:cctv",
       "type": "sections",
-      "max_columns": 3,
+      "icon": "mdi:shield-home",
       "sections": [
         {
           "type": "grid",
           "cards": [
             {
               "type": "heading",
-              "heading": "Presence & doorbell",
-              "icon": "mdi:shield-home"
-            },
-            {
-              "type": "custom:mushroom-person-card",
-              "entity": "person.alex_jenkinson",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-chips-card",
-              "chips": [
-                {
-                  "type": "template",
-                  "entity": "binary_sensor.living_room_cam_living_room_person_occupancy",
-                  "icon": "mdi:cctv",
-                  "icon_color": "{{ 'red' if is_state('binary_sensor.living_room_cam_living_room_person_occupancy','on') else 'grey' }}",
-                  "content": "Living Room"
-                },
-                {
-                  "type": "template",
-                  "entity": "binary_sensor.living_room_cam_kitchen_person_occupancy",
-                  "icon": "mdi:cctv",
-                  "icon_color": "{{ 'red' if is_state('binary_sensor.living_room_cam_kitchen_person_occupancy','on') else 'grey' }}",
-                  "content": "Kitchen"
-                },
-                {
-                  "type": "template",
-                  "entity": "binary_sensor.bedroom_cam_bedroom_person_occupancy",
-                  "icon": "mdi:cctv",
-                  "icon_color": "{{ 'red' if is_state('binary_sensor.bedroom_cam_bedroom_person_occupancy','on') else 'grey' }}",
-                  "content": "Bedroom"
-                },
-                {
-                  "type": "template",
-                  "entity": "binary_sensor.utility_cam_basement_person_occupancy",
-                  "icon": "mdi:cctv",
-                  "icon_color": "{{ 'red' if is_state('binary_sensor.utility_cam_basement_person_occupancy','on') else 'grey' }}",
-                  "content": "Basement"
-                }
-              ],
-              "grid_options": {
-                "columns": "full"
-              }
-            }
-          ]
-        },
-        {
-          "type": "grid",
-          "cards": [
-            {
-              "type": "heading",
               "heading": "Doorbell",
+              "heading_style": "title",
               "icon": "mdi:doorbell-video"
             },
             {
-              "type": "picture-glance",
-              "title": "Front Door",
-              "camera_image": "camera.doorbell",
-              "camera_view": "auto",
-              "entities": [
-                "binary_sensor.doorbell_ringing",
-                "binary_sensor.doorbell_person",
-                "binary_sensor.doorbell_motion"
-              ],
-              "grid_options": {
-                "columns": 12,
-                "rows": 4
-              }
-            },
-            {
-              "type": "custom:mushroom-chips-card",
-              "chips": [
-                {
-                  "type": "entity",
-                  "entity": "binary_sensor.doorbell_ringing",
-                  "icon": "mdi:bell-ring"
-                },
-                {
-                  "type": "entity",
-                  "entity": "binary_sensor.doorbell_person",
-                  "icon": "mdi:account"
-                },
-                {
-                  "type": "entity",
-                  "entity": "sensor.doorbell_battery"
-                },
-                {
-                  "type": "entity",
-                  "entity": "sensor.doorbell_last_person",
-                  "icon": "mdi:account-clock"
-                }
-              ],
-              "grid_options": {
-                "columns": "full"
-              }
-            },
-            {
               "type": "picture-entity",
-              "entity": "image.doorbell_last_event",
-              "name": "Last ring/motion",
+              "entity": "camera.doorbell",
+              "name": "Doorbell",
+              "camera_view": "auto",
               "show_state": false,
               "grid_options": {
-                "columns": 12,
-                "rows": 4
+                "columns": 12
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.doorbell_ringing",
+              "name": "Ringing",
+              "icon": "mdi:bell-ring",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.doorbell_person",
+              "name": "Person",
+              "icon": "mdi:account",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.doorbell_battery",
+              "name": "Battery",
+              "icon": "mdi:battery",
+              "grid_options": {
+                "columns": 4
               }
             }
           ]
@@ -678,83 +816,105 @@
             {
               "type": "heading",
               "heading": "Cameras",
-              "icon": "mdi:cctv",
-              "heading_style": "title"
+              "heading_style": "title",
+              "icon": "mdi:cctv"
             },
             {
-              "type": "picture-glance",
-              "title": "Living Room",
-              "camera_image": "camera.living_room_cam_living_room",
+              "type": "picture-entity",
+              "entity": "camera.living_room_cam_living_room",
+              "name": "Living Room",
+              "show_state": false,
+              "show_name": true,
               "camera_view": "auto",
-              "entities": [
-                {
-                  "entity": "binary_sensor.living_room_cam_living_room_motion"
-                },
-                {
-                  "entity": "binary_sensor.living_room_cam_living_room_person_occupancy"
-                }
-              ],
               "grid_options": {
-                "columns": 12,
-                "rows": 4
+                "columns": 6
               }
             },
             {
-              "type": "picture-glance",
-              "title": "Kitchen",
-              "camera_image": "camera.living_room_cam_kitchen",
+              "type": "picture-entity",
+              "entity": "camera.living_room_cam_kitchen",
+              "name": "Kitchen",
+              "show_state": false,
+              "show_name": true,
               "camera_view": "auto",
-              "entities": [
-                {
-                  "entity": "binary_sensor.living_room_cam_kitchen_motion"
-                },
-                {
-                  "entity": "binary_sensor.living_room_cam_kitchen_person_occupancy"
-                }
-              ],
               "grid_options": {
-                "columns": 12,
-                "rows": 4
+                "columns": 6
               }
             },
             {
-              "type": "picture-glance",
-              "title": "Bedroom",
-              "camera_image": "camera.bedroom_cam_bedroom",
+              "type": "picture-entity",
+              "entity": "camera.bedroom_cam_bedroom",
+              "name": "Bedroom",
+              "show_state": false,
+              "show_name": true,
               "camera_view": "auto",
-              "entities": [
-                {
-                  "entity": "binary_sensor.bedroom_cam_bedroom_motion"
-                },
-                {
-                  "entity": "binary_sensor.bedroom_cam_bedroom_person_occupancy"
-                }
-              ],
               "grid_options": {
-                "columns": 12,
-                "rows": 4
+                "columns": 6
               }
             },
             {
-              "type": "picture-glance",
-              "title": "Basement",
-              "camera_image": "camera.utility_cam_basement",
+              "type": "picture-entity",
+              "entity": "camera.utility_cam_basement",
+              "name": "Basement",
+              "show_state": false,
+              "show_name": true,
               "camera_view": "auto",
-              "entities": [
-                {
-                  "entity": "binary_sensor.utility_cam_basement_motion"
-                },
-                {
-                  "entity": "binary_sensor.utility_cam_basement_person_occupancy"
-                }
-              ],
               "grid_options": {
-                "columns": 12,
-                "rows": 4
+                "columns": 6
               }
             }
-          ],
-          "column_span": 2
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Presence",
+              "heading_style": "title",
+              "icon": "mdi:account-eye"
+            },
+            {
+              "type": "tile",
+              "entity": "person.alex_jenkinson",
+              "name": "Alex",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.living_room_cam_living_room_person_occupancy",
+              "name": "Living Room",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.living_room_cam_kitchen_person_occupancy",
+              "name": "Kitchen",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.bedroom_cam_bedroom_person_occupancy",
+              "name": "Bedroom",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.utility_cam_basement_person_occupancy",
+              "name": "Basement",
+              "grid_options": {
+                "columns": 4
+              }
+            }
+          ]
         },
         {
           "type": "grid",
@@ -762,34 +922,29 @@
             {
               "type": "heading",
               "heading": "Motion",
+              "heading_style": "title",
               "icon": "mdi:motion-sensor"
             },
             {
-              "type": "custom:mushroom-entity-card",
+              "type": "tile",
               "entity": "binary_sensor.hue_motion_sensor_motion",
-              "name": "Office",
-              "icon": "mdi:motion-sensor",
-              "icon_color": "{{ 'red' if is_state('binary_sensor.hue_motion_sensor_motion','on') else 'grey' }}",
+              "name": "Hue",
               "grid_options": {
                 "columns": 4
               }
             },
             {
-              "type": "custom:mushroom-entity-card",
+              "type": "tile",
               "entity": "binary_sensor.living_room_alexa_motion",
               "name": "Living Room",
-              "icon": "mdi:motion-sensor",
-              "icon_color": "{{ 'red' if is_state('binary_sensor.living_room_alexa_motion','on') else 'grey' }}",
               "grid_options": {
                 "columns": 4
               }
             },
             {
-              "type": "custom:mushroom-entity-card",
+              "type": "tile",
               "entity": "binary_sensor.bedroom_alexa_motion",
               "name": "Bedroom",
-              "icon": "mdi:motion-sensor",
-              "icon_color": "{{ 'red' if is_state('binary_sensor.bedroom_alexa_motion','on') else 'grey' }}",
               "grid_options": {
                 "columns": 4
               }
@@ -801,9 +956,8 @@
     {
       "title": "Media",
       "path": "media",
-      "icon": "mdi:speaker-wireless",
       "type": "sections",
-      "max_columns": 3,
+      "icon": "mdi:speaker-multiple",
       "sections": [
         {
           "type": "grid",
@@ -811,36 +965,41 @@
             {
               "type": "heading",
               "heading": "Speakers",
-              "icon": "mdi:speaker-multiple"
+              "heading_style": "title",
+              "icon": "mdi:speaker"
             },
             {
               "type": "custom:mushroom-media-player-card",
               "entity": "media_player.everywhere",
               "name": "Everywhere",
-              "icon": "mdi:speaker-multiple",
-              "use_media_info": true,
               "media_controls": [
-                "play_pause_stop"
+                "play_pause_stop",
+                "previous",
+                "next"
               ],
               "volume_controls": [
-                "volume_mute",
-                "volume_set"
+                "volume_buttons"
               ],
+              "use_media_info": true,
+              "collapsible_controls": true,
               "grid_options": {
-                "columns": "full"
+                "columns": 12
               }
             },
             {
               "type": "custom:mushroom-media-player-card",
               "entity": "media_player.living_room_alexa",
               "name": "Living Room",
-              "use_media_info": true,
               "media_controls": [
-                "play_pause_stop"
+                "play_pause_stop",
+                "previous",
+                "next"
               ],
               "volume_controls": [
-                "volume_set"
+                "volume_buttons"
               ],
+              "use_media_info": true,
+              "collapsible_controls": true,
               "grid_options": {
                 "columns": 6
               }
@@ -849,13 +1008,16 @@
               "type": "custom:mushroom-media-player-card",
               "entity": "media_player.bedroom_alexa",
               "name": "Bedroom",
-              "use_media_info": true,
               "media_controls": [
-                "play_pause_stop"
+                "play_pause_stop",
+                "previous",
+                "next"
               ],
               "volume_controls": [
-                "volume_set"
+                "volume_buttons"
               ],
+              "use_media_info": true,
+              "collapsible_controls": true,
               "grid_options": {
                 "columns": 6
               }
@@ -864,13 +1026,16 @@
               "type": "custom:mushroom-media-player-card",
               "entity": "media_player.office_alexa",
               "name": "Office",
-              "use_media_info": true,
               "media_controls": [
-                "play_pause_stop"
+                "play_pause_stop",
+                "previous",
+                "next"
               ],
               "volume_controls": [
-                "volume_set"
+                "volume_buttons"
               ],
+              "use_media_info": true,
+              "collapsible_controls": true,
               "grid_options": {
                 "columns": 6
               }
@@ -879,13 +1044,16 @@
               "type": "custom:mushroom-media-player-card",
               "entity": "media_player.upstairs",
               "name": "Upstairs",
-              "use_media_info": true,
               "media_controls": [
-                "play_pause_stop"
+                "play_pause_stop",
+                "previous",
+                "next"
               ],
               "volume_controls": [
-                "volume_set"
+                "volume_buttons"
               ],
+              "use_media_info": true,
+              "collapsible_controls": true,
               "grid_options": {
                 "columns": 6
               }
@@ -898,40 +1066,38 @@
             {
               "type": "heading",
               "heading": "Do not disturb",
-              "icon": "mdi:bell-off"
+              "heading_style": "title",
+              "icon": "mdi:minus-circle"
             },
             {
-              "type": "custom:mushroom-entity-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "switch.living_room_alexa_do_not_disturb",
               "name": "Living Room",
-              "icon": "mdi:bell-off",
-              "tap_action": {
-                "action": "toggle"
-              },
+              "icon": "mdi:minus-circle",
               "grid_options": {
                 "columns": 4
               }
             },
             {
-              "type": "custom:mushroom-entity-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "switch.bedroom_alexa_do_not_disturb",
               "name": "Bedroom",
-              "icon": "mdi:bell-off",
-              "tap_action": {
-                "action": "toggle"
-              },
+              "icon": "mdi:minus-circle",
               "grid_options": {
                 "columns": 4
               }
             },
             {
-              "type": "custom:mushroom-entity-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "switch.office_alexa_do_not_disturb",
               "name": "Office",
-              "icon": "mdi:bell-off",
-              "tap_action": {
-                "action": "toggle"
-              },
+              "icon": "mdi:minus-circle",
               "grid_options": {
                 "columns": 4
               }
@@ -941,19 +1107,10 @@
       ]
     },
     {
-      "title": "Poe",
-      "path": "poe",
-      "icon": "mdi:cat",
+      "title": "Cats",
+      "path": "cats",
       "type": "sections",
-      "max_columns": 3,
-      "header": {
-        "layout": "center",
-        "card": {
-          "type": "markdown",
-          "text_only": true,
-          "content": "# 🐾 Poe\n### Last visit: {{ states('sensor.carpeted_area_litter_tray_last_event') | replace('_',' ') | title }} · used {{ states('sensor.carpeted_area_litter_tray_times_used') }}× today"
-        }
-      },
+      "icon": "mdi:cat",
       "sections": [
         {
           "type": "grid",
@@ -961,48 +1118,47 @@
             {
               "type": "heading",
               "heading": "Litter tray",
-              "icon": "mdi:paw"
+              "heading_style": "title",
+              "icon": "mdi:cat"
             },
             {
-              "type": "custom:mushroom-template-card",
-              "primary": "Litter level",
-              "secondary": "{{ states('sensor.carpeted_area_litter_tray_litter_level') }}% remaining",
-              "icon": "mdi:cup",
-              "icon_color": "{{ 'red' if states('sensor.carpeted_area_litter_tray_litter_level')|int(100) < 20 else ('amber' if states('sensor.carpeted_area_litter_tray_litter_level')|int(100) < 40 else 'green') }}",
+              "type": "gauge",
               "entity": "sensor.carpeted_area_litter_tray_litter_level",
+              "name": "Litter level",
+              "min": 0,
+              "max": 100,
+              "severity": {
+                "green": 40,
+                "yellow": 20,
+                "red": 0
+              },
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-template-card",
-              "primary": "Status",
-              "secondary": "{{ states('sensor.carpeted_area_litter_tray_state') | title }}",
-              "icon": "mdi:robot-vacuum",
-              "icon_color": "blue",
+              "type": "tile",
               "entity": "sensor.carpeted_area_litter_tray_state",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Used today",
-              "secondary": "{{ states('sensor.carpeted_area_litter_tray_times_used') }} times · {{ states('sensor.carpeted_area_litter_tray_total_use') }} total",
-              "icon": "mdi:counter",
-              "icon_color": "purple",
-              "entity": "sensor.carpeted_area_litter_tray_times_used",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Last used by",
-              "secondary": "{{ states('sensor.carpeted_area_litter_tray_last_used_by') }}",
+              "name": "State",
               "icon": "mdi:cat",
-              "icon_color": "brown",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.carpeted_area_litter_tray_times_used",
+              "name": "Uses today",
+              "icon": "mdi:counter",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
               "entity": "sensor.carpeted_area_litter_tray_last_used_by",
+              "name": "Last used by",
+              "icon": "mdi:paw",
               "grid_options": {
                 "columns": 6
               }
@@ -1015,66 +1171,54 @@
             {
               "type": "heading",
               "heading": "Controls",
+              "heading_style": "title",
               "icon": "mdi:gesture-tap-button"
             },
             {
-              "type": "custom:mushroom-template-card",
-              "primary": "Scoop now",
-              "icon": "mdi:shovel",
-              "icon_color": "teal",
-              "tap_action": {
-                "action": "perform-action",
-                "perform_action": "button.press",
-                "target": {
-                  "entity_id": "button.carpeted_area_litter_tray_scoop"
-                }
-              },
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Deodorize",
-              "icon": "mdi:spray",
-              "icon_color": "green",
-              "tap_action": {
-                "action": "perform-action",
-                "perform_action": "button.press",
-                "target": {
-                  "entity_id": "button.carpeted_area_litter_tray_deodorize"
-                }
-              },
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Level litter",
-              "icon": "mdi:format-align-middle",
-              "icon_color": "orange",
-              "tap_action": {
-                "action": "perform-action",
-                "perform_action": "button.press",
-                "target": {
-                  "entity_id": "button.carpeted_area_litter_tray_level_litter"
-                }
-              },
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-entity-card",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "switch.carpeted_area_litter_tray_power",
               "name": "Power",
               "icon": "mdi:power",
+              "grid_options": {
+                "columns": 3
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "button.carpeted_area_litter_tray_scoop",
+              "name": "Scoop",
+              "icon": "mdi:shovel",
               "tap_action": {
                 "action": "toggle"
               },
               "grid_options": {
-                "columns": 6
+                "columns": 3
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "button.carpeted_area_litter_tray_level_litter",
+              "name": "Level",
+              "icon": "mdi:spirit-level",
+              "tap_action": {
+                "action": "toggle"
+              },
+              "grid_options": {
+                "columns": 3
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "button.carpeted_area_litter_tray_deodorize",
+              "name": "Deodorize",
+              "icon": "mdi:spray",
+              "tap_action": {
+                "action": "toggle"
+              },
+              "grid_options": {
+                "columns": 3
               }
             }
           ]
@@ -1085,53 +1229,57 @@
             {
               "type": "heading",
               "heading": "Alerts",
-              "icon": "mdi:alert-circle-outline"
+              "heading_style": "title",
+              "icon": "mdi:alert"
             },
             {
-              "type": "custom:mushroom-chips-card",
-              "chips": [
-                {
-                  "type": "template",
-                  "entity": "binary_sensor.carpeted_area_litter_tray_toilet_occupied",
-                  "icon": "mdi:cat",
-                  "icon_color": "{{ 'amber' if is_state('binary_sensor.carpeted_area_litter_tray_toilet_occupied','on') else 'grey' }}",
-                  "content": "{{ 'Occupied' if is_state('binary_sensor.carpeted_area_litter_tray_toilet_occupied','on') else 'Free' }}"
-                },
-                {
-                  "type": "template",
-                  "entity": "binary_sensor.carpeted_area_litter_tray_wastebin_filled",
-                  "icon": "mdi:delete-alert",
-                  "icon_color": "{{ 'red' if is_state('binary_sensor.carpeted_area_litter_tray_wastebin_filled','on') else 'grey' }}",
-                  "content": "{{ 'Bin full' if is_state('binary_sensor.carpeted_area_litter_tray_wastebin_filled','on') else 'Bin OK' }}"
-                },
-                {
-                  "type": "template",
-                  "entity": "binary_sensor.carpeted_area_litter_tray_sand_lack",
-                  "icon": "mdi:alert",
-                  "icon_color": "{{ 'red' if is_state('binary_sensor.carpeted_area_litter_tray_sand_lack','on') else 'grey' }}",
-                  "content": "{{ 'Low sand' if is_state('binary_sensor.carpeted_area_litter_tray_sand_lack','on') else 'Sand OK' }}"
-                },
-                {
-                  "type": "template",
-                  "entity": "sensor.carpeted_area_litter_tray_odor_eliminator_n50_left_days",
-                  "icon": "mdi:air-filter",
-                  "content": "Filter {{ states('sensor.carpeted_area_litter_tray_odor_eliminator_n50_left_days') }}d"
-                }
-              ],
+              "type": "tile",
+              "entity": "binary_sensor.carpeted_area_litter_tray_wastebin_filled",
+              "name": "Waste bin full",
+              "icon": "mdi:delete-alert",
               "grid_options": {
-                "columns": "full"
+                "columns": 4
               }
             },
             {
-              "type": "custom:mushroom-light-card",
+              "type": "tile",
+              "entity": "binary_sensor.carpeted_area_litter_tray_sand_lack",
+              "name": "Sand low",
+              "icon": "mdi:cup",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.carpeted_area_litter_tray_odor_eliminator_n50_left_days",
+              "name": "Odor filter (days)",
+              "icon": "mdi:air-filter",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
               "entity": "light.carpeted_area_litter_tray_light",
-              "name": "Tray Light",
+              "name": "Tray light",
               "icon": "mdi:lightbulb",
-              "show_brightness_control": true,
-              "collapsible_controls": true,
               "grid_options": {
-                "columns": "full"
+                "columns": 12
               }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "3 cats · 2 tracked (two read as one on weight)",
+              "heading_style": "subtitle",
+              "icon": "mdi:information-outline"
             }
           ]
         }
@@ -1140,9 +1288,8 @@
     {
       "title": "Phone",
       "path": "phone",
-      "icon": "mdi:cellphone",
       "type": "sections",
-      "max_columns": 3,
+      "icon": "mdi:cellphone",
       "sections": [
         {
           "type": "grid",
@@ -1150,50 +1297,34 @@
             {
               "type": "heading",
               "heading": "Alex's iPhone",
+              "heading_style": "title",
               "icon": "mdi:cellphone"
             },
             {
-              "type": "custom:mushroom-template-card",
-              "primary": "Battery",
-              "secondary": "{{ states('sensor.alexs_iphone_battery_level') }}% · {{ states('sensor.alexs_iphone_battery_state') }}",
-              "icon": "{{ 'mdi:battery-charging' if 'Charging' in states('sensor.alexs_iphone_battery_state') else 'mdi:battery' }}",
-              "icon_color": "{{ 'red' if states('sensor.alexs_iphone_battery_level')|int(100) < 20 else 'green' }}",
+              "type": "tile",
               "entity": "sensor.alexs_iphone_battery_level",
+              "name": "Battery",
+              "icon": "mdi:battery",
               "grid_options": {
                 "columns": 6
               }
             },
             {
-              "type": "custom:mushroom-template-card",
-              "primary": "Location",
-              "secondary": "{{ states('device_tracker.alexs_iphone') | title }}",
-              "icon": "mdi:map-marker",
-              "icon_color": "{{ 'green' if is_state('device_tracker.alexs_iphone','home') else 'blue' }}",
-              "entity": "device_tracker.alexs_iphone",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Steps today",
-              "secondary": "{{ states('sensor.alexs_iphone_steps') }} steps",
-              "icon": "mdi:walk",
-              "icon_color": "teal",
-              "entity": "sensor.alexs_iphone_steps",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Activity",
-              "secondary": "{{ states('sensor.alexs_iphone_activity') | title }}",
-              "icon": "mdi:run",
-              "icon_color": "orange",
+              "type": "tile",
               "entity": "sensor.alexs_iphone_activity",
+              "name": "Activity",
+              "icon": "mdi:run",
               "grid_options": {
                 "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.alexs_iphone_geocoded_location",
+              "name": "Where",
+              "icon": "mdi:map-marker",
+              "grid_options": {
+                "columns": 12
               }
             }
           ]
@@ -1204,7 +1335,8 @@
             {
               "type": "heading",
               "heading": "Steps",
-              "icon": "mdi:chart-line"
+              "heading_style": "title",
+              "icon": "mdi:shoe-print"
             },
             {
               "type": "custom:mini-graph-card",
@@ -1214,13 +1346,21 @@
                   "name": "Steps"
                 }
               ],
-              "name": "Steps today",
-              "icon": "mdi:walk",
-              "line_color": "#26a69a",
-              "hours_to_show": 24,
-              "points_per_hour": 1,
+              "name": "Steps",
+              "hours_to_show": 168,
+              "aggregate_func": "max",
+              "group_by": "date",
+              "show": {
+                "graph": "bar"
+              },
+              "color_thresholds": [
+                {
+                  "value": 0,
+                  "color": "#44bba4"
+                }
+              ],
               "grid_options": {
-                "columns": "full"
+                "columns": 12
               }
             }
           ]
@@ -1230,7 +1370,8 @@
           "cards": [
             {
               "type": "heading",
-              "heading": "Where",
+              "heading": "Location",
+              "heading_style": "title",
               "icon": "mdi:map"
             },
             {
@@ -1238,22 +1379,10 @@
               "entities": [
                 "device_tracker.alexs_iphone"
               ],
-              "theme_mode": "auto",
+              "default_zoom": 11,
+              "hours_to_show": 0,
               "grid_options": {
-                "columns": "full",
-                "rows": 4
-              }
-            },
-            {
-              "type": "custom:mushroom-template-card",
-              "primary": "Address",
-              "secondary": "{{ states('sensor.alexs_iphone_geocoded_location') }}",
-              "icon": "mdi:home-map-marker",
-              "icon_color": "blue",
-              "multiline_secondary": true,
-              "entity": "sensor.alexs_iphone_geocoded_location",
-              "grid_options": {
-                "columns": "full"
+                "columns": 12
               }
             }
           ]
