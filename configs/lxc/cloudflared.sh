@@ -28,16 +28,18 @@ fi
 pct start "$CTID" 2>/dev/null || true
 
 say "install cloudflared (static binary, arch-matched)"
+# pct exec has a minimal PATH that excludes /usr/local/bin, so test the binary by its
+# absolute path, not `command -v` (which would re-download every run and then fail the check).
 pct exec "$CTID" -- bash -c '
   set -e
   command -v curl >/dev/null || { apt-get update && apt-get install -y curl ca-certificates; }
-  if ! command -v cloudflared >/dev/null; then
+  if [ ! -x /usr/local/bin/cloudflared ]; then
     arch="$(dpkg --print-architecture)"   # amd64 | arm64
     curl -fsSL -o /usr/local/bin/cloudflared \
       "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${arch}"
     chmod +x /usr/local/bin/cloudflared
   fi
-  cloudflared --version'
+  /usr/local/bin/cloudflared --version'
 
 # ---- target + optional token: gitignored .env, set on-box (boxes pull only) ----
 if [ ! -f ../cloudflared/.env ]; then

@@ -7,8 +7,9 @@ ENVF=/opt/cloudflared/.env
 # shellcheck disable=SC1090
 [ -f "$ENVF" ] && . "$ENVF"
 HA_MCP_URL="${HA_MCP_URL:-http://192.168.1.25:9584}"
+CF=/usr/local/bin/cloudflared          # absolute — systemd/minimal PATH may omit /usr/local/bin
 if [ -n "${CLOUDFLARED_TUNNEL_TOKEN:-}" ]; then
-  exec cloudflared --no-autoupdate tunnel run --token "$CLOUDFLARED_TUNNEL_TOKEN"
+  exec "$CF" --no-autoupdate tunnel run --token "$CLOUDFLARED_TUNNEL_TOKEN"
 else
-  exec cloudflared --no-autoupdate tunnel --url "$HA_MCP_URL"
+  exec "$CF" --no-autoupdate tunnel --url "$HA_MCP_URL"
 fi
