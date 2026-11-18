@@ -76,16 +76,16 @@ account's email/password below.
 
 ## Stage 2 — Eufy RoboVac into HA
 
-RoboVacs are **not** part of eufy_security — they're local Tuya devices.
+RoboVacs are **not** part of eufy_security — they're local Tuya devices. Use **`damacus/robovac`**
+(the maintained successor to `bmccluskey/robovac`), which is in the **Marketplace catalog** — no custom
+repo. Installed here 2026-11-18 (v2.5.2) via HA-MCP (`ha_manage_hacs download`).
 
-1. HACS → ⋮ → Custom repositories → add `https://github.com/bmccluskey/robovac` (category Integration)
-   → install → restart HA.
-2. Settings → Devices & Services → Add Integration → **RoboVac**. Newer versions pull the device id +
-   local key from your Eufy account login; older ones need the **device ID + local key** (get them
-   with the Tuya/eufy key extractor the repo README links). Model matters — the repo lists supported
-   RoboVacs; if yours is newer (L60/X-series/Omni) check the open issues for the right fork.
-3. You get a `vacuum.*` entity (start/stop/return/clean) + battery/status — it goes on a new
-   **Cleaning** dashboard card.
+1. Settings → **Marketplace** → search **RoboVac** (`damacus/robovac`) → install → **restart HA** to load it.
+2. Settings → Devices & Services → Add Integration → **RoboVac** → **log in with your Eufy account**
+   (email + password). v2.x **auto-retrieves the device ID, local key and model from Eufy's API** — no
+   manual Tuya key extraction. Check the model first: <https://damacus.github.io/robovac/supported-models/>.
+3. You get a `vacuum.*` entity (start/stop/return/locate) + battery/status — wire it into a **Cleaning**
+   card on the dashboard once the entity exists.
 
 ## Stage 3 — Frigate (LXC 111, nuc2) — the 4 indoor cams
 
