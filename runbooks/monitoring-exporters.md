@@ -156,6 +156,21 @@ Then on the Pi `./configs/pi/redeploy.sh` so Prometheus picks up the `frigate` j
 
 ---
 
+## Tdarr — tdarr-exporter  ✅
+
+**tdarr-exporter** (`homeylab/tdarr-exporter`, `:9114`) scrapes Tdarr's stats API (LXC 210 `:8265`) and
+re-exposes it — Tdarr has no native metrics. No API key (Tdarr has no auth). Runs on the Pi, host
+networking; its own default port is 9090 (clashes with Prometheus) so it's moved to `PROMETHEUS_PORT=9114`.
+**Metrics:** `tdarr_size_diff_bytes` (space saved, signed), `tdarr_transcodes_completed`, `tdarr_files`,
+`tdarr_health_check_score_ratio`, per-library `tdarr_library_*` (with `library_name`), `tdarr_library_transcodes`
+(by `status` — the queue/error breakdown), `tdarr_node_worker_*`, `tdarr_server_uptime_seconds`.
+**Dashboard:** Grafana → **Tdarr transcoding** (uid `tdarr`).
+**Verify:** Prometheus → Targets → `tdarr-stats` UP; `curl -s http://pi.home.alexjenkinson.com:9114/metrics | grep tdarr_ | head`.
+**Caveat:** empty until Tdarr has a library + has run at least once; `tdarr_size_diff_bytes` is signed
+(positive = space reclaimed). If the target is DOWN, check the exporter can reach `media-pipeline…:8265`.
+
+---
+
 ## Home Assistant — native Prometheus integration  ✅
 
 HA exposes `/api/prometheus` (lights, sensors, climate, binary sensors, switches…) behind a bearer token

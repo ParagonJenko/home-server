@@ -133,6 +133,12 @@ scrape_configs:
   - job_name: adguard
     static_configs: [ { targets: ['localhost:9617'] } ]
 
+  # ---- Tdarr stats exporter (:9114) — space saved, queue, transcode/health, per-library ----
+  # tdarr-exporter scrapes Tdarr's API on LXC 210 and re-exposes it here. Feeds the "Tdarr
+  # transcoding" dashboard. (Separate from the blackbox :8265 up/down probe labelled service=tdarr.)
+  - job_name: tdarr-stats
+    static_configs: [ { targets: ['localhost:9114'] } ]
+
   # ---- Frigate (via the metrics-only sidecar on :9101) ----
   # Frigate 0.18 serves metrics at /api/metrics, unauth on its loopback-bound :5000. The frigate-metrics
   # nginx sidecar (configs/frigate/docker-compose.yaml) exposes ONLY that as /metrics on :9101, so the

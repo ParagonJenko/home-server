@@ -131,5 +131,17 @@ services:
       SERVER_PORT: 9617
       INTERVAL: 30s
     restart: unless-stopped
+
+  # Tdarr exporter — scrapes Tdarr's stats API (LXC 210 :8265) and exposes Prometheus metrics
+  # (space saved, queue by state, transcode/health counts, per-library, workers). Tdarr has no
+  # native metrics. arm64-ok. Default metrics port is 9090 (clashes with Prometheus) so it's moved
+  # to :9114. Tdarr has no auth, so no API key. Metrics at localhost:9114/metrics.
+  tdarr-exporter:
+    image: homeylab/tdarr-exporter:latest    # ENTER: pin a version tag (don't leave :latest)
+    network_mode: host
+    environment:
+      TDARR_URL: "http://media-pipeline.home.alexjenkinson.com:8265"
+      PROMETHEUS_PORT: "9114"
+    restart: unless-stopped
 volumes:
   grafana-data:
