@@ -31,19 +31,28 @@ the in-app RTSP toggle** (Settings → the cam → *RTSP*). Battery cams physica
 detection; for those `eufy_security` on-demand view + Eufy-side motion is the best achievable.
 **The camera model is what decides this** — get the models before wiring Frigate.
 
-## This home's split (decided)
+## This home's split (decided — verified working 2026-11-18)
 
-- **4 indoor cams — all wired, all native RTSP → Frigate.** The Frigate config is already written
-  (`configs/frigate/config.yaml`, Stage 3). No eufy-security-ws needed for these — they stream RTSP
-  directly, go2rtc just restreams.
-- **Doorbell — battery → `eufy_security` integration** (Stage 1). Sleeps, so it can't go in Frigate;
-  the integration gives the press event, on-demand view and motion.
+- **4 indoor cams — wired; RTSP is enabled *by* the eufy_security integration → go2rtc (in Frigate) →
+  Frigate & HA.** CORRECTION to the earlier assumption: these cams do **not** expose RTSP from the Eufy
+  app. RTSP turns on when the **eufy-security-ws add-on + eufy_security integration** connect (Stage 1) —
+  that's the piece that makes the cameras serve a stream. Once it's connected *and* `configs/frigate/.env`
+  holds the RTSP creds, Frigate's built-in go2rtc pulls
+  `rtsp://…@cam-<room>.home.alexjenkinson.com:554/live0` and the four Frigate camera entities flip from
+  `unavailable` to `recording` on their own — HA gets them via the Frigate integration, no separate Eufy
+  camera entities needed. (Verified by pulling a live snapshot over MCP the moment the add-on connected.)
+- **Doorbell — battery → the same `eufy_security` integration** (Stage 1). Sleeps, so it can't go in
+  Frigate; the integration gives the press event, on-demand view and motion.
 - **RoboVac → `bmccluskey/robovac`** (Stage 2).
 
-## Stage 1 — eufy-security-ws + the eufy_security integration (for the battery doorbell)
+## Stage 1 — eufy-security-ws + the eufy_security integration (REQUIRED for the cameras AND doorbell)
 
-Needed for the battery doorbell (press events, motion, on-demand view) and any other Eufy device the
-Frigate path doesn't cover.
+This is what turns **RTSP on** for the wired cameras (so Frigate can pull them) **and** covers the
+battery doorbell (press events, motion, on-demand view). Without it the cameras serve no stream and
+Frigate's go2rtc has nothing to connect to — the four Frigate cams sit `unavailable`. The add-on is
+`bropat/hassio-eufy-security-ws` (store slug `402f1039_eufy_security_ws`); it can be added + installed
+from the HA-MCP connector (`ha_manage_app add_repository` then `install`) but must be **configured with
+your Eufy account and started by you**.
 
 **Prereq: make a SECONDARY Eufy account.** The integration holds a login session; if it uses your
 main account you get logged out of the phone app constantly and hit 2FA churn. In the Eufy app
@@ -55,9 +64,11 @@ account's email/password below.
    `username` (secondary account), `password`, `country: GB`, `trusted_device_name: homeassistant`.
    Start it. (It listens on `:3000`.)
 2. **go2rtc / WebRTC** — already installed here (WebRTC Camera / `update.webrtc_camera`). Nothing to do.
-3. **Integration** — HACS → search **Eufy Security** → install → restart HA. Settings → Devices &
-   Services → Add Integration → **Eufy Security** → host `127.0.0.1`, port `3000`. Handle the captcha
-   + 2FA prompts via **Reconfigure** if they appear.
+3. **Integration** — **Settings → Marketplace** (2026.11+; HACS on older) → **Eufy Security** → install
+   → restart HA. Settings → Devices & Services → Add Integration → **Eufy Security** → host `127.0.0.1`,
+   port `3000`. First login throws a **captcha + MFA** challenge: enter the captcha characters and the
+   emailed code **together in the same step** — the code expires in a couple of minutes, so fetch it
+   right before submitting. Email-based 2FA works best here; an authenticator app is fiddlier.
 4. In the Eufy app set **Streaming Quality + Codec to LOW** on each cam (P2P is bandwidth-heavy).
 5. Entities appear as `camera.*`, plus `binary_sensor.*` (motion/person), `sensor.*` (battery), and
    doorbell events. **Re-run the `/api/states` dump and send it** — the dashboard Security tab is
@@ -82,10 +93,12 @@ RoboVacs are **not** part of eufy_security — they're local Tuya devices.
 stream `rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-<room>.home.alexjenkinson.com:554/live0`,
 and Frigate detects+records off go2rtc on localhost. What's left is turning RTSP on and pointing DNS:
 
-1. **Enable RTSP on each indoor cam** — Eufy app → the camera → Settings → **RTSP** → enable. Eufy
-   lets you set a username + password; use the **same pair on all 4** (the config uses one credential
-   set). Confirm the stream path is `/live0` (most Eufy cams); if a cam differs, change only that
-   camera's go2rtc URL.
+1. **RTSP is enabled by the eufy_security integration (Stage 1), NOT the Eufy app.** Once the add-on +
+   integration connect, the cams serve RTSP on their LAN IP at `/live0`. The creds in
+   `configs/frigate/.env` (`FRIGATE_RTSP_USER`/`PASSWORD`) must match what the cams use. If a cam's path
+   isn't `/live0`, change only that camera's go2rtc URL. (In practice the four cams flipped from
+   `unavailable` to `recording` on their own once the integration connected and the creds were already
+   in `.env` — no per-cam toggling needed.)
 2. **Credentials** → put `FRIGATE_RTSP_USER` + `FRIGATE_RTSP_PASSWORD` in `configs/frigate/.env`
    (gitignored). The config has no secrets.
 3. **DNS** → each `cam-<room>.home.alexjenkinson.com` must resolve to the camera's IP from inside the
