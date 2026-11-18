@@ -1756,6 +1756,11 @@ var STAGES = [
             }
           },
           {
+            "callout": "note",
+            "title": "Name the cameras to your rooms — setup-cameras.sh",
+            "html": "<p>The four cameras ship as placeholders <code class=\"inline\">cam-living-room / cam-kitchen / cam-bedroom / cam-basement</code>. To rename them to your actual rooms <em>consistently</em> — the name lives in three files (<code class=\"inline\">config.yaml</code> for recording, <code class=\"inline\">network.md</code> for DNS, <code class=\"inline\">prometheus.yml</code> for the up/down probe) — run the interactive <code class=\"inline\">./configs/frigate/setup-cameras.sh</code>: it prompts each camera's real room, renames across all three files, and sets the shared RTSP credential in one pass (so <code class=\"inline\">frigate.sh</code> won't re-prompt). Commit the renames, then <code class=\"inline\">adguard-rewrites.py --apply</code> on the Pi and <code class=\"inline\">frigate.sh</code> on NUC-2.</p><p><strong>This build's cameras are all wired indoor Eufy cams with in-app RTSP (no HomeBase needed); the battery doorbell is NOT a Frigate camera</strong> — it goes through the <code class=\"inline\">eufy_security</code> integration. The full Eufy→Frigate→HA split, the doorbell, and the RoboVac are in <code class=\"inline\">runbooks/eufy-ha.md</code>.</p>"
+          },
+          {
             "manual": {
               "where": "Router + AdGuard · needs Pi",
               "lead": "<code class=\"inline\">cam-living-room.home.alexjenkinson.com</code>, … — literal camera IPs are exactly what broke the old setup. <strong>This needs the Pi already built</strong>; without it Frigate starts and records nothing.",
