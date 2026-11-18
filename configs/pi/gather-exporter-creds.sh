@@ -125,6 +125,11 @@ ask_secret ADGUARD_PASS "AdGuard password"
 echo "[9] Home Assistant  (enable the Prometheus integration in HA first — see monitoring-exporters.md)"
 ask_secret HA_TOKEN "HA long-lived token (HA profile -> Security -> Long-lived access tokens -> Create)"
 
+# --- 10. Tdarr -------------------------------------------------------------
+echo "[10] Tdarr  (its cruddb/stats API needs a key; find it in Tdarr's UI, or on nuc1:"
+echo "      pct exec 210 -- grep -ioE '\"[a-z_]*key[a-z_]*\":\"[^\"]*\"' /opt/tdarr/configs/Tdarr_Server_Config.json )"
+ask TDARR_API_KEY "Tdarr API key" "${SUG[TDARR_API_KEY]:-}"
+
 echo
 echo "All saved to $ENV."
 if yn "Restart the stack now (docker compose up -d)?"; then
