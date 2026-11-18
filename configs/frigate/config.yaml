@@ -48,31 +48,34 @@ model:
   path: /openvino-model/ssdlite_mobilenet_v2.xml
   labelmap_path: /openvino-model/coco_91cl_bkgr.txt
 
-# go2rtc restreams each camera once and Frigate pulls from it on localhost. Eufy RTSP is
-# finicky for ffmpeg to consume directly, so go2rtc sits in front (it also powers the live view).
-# The {VAR}s resolve from .env; the cam-*.home.alexjenkinson.com names must resolve FROM INSIDE
-# this container (Pi DNS) — if a stream stays down, check `getent hosts cam-*.home.alexjenkinson.com`.
-# Until RTSP is enabled on the cams and FRIGATE_RTSP_* is set in .env, the cameras load but show
-# "no stream" — that's expected, not a config error.
+# go2rtc restreams each camera once and Frigate pulls from it on localhost (127.0.0.1:8554).
+#
+# SOURCE = the eufy-sdk bridge (HA add-on on the HA VM, 192.168.1.25:8554). The bridge holds ONE
+# P2P session per Eufy camera and restreams it over RTSP keyed by the camera's DEVICE SERIAL. This
+# REPLACED the old cam-<room>.home on-camera-RTSP pulls + the DNS-swap hack (the physical cams were
+# wired to the wrong cam-<room>.home names). Pulling from the bridge gives: correct-by-serial labels
+# (no dependence on which cam-<room>.home DNS points where), and a single P2P session per cam that is
+# SHARED with HA's own camera view — so Frigate no longer opens a second client against each camera.
+#
+# WHERE THE SERIALS COME FROM (re-read after any re-pair / rebuild): HA entity sensor.<room>_stream_url
+# (eufy-sdk) = rtsp://<bridge>:8554/<SERIAL>. That sensor shows the add-on's INTERNAL Docker IP
+# (172.30.x); from OUTSIDE HA — this Frigate LXC on nuc2 — use the HA host LAN IP 192.168.1.25. The
+# eufy-sdk bridge add-on publishes :8554 on the host (verified in its add-on network config: 8554/tcp).
+# The bridge's go2rtc RTSP is unauthenticated on the LAN, so these URLs carry no creds (file stays secret-free).
+# If a stream stays down: `nc -vz 192.168.1.25 8554` from inside this container, and check the bridge add-on is running.
+#
+#   living-room T8410 = T8410P412237379E | kitchen  T8410 = T8410P4122381195
+#   bedroom     T8417 = T8417T0025011480 | basement T8400 = T8400P3223124F23
 go2rtc:
-  # CAMERA↔HOSTNAME MISMATCH (verified 2026-11-18 by what each feed actually shows): the physical
-  # cameras were wired to the wrong cam-<room>.home DNS names. Each cam-<room>.home resolves to a
-  # DIFFERENT room's camera, in two swapped pairs — living-room↔bedroom and kitchen↔basement. Rather
-  # than redo DHCP reservations + AdGuard rewrites, each Frigate stream below pulls the hostname that
-  # ACTUALLY shows its room, so the Frigate camera names (and HA entities + dashboard) are correct:
-  #   cam-living-room feed lives at cam-bedroom.home   | cam-bedroom feed  lives at cam-living-room.home
-  #   cam-kitchen feed     lives at cam-basement.home  | cam-basement feed lives at cam-kitchen.home
-  # To fix "properly" later: swap the AdGuard rewrites so each cam-<room>.home → that room's camera IP,
-  # then point each stream back at its own matching hostname.
   streams:
     cam-living-room:
-      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-bedroom.home.alexjenkinson.com:554/live0
+      - rtsp://192.168.1.25:8554/T8410P412237379E
     cam-kitchen:
-      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-basement.home.alexjenkinson.com:554/live0
+      - rtsp://192.168.1.25:8554/T8410P4122381195
     cam-bedroom:
-      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-living-room.home.alexjenkinson.com:554/live0
+      - rtsp://192.168.1.25:8554/T8417T0025011480
     cam-basement:
-      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-kitchen.home.alexjenkinson.com:554/live0
+      - rtsp://192.168.1.25:8554/T8400P3223124F23
 
 cameras:
   cam-living-room:

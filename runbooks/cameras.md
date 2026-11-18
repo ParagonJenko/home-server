@@ -1,9 +1,23 @@
 # Camera onboarding (Frigate NVR)
 
 How to take a camera from "in the box" to "recording in Frigate and monitored in Grafana".
-Frigate is already installed (LXC 111 on nuc2); what's missing per camera is **RTSP enabled, a
-DHCP reservation, an AdGuard rewrite, and the shared RTSP credentials**. Do all four or the camera
-records nothing.
+
+> **Architecture update (2026-11-18): Frigate sources cameras from the eufy-sdk bridge, not direct
+> on-camera RTSP.** The eufy-sdk HACS integration + its bridge add-on (on the HA VM) hold ONE P2P
+> session per camera and restream each over RTSP at `192.168.1.25:8554/<device-serial>`. Frigate's
+> `go2rtc` pulls those (serial map lives in `configs/frigate/config.yaml`). This retired the old
+> `cam-<room>.home` direct-RTSP pulls **and** the DNS-swap hack (the physical cams were wired to the
+> wrong `cam-<room>.home` names). One P2P session is shared with HA's own view, so Frigate no longer
+> opens a second client per camera. Each live serial = `sensor.<room>_stream_url` in HA; the bridge
+> itself is documented in `runbooks/eufy-ha.md`.
+>
+> **Steps 1–7 below are the direct-RTSP FALLBACK** (Frigate → camera `:554/live0` by hostname). They
+> stay because the DHCP reservations, AdGuard rewrites, and on-camera RTSP they set up are still what
+> make each camera addressable — and what eufy-sdk's own `switch.<room>_rtsp_stream` toggles rely on.
+> Use them only if you deliberately bypass the bridge.
+
+Frigate is already installed (LXC 111 on nuc2); for the fallback path, what's missing per camera is
+**RTSP enabled, a DHCP reservation, an AdGuard rewrite, and the shared RTSP credentials**.
 
 The four cameras and their reserved IPs (from `network.md`):
 
