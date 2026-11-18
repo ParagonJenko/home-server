@@ -158,6 +158,10 @@ def build_group(name, desc, library, flavor, added_prop, watched_prop, days, gra
             "visibleOnHome": False,
         },
         "rules": rules,
+        # MUST be an empty list, not omitted: createOrUpdateGroup does
+        # `.add(notifications?.map(...))`, and on undefined that becomes `.add(undefined)` which
+        # inserts a null notificationId and trips a NOT NULL constraint, failing the whole group.
+        "notifications": [],
     }
     # The newer API ties a group to a specific Radarr/Sonarr instance; 2.x assumes the single
     # configured one, so only send the settings id on the media-server flavor.
@@ -252,20 +256,30 @@ def main():
         return
 
     print(f"\n{'Creating' if args.apply else 'Would create'} {len(planned)} rule group(s):\n")
+    created = 0
     for g in planned:
         print(f"  • {g['name']}")
         print("    " + json.dumps(g, separators=(",", ":")))
         if args.apply:
             s, resp = _req(f"{base}/api/rules", method="POST", body=g)
-            ok = s in (200, 201) and isinstance(resp, dict) and resp.get("code") == 1
-            print(f"    -> HTTP {s} {'OK' if ok else 'FAILED: ' + str(resp)[:300]}")
+            if s in (200, 201) and isinstance(resp, dict) and resp.get("code") == 1:
+                created += 1
+                print(f"    -> HTTP {s} OK")
+            elif s in (200, 201) and resp is None:
+                print(f"    -> HTTP {s} FAILED (empty body = server-side create error). Check: "
+                      "pct exec 210 -- docker logs media-pipeline-maintainerr-1 --tail 15")
+            else:
+                print(f"    -> HTTP {s} FAILED: {str(resp)[:300]}")
         print()
 
     if not args.apply:
         print("DRY-RUN — nothing was created. Re-run with --apply to create these groups.")
+    elif created:
+        print(f"Created {created} group(s). Nothing is deleted yet: open each group in the Maintainerr UI,\n"
+              "review the matched items, then run the group. Matches then sit in the collection for the\n"
+              "grace window before removal.")
     else:
-        print("Created. Nothing is deleted yet: open each group in the Maintainerr UI, review the matched\n"
-              "items, then run the group. Matches then sit in the collection for the grace window before removal.")
+        print("No groups were created — see the FAILED line(s) above.")
 
 
 if __name__ == "__main__":
