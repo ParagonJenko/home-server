@@ -1,0 +1,80 @@
+# Deployed live via HA-MCP and committed here as the source of truth.
+# Faithful copy of the HA automations; drop into /config/automations.yaml on a rebuild
+# (or just restore the HA backup tarball). See README.md.
+- id: '1795039639885'
+  alias: Doorbell → phone (snapshot)
+  description: 'Doorbell pressed: push a live doorbell snapshot to Alex''s phone.'
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.doorbell_ringing
+    to: 'on'
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 🔔 Doorbell
+      message: Someone's at the front door
+      data:
+        image: /api/camera_proxy/camera.doorbell
+        tag: doorbell
+        group: security
+- id: '1795039640817'
+  alias: Person detected while away
+  description: 'Frigate sees a person in a room while Alex is away: push an alert with that room''s camera snapshot.'
+  mode: parallel
+  max: 10
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.living_room_person
+    - binary_sensor.kitchen_person
+    - binary_sensor.bedroom_person
+    - binary_sensor.basement_person
+    to: 'on'
+  conditions:
+  - condition: state
+    entity_id: person.alex_jenkinson
+    state: not_home
+  variables:
+    cam: '{{ {''binary_sensor.living_room_person'':''camera.living_room_cam_living_room'',''binary_sensor.kitchen_person'':''camera.living_room_cam_kitchen'',''binary_sensor.bedroom_person'':''camera.bedroom_cam_bedroom'',''binary_sensor.basement_person'':''camera.utility_cam_basement''}.get(trigger.entity_id,''camera.doorbell'')
+      }}'
+    room: '{{ trigger.to_state.attributes.friendly_name | replace('' Person'','''') }}'
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 👁️ Person detected — you're away
+      message: Someone is in the {{ room }}
+      data:
+        image: /api/camera_proxy/{{ cam }}
+        tag: person_away_{{ room }}
+        group: security
+- id: '1795039641592'
+  alias: Arrive home (dark) → living room lights
+  description: When Alex gets home while the sun is below the horizon, turn on the living room lights.
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: person.alex_jenkinson
+    to: home
+  conditions:
+  - condition: state
+    entity_id: sun.sun
+    state: below_horizon
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.living_room_living_room
+- id: '1795039642577'
+  alias: Leave home → all lights off
+  description: When Alex leaves (debounced 2 min), turn off all lights. Single occupant, so not_home = empty house.
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: person.alex_jenkinson
+    to: not_home
+    for:
+      minutes: 2
+  actions:
+  - action: light.turn_off
+    target:
+      entity_id: all
