@@ -78,3 +78,25 @@
   - action: light.turn_off
     target:
       entity_id: all
+- id: '1795039995065'
+  alias: Litter tray full → hourly phone alert
+  description: 'PetKit waste bin full: alert Alex''s phone immediately, then every hour until it''s emptied.'
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.carpeted_area_litter_tray_wastebin_filled
+    to: 'on'
+  - trigger: time_pattern
+    hours: /1
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.carpeted_area_litter_tray_wastebin_filled
+    state: 'on'
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 🚽 Litter tray full
+      message: The PetKit waste bin is full — time to empty it.
+      data:
+        tag: litter_full
+        group: home
