@@ -16,11 +16,15 @@ tls:
 record:
   enabled: true
   retain:
-    days: 14               # keep 14 days of MOTION footage (records 24/7, prunes still segments) — storage.md
-    mode: motion           # 'all' = true 24/7 (much more disk); 'active_objects' = only tracked-object clips
+    days: 2                # 48h of CONTINUOUS footage — scrub to any moment (fits the 260G LXC)
+    mode: all
+  # Beyond 48h, Frigate keeps footage around DETECTED OBJECTS (person/animal/car) for 14 days, not raw
+  # motion — the recommended security setup (keeps people, drops noise). Needs the detector working;
+  # the default CPU detector is slow on 4 cams at 2 cores — add an OpenVINO (iGPU) detector later for
+  # snappier detection (the LXC already has /dev/dri passed through).
   alerts:
     retain:
-      days: 14             # object-detection alerts kept the full 14 days regardless
+      days: 14
       mode: motion
   detections:
     retain:
