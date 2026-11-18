@@ -13,9 +13,10 @@ It also adapts to BOTH Maintainerr API generations:
     dataType is the string 'movie'/'show', with radarrSettingsId/sonarrSettingsId.
 
 What it creates (conservative on purpose), one group per movie library:
-    delete when the film was ADDED over N days ago AND (never watched OR last watched over
-    N days ago). The "added over N days ago" half is the safety net: a film you added last
-    week but haven't watched yet is NOT a match. N defaults to 90.
+    delete when the film was ADDED over N days ago AND last watched over N days ago (films
+    watched in the last N days are excluded; see build_group for how never-watched films land
+    under Maintainerr's evaluation). The "added over N days ago" half is the safety net: a
+    film you added last week is never a match. N defaults to 90.
   --shows adds the same shape for show libraries using the newest-episode view date (180d).
 
 Two layers of safety before anything is deleted:
@@ -44,9 +45,8 @@ DEFAULT_URL = os.environ.get("MAINTAINERR_URL", "http://media-pipeline.home.alex
 DAY = 86400
 
 # Enum values from Maintainerr's rule constants (stable/append-only across 2.x and main).
-RULE_OP_OR = 1          # RuleOperators.OR (null = first rule of a section)
+RULE_OP_AND = 0         # RuleOperators.AND
 POSS_BEFORE = 5         # RulePossibility.BEFORE  — date is further in the past than the value
-POSS_NOT_EXISTS = 19    # RulePossibility.NOT_EXISTS
 RULETYPE_NUMBER = 0     # customVal.ruleTypeId for a relative duration (value = seconds, as string)
 ARRACTION_DELETE = 0    # ServarrAction.DELETE
 EPLEX_MOVIES = 1        # EPlexDataType.MOVIES  (2.x numeric dataType)
@@ -119,15 +119,20 @@ def date_rule(section, operator, action, firstval, seconds=None):
 
 
 def build_group(name, desc, library, flavor, added_prop, watched_prop, days, grace, arr):
-    """added >N days ago AND (watched NOT_EXISTS OR watched BEFORE N days ago)."""
+    """added >N days ago AND last watched >N days ago.
+
+    Two BEFORE rules AND'd together. Encoded this way on purpose (not NOT_EXISTS):
+    Maintainerr evaluates an AND rule by *removing* items that explicitly fail it, and skips
+    the rule entirely for an item whose value is missing. So the first rule seeds the set with
+    everything added >N days ago, and the second removes only films watched within the last N
+    days — a never-watched film (no last-view date) is skipped, not removed, so it stays in.
+    Net: 'old and not watched recently', which is the safe cleanup target. Review in the UI to
+    confirm how your library's never-watched items land before trusting it.
+    """
     secs = days * DAY
     rules = [
-        # section 0 — gate: added more than N days ago (don't touch new, not-yet-watched media)
-        date_rule(0, None, POSS_BEFORE, added_prop, secs),
-        # section 1 (AND'd with section 0) — never watched ...
-        date_rule(1, None, POSS_NOT_EXISTS, watched_prop),
-        # ... OR last watched more than N days ago
-        date_rule(1, RULE_OP_OR, POSS_BEFORE, watched_prop, secs),
+        date_rule(0, None, POSS_BEFORE, added_prop, secs),         # added > N days ago
+        date_rule(0, RULE_OP_AND, POSS_BEFORE, watched_prop, secs),  # AND not watched in N days
     ]
     # dataType + libraryId differ between the two API generations.
     if flavor == "plex":
@@ -227,8 +232,8 @@ def main():
             continue
         planned.append(build_group(
             name,
-            f"Delete movies in '{lib['title']}' added over {args.days} days ago and never watched "
-            f"or not watched in {args.days} days. {args.grace}-day grace before removal.",
+            f"Delete movies in '{lib['title']}' added over {args.days} days ago and not watched "
+            f"in the last {args.days} days. {args.grace}-day grace before removal.",
             lib, flavor, plex_added, plex_lastviewed, args.days, args.grace, radarr_arr))
     if args.shows:
         for lib in show_libs:
