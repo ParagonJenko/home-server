@@ -66,11 +66,13 @@ pct push "$CTID" ../media-pipeline/decluttarr.config.yaml /opt/decluttarr/config
 # be owned by 1000 or they can't read config / write logs (R6 idmap: host 1000).
 pct exec "$CTID" -- chown -R 1000:1000 /opt/recyclarr /opt/qbit_manage /opt/decluttarr
 
-# Maintainerr (watch-based library cleanup) + Tdarr (re-encode to shrink the library). Maintainerr runs
-# as root in its own data vol; Tdarr runs as uid 1000 with its transcode scratch on the POOL (a 4K
-# transcode needs tens of GB — never the 20 G rootfs). Both are configured in their web UIs.
+# Maintainerr (watch-based library cleanup) + Tdarr (re-encode to shrink the library). BOTH run as
+# uid 1000, NOT root: Maintainerr v2's image is hardwired to `USER node` (uid 1000) with no PUID/PGID,
+# so /opt/maintainerr/data MUST be owned by 1000 or the server crash-loops on "Could not create or
+# access (files in) the data directory". Tdarr (uid 1000) keeps its transcode scratch on the POOL
+# (a 4K transcode needs tens of GB — never the 20 G rootfs). Both are configured in their web UIs.
 # /opt dirs live on the container rootfs — root-in-CT can make + chown them.
-pct exec "$CTID" -- bash -c 'mkdir -p /opt/maintainerr/data /opt/tdarr/server /opt/tdarr/configs /opt/tdarr/logs && chown -R 1000:1000 /opt/tdarr'
+pct exec "$CTID" -- bash -c 'mkdir -p /opt/maintainerr/data /opt/tdarr/server /opt/tdarr/configs /opt/tdarr/logs && chown -R 1000:1000 /opt/tdarr /opt/maintainerr'
 # Tdarr's transcode scratch lives on the POOL. root inside this unprivileged CT maps to a
 # high host uid and CANNOT write the idmapped /data mount, so make the dir on the HOST pool
 # path (/mnt/media is owned by host 1000 = the CT's media user). It then appears in-CT as

@@ -75,6 +75,9 @@ services:
   # Maintainerr — watch-based library cleanup (R26: media is reconstructable). Rules like "delete
   # movies unwatched 90d" run against Plex + Radarr/Sonarr; it only calls their APIs, so it needs NO
   # /data mount. Configure rules in its UI (:6246). storage.md.
+  # v2's image runs as `USER node` (uid 1000, no PUID/PGID): the host dir behind /opt/data MUST be
+  # chowned to 1000 (media-pipeline.sh does it) or the server crash-loops on "Could not ... access
+  # (files in) the data directory".
   maintainerr:
     image: ghcr.io/jorenn92/maintainerr:latest       # ENTER: pin a version tag
     environment: { TZ: "Europe/London" }
