@@ -31,48 +31,56 @@ the in-app RTSP toggle** (Settings → the cam → *RTSP*). Battery cams physica
 detection; for those `eufy_security` on-demand view + Eufy-side motion is the best achievable.
 **The camera model is what decides this** — get the models before wiring Frigate.
 
-## This home's split (decided — verified working 2026-11-18)
+## This home's split (rebuilt on the eufy-sdk stack — 2026-11-18)
 
-- **4 indoor cams — wired; RTSP is enabled *by* the eufy_security integration → go2rtc (in Frigate) →
-  Frigate & HA.** CORRECTION to the earlier assumption: these cams do **not** expose RTSP from the Eufy
-  app. RTSP turns on when the **eufy-security-ws add-on + eufy_security integration** connect (Stage 1) —
-  that's the piece that makes the cameras serve a stream. Once it's connected *and* `configs/frigate/.env`
-  holds the RTSP creds, Frigate's built-in go2rtc pulls
-  `rtsp://…@cam-<room>.home.alexjenkinson.com:554/live0` and the four Frigate camera entities flip from
-  `unavailable` to `recording` on their own — HA gets them via the Frigate integration, no separate Eufy
-  camera entities needed. (Verified by pulling a live snapshot over MCP the moment the add-on connected.)
-- **Doorbell — battery → the same `eufy_security` integration** (Stage 1). Sleeps, so it can't go in
-  Frigate; the integration gives the press event, on-demand view and motion.
-- **RoboVac → `bmccluskey/robovac`** (Stage 2).
+**The old bropat stack is dead for this account.** `bropat/hassio-eufy-security-ws` +
+`fuatakgun/eufy_security` authenticate fine but return **"No devices found / No stations found / No
+houses found"** on Eufy **Mega** accounts — Eufy's new cloud returns success code `200` where the old
+client only accepts `0` ([eufy-security-client #956](https://github.com/bropat/eufy-security-client/issues/956)).
+This account is a Mega account, so that stack can never see the devices. **Removed and replaced** with
+the maintained **eufy-sdk** stack (Stage 1). Symptoms that confirm you're hitting this: add-on log shows
+`getPassportProfile` errors + repeated `No devices found` despite a successful login.
 
-## Stage 1 — eufy-security-ws + the eufy_security integration (REQUIRED for the cameras AND doorbell)
+- **Doorbell (battery, E340 / T8214) → eufy-sdk.** It sleeps, so it stays out of Frigate. eufy-sdk gives
+  `camera.doorbell` (on-demand), `event.doorbell_doorbell` (ring) + `binary_sensor.doorbell_ringing`,
+  `binary_sensor.doorbell_motion` / `_person`, `image.doorbell_last_event`, battery, package detection —
+  wired into the dashboard Security tab.
+- **4 indoor cams (Living Room/Kitchen/Bedroom/Basement) → two ways:**
+  1. **Frigate** pulls each over RTSP for 24/7 recording + OpenVINO detection (the primary path; see
+     `configs/frigate/config.yaml`). NOTE: the cams were physically wired to the wrong `cam-<room>.home`
+     DNS names, so the go2rtc URLs are **swap-corrected** there (living-room↔bedroom, kitchen↔basement).
+  2. **eufy-sdk** also exposes them directly as `camera.<room>` with correct Eufy device names and a
+     per-camera `sensor.<room>_rtsp_url` + `switch.<room>_rtsp_stream`. This is the clean source of truth
+     for the real room↔camera mapping; a future tidy-up is to point Frigate at these RTSP URLs instead of
+     the DNS-name hack.
+- **RoboVac (T2118) → eufy-sdk** surfaces telemetry sensors; control (`vacuum.robovac`) comes from
+  `damacus/robovac` (Stage 2).
 
-This is what turns **RTSP on** for the wired cameras (so Frigate can pull them) **and** covers the
-battery doorbell (press events, motion, on-demand view). Without it the cameras serve no stream and
-Frigate's go2rtc has nothing to connect to — the four Frigate cams sit `unavailable`. The add-on is
-`bropat/hassio-eufy-security-ws` (store slug `402f1039_eufy_security_ws`); it can be added + installed
-from the HA-MCP connector (`ha_manage_app add_repository` then `install`) but must be **configured with
-your Eufy account and started by you**.
+## Stage 1 — the eufy-sdk stack (bridge add-on + integration) — REQUIRED for the doorbell + Eufy devices
 
-**Prereq: make a SECONDARY Eufy account.** The integration holds a login session; if it uses your
-main account you get logged out of the phone app constantly and hit 2FA churn. In the Eufy app
-(main account) → add a guest/shared member, give it access to the HomeBase + devices, use THAT
-account's email/password below.
+Built for Eufy **Mega** accounts (which the old bropat stack can't handle). Two parts: a **bridge
+add-on** (WS control + HTTP video + go2rtc) and the **eufy-sdk HACS/Marketplace integration** that talks
+to it. Most of this is drivable from the HA-MCP connector (`ha_manage_app` / `ha_manage_hacs`); the Eufy
+login + 2FA are yours. Docs: <https://mega-yfue.github.io/>.
 
-1. **Add-on** — Settings → Add-ons → Store → ⋮ → Repositories → add
-   `https://github.com/bropat/hassio-eufy-security-ws` → install **Eufy Security Add-on**. Configure:
-   `username` (secondary account), `password`, `country: GB`, `trusted_device_name: homeassistant`.
-   Start it. (It listens on `:3000`.)
-2. **go2rtc / WebRTC** — already installed here (WebRTC Camera / `update.webrtc_camera`). Nothing to do.
-3. **Integration** — **Settings → Marketplace** (2026.11+; HACS on older) → **Eufy Security** → install
-   → restart HA. Settings → Devices & Services → Add Integration → **Eufy Security** → host `127.0.0.1`,
-   port `3000`. First login throws a **captcha + MFA** challenge: enter the captcha characters and the
-   emailed code **together in the same step** — the code expires in a couple of minutes, so fetch it
-   right before submitting. Email-based 2FA works best here; an authenticator app is fiddlier.
-4. In the Eufy app set **Streaming Quality + Codec to LOW** on each cam (P2P is bandwidth-heavy).
-5. Entities appear as `camera.*`, plus `binary_sensor.*` (motion/person), `sensor.*` (battery), and
-   doorbell events. **Re-run the `/api/states` dump and send it** — the dashboard Security tab is
-   camera-ready and I'll drop the real cards in.
+1. **Bridge add-on** — Settings → Add-ons → Store → ⋮ → Repositories → add
+   `https://github.com/mega-yfue/ha-eufy-sdk-addon` → install **eufy-sdk bridge**. Configuration tab:
+   your **OWNER** Eufy account email + password (NOT a shared/secondary account — Mega accounts don't
+   expose shared devices to the API, only owned ones), `country: GB`. Enable Watchdog + Start on boot,
+   **Start**. It listens on `:3000` (WS/HTTP) + `:8554` (RTSP); if it collides on `:1984`, the WebRTC
+   Camera integration owns that port — remove WebRTC Camera (Frigate has its own go2rtc) or remap it.
+2. **Integration** — **Settings → Marketplace** → ⋮ → Add custom repository `mega-yfue/ha-eufy-sdk`
+   (category Integration) → install → **restart HA**.
+3. **Add it** — Settings → Devices & Services → Add Integration → **eufy-sdk** → it auto-discovers the
+   bridge → enter the **2FA code Eufy emails** (fast — it expires; request a fresh one if it rejects).
+   The 2FA is entered HERE in the integration, not in the add-on (the bridge logs `auth required:
+   require_2fa` and waits for the integration to submit it).
+4. Devices enumerate immediately: doorbell, the 4 cams, the RoboVac. Entity IDs are `camera.<name>`,
+   `binary_sensor.<name>_motion/_person/_ringing`, `event.<name>_doorbell`, `image.<name>_last_event`,
+   `sensor.<name>_battery`/`_rtsp_url`, plus a deep set of switches/selects/numbers per device.
+
+**Gotcha:** only one client holds a Eufy station's P2P at a time — running the bridge can knock the
+phone app's live view, and vice versa. Expected, not a fault.
 
 ## Stage 2 — Eufy RoboVac into HA
 
