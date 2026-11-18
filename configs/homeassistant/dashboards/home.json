@@ -573,23 +573,6 @@
               }
             },
             {
-              "type": "custom:mushroom-template-card",
-              "primary": "Doorbell",
-              "secondary": "Tap to ring",
-              "icon": "mdi:doorbell-video",
-              "icon_color": "blue",
-              "tap_action": {
-                "action": "perform-action",
-                "perform_action": "button.press",
-                "target": {
-                  "entity_id": "button.me_alexjenkinson_com_doorbell_rung"
-                }
-              },
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
               "type": "custom:mushroom-chips-card",
               "chips": [
                 {
@@ -623,6 +606,68 @@
               ],
               "grid_options": {
                 "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Doorbell",
+              "icon": "mdi:doorbell-video"
+            },
+            {
+              "type": "picture-glance",
+              "title": "Front Door",
+              "camera_image": "camera.doorbell",
+              "camera_view": "auto",
+              "entities": [
+                "binary_sensor.doorbell_ringing",
+                "binary_sensor.doorbell_person",
+                "binary_sensor.doorbell_motion"
+              ],
+              "grid_options": {
+                "columns": 12,
+                "rows": 4
+              }
+            },
+            {
+              "type": "custom:mushroom-chips-card",
+              "chips": [
+                {
+                  "type": "entity",
+                  "entity": "binary_sensor.doorbell_ringing",
+                  "icon": "mdi:bell-ring"
+                },
+                {
+                  "type": "entity",
+                  "entity": "binary_sensor.doorbell_person",
+                  "icon": "mdi:account"
+                },
+                {
+                  "type": "entity",
+                  "entity": "sensor.doorbell_battery"
+                },
+                {
+                  "type": "entity",
+                  "entity": "sensor.doorbell_last_person",
+                  "icon": "mdi:account-clock"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "picture-entity",
+              "entity": "image.doorbell_last_event",
+              "name": "Last ring/motion",
+              "show_state": false,
+              "grid_options": {
+                "columns": 12,
+                "rows": 4
               }
             }
           ]
