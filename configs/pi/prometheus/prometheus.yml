@@ -139,6 +139,10 @@ scrape_configs:
   - job_name: tdarr-stats
     static_configs: [ { targets: ['localhost:9114'] } ]
 
+  # ---- Maintainerr exporter (:9116) — cleanup backlog (items pending per collection) ----
+  - job_name: maintainerr
+    static_configs: [ { targets: ['localhost:9116'] } ]
+
   # ---- Frigate (via the metrics-only sidecar on :9101) ----
   # Frigate 0.18 serves metrics at /api/metrics, unauth on its loopback-bound :5000. The frigate-metrics
   # nginx sidecar (configs/frigate/docker-compose.yaml) exposes ONLY that as /metrics on :9101, so the

@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 
 # Repo-managed config dirs (no secrets, no runtime data) — replace wholesale, avoiding cp-nesting.
 # NB: NOT adguard/ — that holds AdGuardHome.yaml + runtime data, not repo config.
-for d in prometheus blackbox grafana alert-relay; do
+for d in prometheus blackbox grafana alert-relay maintainerr-exporter; do
   [ -d "./$d" ] || continue
   rm -rf "/opt/pi-stack/$d"
   cp -r "./$d" /opt/pi-stack/
@@ -54,7 +54,7 @@ docker compose up -d --remove-orphans \
 # --remove-orphans clears containers for services dropped from the compose (e.g. plex-exporter, which
 # moved to nuc1). It only touches THIS project's orphans, never other stacks.
 # ^ non-fatal: a single unpullable/unconfigured exporter must NOT block reloading the core stack below.
-docker compose restart prometheus blackbox grafana alertmanager alert-relay  # reload mounted configs:
+docker compose restart prometheus blackbox grafana alertmanager alert-relay maintainerr-exporter  # reload mounted configs:
                                                     # prometheus (scrape+rules), blackbox (probe modules),
                                                     # grafana (datasource + dashboard PROVIDERS — only
                                                     # re-read at boot, so 'up -d' alone never registers

@@ -171,6 +171,22 @@ networking; its own default port is 9090 (clashes with Prometheus) so it's moved
 
 ---
 
+## Maintainerr — maintainerr-exporter (custom)  ✅
+
+Maintainerr has no native metrics, so `configs/pi/maintainerr-exporter/exporter.py` (tiny stdlib
+Python, like the alert-relay — `python:3.12-alpine`, no pip) scrapes its API on LXC 210 (`:6246`) and
+exposes the cleanup backlog. Pi, host networking, `:9116`. No auth.
+**Metrics:** `maintainerr_up`, `maintainerr_rule_groups`, `maintainerr_collections`,
+`maintainerr_collection_items{collection,active}` (items pending per Clear/Review collection —
+the review backlog), `maintainerr_scrape_duration_seconds`.
+**Dashboard:** Grafana → **Maintainerr cleanup** (uid `maintainerr`).
+**Verify:** Prometheus → Targets → `maintainerr` UP; `curl -s http://pi.home.alexjenkinson.com:9116/metrics | grep maintainerr_`.
+**Caveat:** `collection_items` is 0 for a group until its rule has been **run** (creating a group
+doesn't populate the collection). `redeploy.sh` copies the exporter dir + restarts it, so edit the
+`.py` then re-run it.
+
+---
+
 ## Home Assistant — native Prometheus integration  ✅
 
 HA exposes `/api/prometheus` (lights, sensors, climate, binary sensors, switches…) behind a bearer token

@@ -143,5 +143,18 @@ services:
       TDARR_URL: "http://media-pipeline.home.alexjenkinson.com:8265"
       PROMETHEUS_PORT: "9114"
     restart: unless-stopped
+
+  # maintainerr-exporter — tiny stdlib exporter (Maintainerr has no native metrics). Scrapes its API
+  # on LXC 210 and exposes the cleanup backlog (items pending per Clear/Review collection). :9116.
+  maintainerr-exporter:
+    image: python:3.12-alpine
+    network_mode: host
+    volumes:
+      - ./maintainerr-exporter/exporter.py:/exporter.py:ro
+    environment:
+      MAINTAINERR_URL: "http://media-pipeline.home.alexjenkinson.com:6246"
+      LISTEN_PORT: "9116"
+    command: ["python3", "/exporter.py"]
+    restart: unless-stopped
 volumes:
   grafana-data:
