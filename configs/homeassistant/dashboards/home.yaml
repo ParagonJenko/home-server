@@ -435,23 +435,69 @@ views:
             icon_color: >-
               {{ 'red' if is_state('binary_sensor.bedroom_alexa_motion','on') else 'grey' }}
 
-      # ---- Cameras: no camera.* entities yet. Once Eufy/Frigate are set up, the cameras appear
-      # as camera.<name> — delete this note card and uncomment the block below, filling in the ids.
+      # ---- Cameras: Eufy -> Frigate (LXC 111) -> Frigate HA integration. The person/motion chips +
+      # overlays work NOW via MQTT; the picture tiles stay blank until RTSP is enabled on the Eufy
+      # cams (setup-cameras.sh). HA prefixed each id with the area the device landed in — e.g. the
+      # kitchen cam is camera.living_room_cam_kitchen. IDs are fixed; don't "correct" them here.
       - type: grid
         cards:
           - type: heading
             heading: 🎥 Cameras
             heading_style: title
-          - type: markdown
-            content: >
-              **No cameras set up yet.** Eufy Security is installed (there's an `update.eufy_security`),
-              and WebRTC Camera is ready — once you add cameras they'll appear as `camera.*` entities.
-              Then swap this note for the camera cards (an example is commented in the YAML).
-          # - type: picture-glance
-          #   title: Front Door
-          #   camera_image: camera.front_door
-          #   camera_view: live
-          #   entities: []
+          - type: custom:mushroom-chips-card
+            chips:
+              - type: template
+                entity: binary_sensor.living_room_cam_living_room_person_occupancy
+                icon: mdi:cctv
+                icon_color: >-
+                  {{ 'red' if is_state('binary_sensor.living_room_cam_living_room_person_occupancy','on') else 'grey' }}
+                content: Living Room
+              - type: template
+                entity: binary_sensor.living_room_cam_kitchen_person_occupancy
+                icon: mdi:cctv
+                icon_color: >-
+                  {{ 'red' if is_state('binary_sensor.living_room_cam_kitchen_person_occupancy','on') else 'grey' }}
+                content: Kitchen
+              - type: template
+                entity: binary_sensor.bedroom_cam_bedroom_person_occupancy
+                icon: mdi:cctv
+                icon_color: >-
+                  {{ 'red' if is_state('binary_sensor.bedroom_cam_bedroom_person_occupancy','on') else 'grey' }}
+                content: Bedroom
+              - type: template
+                entity: binary_sensor.utility_cam_basement_person_occupancy
+                icon: mdi:cctv
+                icon_color: >-
+                  {{ 'red' if is_state('binary_sensor.utility_cam_basement_person_occupancy','on') else 'grey' }}
+                content: Basement
+          - type: picture-glance
+            title: Living Room
+            camera_image: camera.living_room_cam_living_room
+            camera_view: auto
+            entities:
+              - entity: binary_sensor.living_room_cam_living_room_motion
+              - entity: binary_sensor.living_room_cam_living_room_person_occupancy
+          - type: picture-glance
+            title: Kitchen
+            camera_image: camera.living_room_cam_kitchen
+            camera_view: auto
+            entities:
+              - entity: binary_sensor.living_room_cam_kitchen_motion
+              - entity: binary_sensor.living_room_cam_kitchen_person_occupancy
+          - type: picture-glance
+            title: Bedroom
+            camera_image: camera.bedroom_cam_bedroom
+            camera_view: auto
+            entities:
+              - entity: binary_sensor.bedroom_cam_bedroom_motion
+              - entity: binary_sensor.bedroom_cam_bedroom_person_occupancy
+          - type: picture-glance
+            title: Basement
+            camera_image: camera.utility_cam_basement
+            camera_view: auto
+            entities:
+              - entity: binary_sensor.utility_cam_basement_motion
+              - entity: binary_sensor.utility_cam_basement_person_occupancy
 
   # =====================================================================================
   # 🔊 MEDIA
