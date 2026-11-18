@@ -69,7 +69,7 @@ Other guests keep their defaults until a `GuestMemoryHigh` alert says otherwise 
 The ~7.2 TB pool (2×4 TB mergerfs, no parity) fills over time. Three levers, in combination:
 
 1. **Grow the pool (R1)** — add a bigger drive as a new mergerfs branch; no data moves, nothing reconfigures. Cheapest, because the library is reconstructable (R26) so it needs no backup.
-2. **Store less — [[Maintainerr]]** (LXC 210, `:6246`): watch-based cleanup rules (e.g. delete movies unwatched 90d) call Radarr/Sonarr to remove files. Turns "hoard forever" into "keep what you watch." Pair with tight **Recyclarr** quality profiles so you don't grab bloated remuxes.
+2. **Store less — [[Maintainerr]]** (LXC 210, `:6246`): watch-based cleanup rules (e.g. delete movies unwatched 90d) call Radarr/Sonarr to remove files. Turns "hoard forever" into "keep what you watch." Pair with tight **Recyclarr** quality profiles so you don't grab bloated remuxes. Starter rules are seeded by `configs/media-pipeline/maintainerr-seed-rules.py` (dry-run by default; resolves property/library IDs from the live instance) — the rule is *added >90d ago AND (never watched OR not watched in 90d)*, so new unwatched films are never caught. Nothing deletes until you run the group in the UI, and matches then hold a grace window first.
 3. **Store it smaller — [[Tdarr]]** (LXC 210, `:8265`): re-encodes the library to HEVC/AV1 (~half the size) in the background. CPU-bound here (no GPU passthrough on LXC 210 yet; 2 cores → keep to one worker and run off-peak). Scratch goes on the pool, not the rootfs.
 
 Early warning: `DiskUsageHigh` at 80% + mergerfs `minfreespace` (hard stop — Arrs pause grabbing) mean you get a nudge with runway, never a silent 100%.
