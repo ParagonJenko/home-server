@@ -4,16 +4,19 @@
 Maintainerr's rule format addresses every property as a numeric [application, property]
 pair whose IDs can drift between versions, so this script never hardcodes them: it reads
 GET /api/rules/constants at runtime and resolves Plex properties BY NAME (addDate,
-lastViewedAt, sw_lastWatched). Same for the Radarr/Sonarr instance IDs and the Plex
-library IDs — all discovered from the live instance.
+lastViewedAt, sw_lastWatched). Plex library IDs are discovered from the live instance too.
 
-What it creates (conservative on purpose):
-  * Movies — one group per movie library: delete when the film was ADDED over N days ago
-    AND (it was never watched OR last watched over N days ago). The "added over N days ago"
-    half is the safety net: a film you added last week but haven't watched yet is NOT a
-    match. N defaults to 90.
-  * Shows  — only with --shows, one group per show library, same shape using the newest
-    episode view date, with a longer window (default 180d).
+It also adapts to BOTH Maintainerr API generations:
+  * 2.x (current stable, e.g. 2.19): libraries at /api/plex/libraries (id field 'key'),
+    dataType is the numeric EPlexDataType (movie=1, show=2), one Radarr/Sonarr assumed.
+  * newer 'main' (media-server abstraction): /api/media-server/libraries (id field 'id'),
+    dataType is the string 'movie'/'show', with radarrSettingsId/sonarrSettingsId.
+
+What it creates (conservative on purpose), one group per movie library:
+    delete when the film was ADDED over N days ago AND (never watched OR last watched over
+    N days ago). The "added over N days ago" half is the safety net: a film you added last
+    week but haven't watched yet is NOT a match. N defaults to 90.
+  --shows adds the same shape for show libraries using the newest-episode view date (180d).
 
 Two layers of safety before anything is deleted:
   1. DRY-RUN by default. It prints the exact payloads and changes nothing. Add --apply to POST.
@@ -40,12 +43,14 @@ import urllib.request
 DEFAULT_URL = os.environ.get("MAINTAINERR_URL", "http://media-pipeline.home.alexjenkinson.com:6246")
 DAY = 86400
 
-# Enum values from @maintainerr/contracts (stable; verified against the source).
+# Enum values from Maintainerr's rule constants (stable/append-only across 2.x and main).
 RULE_OP_OR = 1          # RuleOperators.OR (null = first rule of a section)
 POSS_BEFORE = 5         # RulePossibility.BEFORE  — date is further in the past than the value
 POSS_NOT_EXISTS = 19    # RulePossibility.NOT_EXISTS
 RULETYPE_NUMBER = 0     # customVal.ruleTypeId for a relative duration (value = seconds, as string)
 ARRACTION_DELETE = 0    # ServarrAction.DELETE
+EPLEX_MOVIES = 1        # EPlexDataType.MOVIES  (2.x numeric dataType)
+EPLEX_SHOWS = 2         # EPlexDataType.SHOWS
 
 
 def _req(url, method="GET", body=None, timeout=20):
@@ -72,8 +77,26 @@ def die(msg):
     sys.exit(1)
 
 
+def get_libraries(base):
+    """Return (libraries, flavor). flavor 'plex' = 2.x API, 'mediaserver' = newer API.
+    Each library normalised to {id, title, type('movie'|'show')}."""
+    st, data = _req(f"{base}/api/plex/libraries")
+    if st == 200 and isinstance(data, list):
+        libs = [{"id": l.get("key"), "title": l.get("title"), "type": l.get("type")}
+                for l in data if l.get("type") in ("movie", "show")]
+        return libs, "plex"
+    st2, data2 = _req(f"{base}/api/media-server/libraries")
+    if st2 == 200 and isinstance(data2, list):
+        libs = [{"id": l.get("id"), "title": l.get("title"), "type": l.get("type")}
+                for l in data2 if l.get("type") in ("movie", "show")]
+        return libs, "mediaserver"
+    die("could not read libraries from either /api/plex/libraries "
+        f"(HTTP {st}) or /api/media-server/libraries (HTTP {st2}). "
+        "Connect your media server (Plex) in the Maintainerr UI first, then re-run.")
+
+
 def resolve_prop(constants, app_name, prop_name):
-    """Return [appId, propId] for a property, looked up by name — never hardcoded."""
+    """Return [appId, propId] for a property, looked up BY NAME — never hardcoded."""
     for app in constants.get("applications", []):
         if app.get("name", "").lower() == app_name.lower():
             for p in app.get("props", []):
@@ -91,7 +114,7 @@ def date_rule(section, operator, action, firstval, seconds=None):
     return r
 
 
-def build_group(name, desc, library, data_type, added_prop, watched_prop, days, grace, arr_settings_id, arr_key):
+def build_group(name, desc, library, flavor, added_prop, watched_prop, days, grace, arr):
     """added >N days ago AND (watched NOT_EXISTS OR watched BEFORE N days ago)."""
     secs = days * DAY
     rules = [
@@ -102,23 +125,35 @@ def build_group(name, desc, library, data_type, added_prop, watched_prop, days, 
         # ... OR last watched more than N days ago
         date_rule(1, RULE_OP_OR, POSS_BEFORE, watched_prop, secs),
     ]
+    # dataType + libraryId differ between the two API generations.
+    if flavor == "plex":
+        data_type = EPLEX_MOVIES if library["type"] == "movie" else EPLEX_SHOWS
+        try:
+            library_id = int(library["id"])      # RulesDto.libraryId is numeric in 2.x
+        except (TypeError, ValueError):
+            library_id = library["id"]
+    else:
+        data_type = library["type"]              # 'movie' | 'show'
+        library_id = str(library["id"])
     group = {
-        "libraryId": str(library["id"]),
+        "libraryId": library_id,
         "name": name,
         "description": desc,
         "isActive": True,
         "useRules": True,
         "arrAction": ARRACTION_DELETE,
-        "dataType": data_type,                       # 'movie' | 'show'
+        "dataType": data_type,
         "collection": {
-            "deleteAfterDays": grace,                # grace window before deletion fires
+            "deleteAfterDays": grace,            # grace window before deletion fires
             "keepLogsForMonths": 6,
             "visibleOnHome": False,
         },
         "rules": rules,
     }
-    if arr_settings_id is not None:
-        group[arr_key] = arr_settings_id            # so DELETE also removes it from Radarr/Sonarr
+    # The newer API ties a group to a specific Radarr/Sonarr instance; 2.x assumes the single
+    # configured one, so only send the settings id on the media-server flavor.
+    if arr is not None:
+        group[arr[0]] = arr[1]
     return group
 
 
@@ -135,17 +170,14 @@ def main():
 
     print(f"Maintainerr: {base}   mode: {'APPLY' if args.apply else 'DRY-RUN (no changes)'}\n")
 
-    # 1) Libraries — also our "is Plex connected?" check.
-    st, libs = _req(f"{base}/api/media-server/libraries")
-    if st != 200 or not isinstance(libs, list):
-        die("could not read libraries — connect your media server (Plex) in the Maintainerr UI first "
-            f"(got HTTP {st}: {str(libs)[:200]}).")
+    # 1) Libraries (also the "is Plex connected?" check) + which API generation we're on.
+    libs, flavor = get_libraries(base)
     if not libs:
-        die("Maintainerr returned no libraries — finish connecting Plex in the UI, then re-run.")
-    movie_libs = [l for l in libs if l.get("type") == "movie"]
-    show_libs = [l for l in libs if l.get("type") == "show"]
-    print(f"Found {len(libs)} libraries: "
-          + ", ".join(f"{l['title']} ({l['type']})" for l in libs) + "\n")
+        die("Maintainerr returned no movie/show libraries — finish connecting Plex in the UI, then re-run.")
+    movie_libs = [l for l in libs if l["type"] == "movie"]
+    show_libs = [l for l in libs if l["type"] == "show"]
+    print(f"API: {flavor}   libraries: "
+          + ", ".join(f"{l['title']} ({l['type']}, id={l['id']})" for l in libs) + "\n")
 
     # 2) Rule constants — resolve property IDs by name (version-robust).
     st, constants = _req(f"{base}/api/rules/constants")
@@ -155,7 +187,7 @@ def main():
     plex_lastviewed = resolve_prop(constants, "Plex", "lastViewedAt")
     plex_sw_lastwatched = resolve_prop(constants, "Plex", "sw_lastWatched")
 
-    # 3) Arr instance IDs — so a DELETE is also removed from Radarr/Sonarr.
+    # 3) Arr instance IDs — only the newer API ties a group to one; 2.x uses the single config.
     def first_arr_id(path, label):
         s, data = _req(f"{base}{path}")
         if s == 200 and isinstance(data, list) and data:
@@ -165,9 +197,14 @@ def main():
         print(f"  note: no {label} instance found — {label}-side deletion won't be wired "
               f"(Plex + disk delete still works).")
         return None
-    radarr_id = first_arr_id("/api/settings/radarr", "Radarr")
-    sonarr_id = first_arr_id("/api/settings/sonarr", "Sonarr") if args.shows else None
-    print()
+    radarr_arr = sonarr_arr = None
+    if flavor == "mediaserver":
+        rid = first_arr_id("/api/settings/radarr", "Radarr")
+        radarr_arr = ("radarrSettingsId", rid) if rid is not None else None
+        if args.shows:
+            sid = first_arr_id("/api/settings/sonarr", "Sonarr")
+            sonarr_arr = ("sonarrSettingsId", sid) if sid is not None else None
+        print()
 
     # 4) Existing groups — skip by name (idempotent).
     st, existing = _req(f"{base}/api/rules")
@@ -188,7 +225,7 @@ def main():
             name,
             f"Delete movies in '{lib['title']}' added over {args.days} days ago and never watched "
             f"or not watched in {args.days} days. {args.grace}-day grace before removal.",
-            lib, "movie", plex_added, plex_lastviewed, args.days, args.grace, radarr_id, "radarrSettingsId"))
+            lib, flavor, plex_added, plex_lastviewed, args.days, args.grace, radarr_arr))
     if args.shows:
         for lib in show_libs:
             name = f"Unwatched shows — {lib['title']} ({args.show_days}d)"
@@ -199,7 +236,7 @@ def main():
                 name,
                 f"Delete shows in '{lib['title']}' added over {args.show_days} days ago with no episode "
                 f"watched in {args.show_days} days. {args.grace}-day grace before removal.",
-                lib, "show", plex_added, plex_sw_lastwatched, args.show_days, args.grace, sonarr_id, "sonarrSettingsId"))
+                lib, flavor, plex_added, plex_sw_lastwatched, args.show_days, args.grace, sonarr_arr))
 
     if not planned:
         print("\nNothing to create (all target groups already exist). Done.")
