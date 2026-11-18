@@ -87,6 +87,20 @@ scrape_configs:
       - { source_labels: [service],     target_label: instance }
       - { target_label: __address__,    replacement: localhost:9115 }
 
+  # ---- EUFY-SDK BRIDGE: the sole camera path now. Frigate pulls its :8554 restream and HA pulls its
+  # cameras through it, so DOWN -> every Frigate feed AND the HA live view go dark. :8554 = RTSP
+  # restream, :3000 = WS/HTTP control. Runs as an add-on on the HA VM (homeassistant.home = .25).
+  - job_name: blackbox-eufy-bridge
+    metrics_path: /probe
+    params: { module: [tcp_connect] }
+    static_configs:
+      - { targets: ['homeassistant.home.alexjenkinson.com:8554'], labels: { service: eufy-bridge-rtsp } }
+      - { targets: ['homeassistant.home.alexjenkinson.com:3000'], labels: { service: eufy-bridge-ws } }
+    relabel_configs:
+      - { source_labels: [__address__], target_label: __param_target }
+      - { source_labels: [service],     target_label: instance }
+      - { target_label: __address__,    replacement: localhost:9115 }
+
   # Internal DNS health: ask AdGuard (:53) to resolve a *.home name. job=dns feeds InternalDNSBroken.
   - job_name: dns
     metrics_path: /probe

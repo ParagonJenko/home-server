@@ -159,16 +159,27 @@ groups:
           fix: "acme.sh auto-renews via Cloudflare DNS-01. Force on nginx LXC 240: acme.sh --renew -d '*.home.alexjenkinson.com' --force. Check the Cloudflare API token (R21)."
           where: "nginx LXC 240 on nuc1. configs/nginx/enable-tls.sh. services.md."
 
-      - alert: CameraDown                 # RTSP port shut — Frigate has probably lost the stream
+      - alert: CameraDown                 # camera's own RTSP (:554) down — camera likely offline; the bridge can't restream it
         expr: probe_success{job="blackbox-cameras"} == 0
         for: 10m
         labels: { severity: warning }
         annotations:
           summary: "{{ $labels.instance }} RTSP (:554) unreachable for 10m"
-          impact: "Camera {{ $labels.instance }} is unreachable on RTSP — Frigate has probably lost its stream and is not recording it."
+          impact: "Camera {{ $labels.instance }} is unreachable on its own RTSP (:554) — likely offline, so the eufy-sdk bridge can't pull it and Frigate loses that feed. (Frigate's source is the bridge now, not :554 directly — a total camera blackout is EufyBridgeDown.)"
           cause: "TCP connect to {{ $labels.instance }}:554 failed for 10m."
           fix: "Camera powered/online? Reservation + AdGuard rewrite set? getent hosts {{ $labels.instance }} inside LXC 111. runbooks/cameras.md troubleshooting."
           where: "Grafana → Network & Uptime → Cameras. Frigate https://frigate.home.alexjenkinson.com. Runbook cameras.md."
+
+      - alert: EufyBridgeDown             # the eufy-sdk bridge is the SOLE camera path now
+        expr: probe_success{job="blackbox-eufy-bridge"} == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "eufy-sdk bridge {{ $labels.instance }} unreachable for 5m"
+          impact: "The eufy-sdk bridge is the ONLY camera path — Frigate pulls its :8554 restream and HA pulls its cameras through it. Down = every Frigate feed AND the HA live view go dark, and Frigate records nothing."
+          cause: "TCP connect to the bridge ({{ $labels.instance }}) failed for 5m — the eufy-sdk bridge add-on on HA (VM 910) is likely stopped or crashed."
+          fix: "HA → Settings → Add-ons → eufy-sdk bridge: running? Check its log for a P2P/login failure, then restart it. Only one client may hold a station's P2P — make sure the Eufy phone app isn't live-viewing. runbooks/eufy-ha.md."
+          where: "HA add-on 'eufy-sdk bridge' (VM 910, 192.168.1.25). Grafana → Network & Uptime. runbooks/eufy-ha.md."
 
       - alert: InternetSpeedLow           # download well below plan. TUNE the threshold to ~50% of your plan.
         expr: speedtest_download_bits_per_second < 50e6   # 50 Mbit/s placeholder — change it.
