@@ -4,9 +4,11 @@
 # NOTE: record.continuous.* / record.motion.* are NOT valid keys — a config using them
 # fails validation and Frigate boots into safe mode with ZERO cameras loaded.
 mqtt:
-  enabled: false          # OFF until the Mosquitto broker + an MQTT user exist in HA.
-                          # Enabling is a repo edit (flip to true) + push + pull — boxes pull only;
-                          # then enable-mqtt.sh writes the broker creds to .env. See runbooks/eufy-ha.md Stage 4.
+  enabled: true           # Mosquitto broker + MQTT user now exist in HA (2026-11-18).
+                          # Broker creds (FRIGATE_MQTT_USER/PASSWORD) come from .env via enable-mqtt.sh.
+  host: homeassistant.home.alexjenkinson.com
+  user: "{FRIGATE_MQTT_USER}"
+  password: "{FRIGATE_MQTT_PASSWORD}"
 
 tls:
   enabled: false          # Nginx fronts it; the :8971 login itself stays on.
