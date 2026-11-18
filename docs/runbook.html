@@ -1014,6 +1014,11 @@ var STAGES = [
           },
           {
             "callout": "note",
+            "title": "Boot survives a missing DAS disk",
+            "html": "The branch mounts and the pool carry <code class=\"inline\">nofail</code> (branches also <code class=\"inline\">x-systemd.device-timeout=30s</code>), so a missing DAS disk lets the box boot in ~30s instead of hanging — the pool just doesn't mount (media containers stay down) and <code class=\"inline\">x-systemd.requires=</code> still stops it unioning off the host SSD. Trade-off: a genuinely missing disk then fails quietly, so lean on the storage + uptime alerts to catch it."
+          },
+          {
+            "callout": "note",
             "title": "Why siblings",
             "html": "<code class=\"inline\">torrents/</code> and <code class=\"inline\">library/</code> sit side by side on one filesystem so Arr imports are hardlinks, not copies. Both owned by <code class=\"inline\">1000:1000</code>, the shared media user, across every container."
           }
@@ -2810,13 +2815,13 @@ var STAGES = [
       {
         "id": "L3",
         "type": "ref",
-        "title": "Boot-survives-missing-disk (nofail hardening)",
+        "title": "Boot-survives-missing-disk — ✓ promoted to the base build (B2)",
         "rules": [ "R9" ],
         "body": [
-          { "p": "nuc1 currently refuses to boot if a DAS disk is missing — it hangs on the mount, the same safety net that stops the pool unioning off the host SSD. Optionally let it boot anyway so you can fix a missing disk remotely instead of needing a monitor on it." },
+          { "p": "No longer deferred — folded into the base build. <code class=\"inline\">stage-b-storage.sh</code> now writes <code class=\"inline\">nofail,x-systemd.device-timeout=30s</code> on the two branch mounts and <code class=\"inline\">nofail</code> on the pool line (stage B2). nuc1 boots in ~30s even with a DAS disk missing — the pool stays down and <code class=\"inline\">x-systemd.requires=</code> still stops it unioning off the host SSD. Trade-off: a missing disk fails quietly, so the storage + uptime alerts are what catch it." },
           { "list": [
-            "<strong>Integrate:</strong> add <code class=\"inline\">nofail,x-systemd.device-timeout=30s</code> to the branch mounts in the mergerfs fstab snippet.",
-            "<strong>Test:</strong> boot nuc1 with one DAS disk unplugged → it comes up reachable in ~30s <em>without</em> the pool (the mergerfs mount and media containers stay down) instead of hanging. Trade-off: a genuinely missing disk then fails quietly rather than loudly — decide which you want before applying."
+            "<strong>Apply to an already-built nuc1:</strong> add those options to the two <code class=\"inline\">/mnt/pool/diskN</code> lines and the <code class=\"inline\">/mnt/media</code> line in <code class=\"inline\">/etc/fstab</code>, then <code class=\"inline\">systemctl daemon-reload</code> and <code class=\"inline\">findmnt --verify --fstab</code>. Takes effect on next boot.",
+            "<strong>Test (optional):</strong> boot nuc1 with one DAS disk unplugged → it comes up reachable in ~30s <em>without</em> the pool instead of hanging."
           ] }
         ]
       },

@@ -38,12 +38,12 @@ cp /etc/fstab "/etc/fstab.bak.$(date +%s)"
 sed -i 's/category\.create=epmff\b/category.create=epmfs/' /etc/fstab
 for n in 1 2; do
   grep -q "LABEL=media-disk$n " /etc/fstab \
-    || echo "LABEL=media-disk$n  /mnt/pool/disk$n  ext4  defaults,noatime  0 2" >> /etc/fstab
+    || echo "LABEL=media-disk$n  /mnt/pool/disk$n  ext4  defaults,noatime,nofail,x-systemd.device-timeout=30s  0 2" >> /etc/fstab
 done
 if ! grep -q ' /mnt/media ' /etc/fstab; then
   mkdir -p /mnt/media
   cat >> /etc/fstab <<'EOF'
-/mnt/pool/disk1:/mnt/pool/disk2  /mnt/media  fuse.mergerfs  defaults,allow_other,use_ino,cache.files=partial,dropcacheonclose=true,category.create=epmfs,minfreespace=250G,fsname=mergerfs,x-systemd.requires=/mnt/pool/disk1,x-systemd.requires=/mnt/pool/disk2  0 0
+/mnt/pool/disk1:/mnt/pool/disk2  /mnt/media  fuse.mergerfs  defaults,allow_other,use_ino,cache.files=partial,dropcacheonclose=true,category.create=epmfs,minfreespace=250G,fsname=mergerfs,x-systemd.requires=/mnt/pool/disk1,x-systemd.requires=/mnt/pool/disk2,nofail  0 0
 EOF
 fi
 systemctl daemon-reload
