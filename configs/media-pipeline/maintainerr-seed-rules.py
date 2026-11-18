@@ -67,8 +67,12 @@ def _req(url, method="GET", body=None, timeout=20):
             return e.code, json.loads(raw)
         except Exception:
             return e.code, raw
-    except urllib.error.URLError as e:
-        print(f"  ! cannot reach {url}: {e.reason}", file=sys.stderr)
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        reason = getattr(e, "reason", e)
+        print(f"  ! Maintainerr did not respond for {url}: {reason}\n"
+              "    Usually means Maintainerr can't reach Plex (its API blocks on the Plex query).\n"
+              "    In Settings -> Plex, pick the plain local-IP server (not the .plex.direct one) and save.",
+              file=sys.stderr)
         sys.exit(2)
 
 
