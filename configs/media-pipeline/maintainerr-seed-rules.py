@@ -17,7 +17,9 @@ What it creates (conservative on purpose), one group per movie library:
     watched in the last N days are excluded; see build_group for how never-watched films land
     under Maintainerr's evaluation). The "added over N days ago" half is the safety net: a
     film you added last week is never a match. N defaults to 90.
-  --shows adds the same shape for show libraries using the newest-episode view date (180d).
+  --shows adds a show-library group: added >N days ago AND no episode watched in N days
+    (180d) AND the series has ENDED in Sonarr — so a still-airing show you're between seasons
+    on is never matched, only finished shows you've abandoned.
 
 Two layers of safety before anything is deleted:
   1. DRY-RUN by default. It prints the exact payloads and changes nothing. Add --apply to POST.
@@ -46,8 +48,10 @@ DAY = 86400
 
 # Enum values from Maintainerr's rule constants (stable/append-only across 2.x and main).
 RULE_OP_AND = 0         # RuleOperators.AND
+POSS_EQUALS = 2         # RulePossibility.EQUALS
 POSS_BEFORE = 5         # RulePossibility.BEFORE  — date is further in the past than the value
 RULETYPE_NUMBER = 0     # customVal.ruleTypeId for a relative duration (value = seconds, as string)
+RULETYPE_BOOL = 3       # customVal.ruleTypeId for a boolean ("1"/"0")
 ARRACTION_DELETE = 0    # ServarrAction.DELETE
 EPLEX_MOVIES = 1        # EPlexDataType.MOVIES  (2.x numeric dataType)
 EPLEX_SHOWS = 2         # EPlexDataType.SHOWS
@@ -118,7 +122,12 @@ def date_rule(section, operator, action, firstval, seconds=None):
     return r
 
 
-def build_group(name, desc, library, flavor, added_prop, watched_prop, days, grace, arr):
+def bool_rule(section, operator, action, firstval, truthy=True):
+    return {"operator": operator, "action": action, "firstVal": firstval, "section": section,
+            "customVal": {"ruleTypeId": RULETYPE_BOOL, "value": "1" if truthy else "0"}}
+
+
+def build_group(name, desc, library, flavor, added_prop, watched_prop, days, grace, arr, extra_rules=None):
     """added >N days ago AND last watched >N days ago.
 
     Two BEFORE rules AND'd together. Encoded this way on purpose (not NOT_EXISTS):
@@ -134,6 +143,7 @@ def build_group(name, desc, library, flavor, added_prop, watched_prop, days, gra
         date_rule(0, None, POSS_BEFORE, added_prop, secs),         # added > N days ago
         date_rule(0, RULE_OP_AND, POSS_BEFORE, watched_prop, secs),  # AND not watched in N days
     ]
+    rules += extra_rules or []                                      # e.g. shows: AND Sonarr ended
     # dataType + libraryId differ between the two API generations.
     if flavor == "plex":
         data_type = EPLEX_MOVIES if library["type"] == "movie" else EPLEX_SHOWS
@@ -199,6 +209,7 @@ def main():
     plex_added = resolve_prop(constants, "Plex", "addDate")
     plex_lastviewed = resolve_prop(constants, "Plex", "lastViewedAt")
     plex_sw_lastwatched = resolve_prop(constants, "Plex", "sw_lastWatched")
+    sonarr_ended = resolve_prop(constants, "Sonarr", "ended") if args.shows else None
 
     # 3) Arr instance IDs — only the newer API ties a group to one; 2.x uses the single config.
     def first_arr_id(path, label):
@@ -247,9 +258,12 @@ def main():
                 continue
             planned.append(build_group(
                 name,
-                f"Delete shows in '{lib['title']}' added over {args.show_days} days ago with no episode "
-                f"watched in {args.show_days} days. {args.grace}-day grace before removal.",
-                lib, flavor, plex_added, plex_sw_lastwatched, args.show_days, args.grace, sonarr_arr))
+                f"Delete ENDED shows in '{lib['title']}' added over {args.show_days} days ago with no "
+                f"episode watched in {args.show_days} days. Still-airing series are never matched. "
+                f"{args.grace}-day grace before removal.",
+                lib, flavor, plex_added, plex_sw_lastwatched, args.show_days, args.grace, sonarr_arr,
+                # AND Sonarr 'ended' == true: only finished series, never one still airing.
+                extra_rules=[bool_rule(0, RULE_OP_AND, POSS_EQUALS, sonarr_ended, truthy=True)]))
 
     if not planned:
         print("\nNothing to create (all target groups already exist). Done.")
