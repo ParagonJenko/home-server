@@ -53,19 +53,30 @@ if [ "$setcreds" = 1 ]; then
   echo "  saved to configs/frigate/.env (gitignored, chmod 600)"
 fi
 
-# --- 3. What to do next ----------------------------------------------------
+# --- 3. Commit the (non-secret) renames, if any ----------------------------
+# .env is gitignored, so there's nothing to commit unless a camera was actually renamed.
+REPO="$(git -C . rev-parse --show-toplevel 2>/dev/null || true)"
+files=(configs/frigate/config.yaml network.md configs/pi/prometheus/prometheus.yml)
+echo
+if [ -n "$REPO" ] && [ -n "$(git -C "$REPO" status --porcelain -- "${files[@]}" 2>/dev/null)" ]; then
+  git -C "$REPO" status --short -- "${files[@]}"
+  read -rp "Commit + push these renames now? [Y/n] " a
+  if [[ ! "$a" =~ ^[Nn]$ ]]; then
+    git -C "$REPO" add -- "${files[@]}"
+    git -C "$REPO" commit -q -m "frigate: name cameras to real rooms" && git -C "$REPO" push && echo "  committed + pushed."
+  fi
+else
+  echo "No repo changes to commit — you kept the camera names (the RTSP creds are gitignored)."
+fi
+
 cat <<'EOF'
 
-Done. Commit the (non-secret) renames, then deploy:
-
-  git add -A && git commit -m "frigate: name cameras to real rooms" && git push
-
-  # on the Pi — push DNS rewrites for the cameras (names must resolve before Frigate starts):
+Deploy (run on each box — these can't be done from here):
+  # Pi — push DNS rewrites so the camera names resolve before Frigate starts:
   cd ~/home-server && git pull && ./configs/pi/adguard-rewrites.py --apply
-
-  # on NUC-2 — (re)deploy Frigate; it won't re-prompt creds now they're set:
+  # NUC-2 — (re)deploy Frigate (no re-prompt; creds are set):
   cd ~/home-server && git pull && ./configs/lxc/frigate.sh && ./configs/frigate/verify-frigate.sh
 
-Then: HA → add the Frigate integration (camera.* + binary_sensor.*_motion/_person), re-run the
-/api/states dump, and the dashboard Security tab gets the real camera cards.
+Then: HA → add the Frigate integration, re-run the /api/states dump, and the dashboard
+Security tab gets the real camera cards.
 EOF
