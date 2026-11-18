@@ -16,11 +16,11 @@ tls:
 record:
   enabled: true
   retain:
-    days: 0               # no 24/7 continuous recording
-    mode: all
+    days: 14               # keep 14 days of MOTION footage (records 24/7, prunes still segments) — storage.md
+    mode: motion           # 'all' = true 24/7 (much more disk); 'active_objects' = only tracked-object clips
   alerts:
     retain:
-      days: 14            # the graceful ceiling — matches storage.md
+      days: 14             # object-detection alerts kept the full 14 days regardless
       mode: motion
   detections:
     retain:
