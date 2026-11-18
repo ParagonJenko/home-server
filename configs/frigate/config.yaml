@@ -1,8 +1,72 @@
 # frigate/config.yaml — holds NO secrets (safe as committed). Cameras by NAME, not IP. [R13]
-# Frigate 0.15+ removed record.retain — retention is split continuous/motion with
-# separate retain blocks under alerts/detections. A config using record.retain.days won't load.
+# Frigate 0.18 retention schema: continuous recording is record.retain.days (0 = off);
+# event recording is retained per-type under record.alerts / record.detections.
+# NOTE: record.continuous.* / record.motion.* are NOT valid keys — a config using them
+# fails validation and Frigate boots into safe mode with ZERO cameras loaded.
 mqtt:
+  enabled: false          # OFF until the Mosquitto broker + an MQTT user exist in HA.
+                          # Enabling is a repo edit (flip to true) + push + pull — boxes pull only;
+                          # then enable-mqtt.sh writes the broker creds to .env. See runbooks/eufy-ha.md Stage 4.
+
+tls:
+  enabled: false          # Nginx fronts it; the :8971 login itself stays on.
+
+record:
   enabled: true
-  host: homeassistant.home.alexjenkinson.com
-  user: "{FRIGATE_MQTT_USER}"
-  password: "{FRIGATE_MQTT_PASSWORD}"
+  retain:
+    days: 0               # no 24/7 continuous recording
+    mode: all
+  alerts:
+    retain:
+      days: 14            # the graceful ceiling — matches storage.md
+      mode: motion
+  detections:
+    retain:
+      days: 14
+      mode: motion
+
+# go2rtc restreams each camera once and Frigate pulls from it on localhost. Eufy RTSP is
+# finicky for ffmpeg to consume directly, so go2rtc sits in front (it also powers the live view).
+# The {VAR}s resolve from .env; the cam-*.home.alexjenkinson.com names must resolve FROM INSIDE
+# this container (Pi DNS) — if a stream stays down, check `getent hosts cam-*.home.alexjenkinson.com`.
+# Until RTSP is enabled on the cams and FRIGATE_RTSP_* is set in .env, the cameras load but show
+# "no stream" — that's expected, not a config error.
+go2rtc:
+  streams:
+    cam-living-room:
+      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-living-room.home.alexjenkinson.com:554/live0
+    cam-kitchen:
+      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-kitchen.home.alexjenkinson.com:554/live0
+    cam-bedroom:
+      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-bedroom.home.alexjenkinson.com:554/live0
+    cam-basement:
+      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@cam-basement.home.alexjenkinson.com:554/live0
+
+cameras:
+  cam-living-room:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam-living-room
+          roles: [detect, record]
+  cam-kitchen:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam-kitchen
+          roles: [detect, record]
+  cam-bedroom:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam-bedroom
+          roles: [detect, record]
+  cam-basement:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/cam-basement
+          roles: [detect, record]
+  # If a model's RTSP path isn't /live0, change only that camera's go2rtc stream URL.
+
+# Optional (Stage K): genai descriptions via local Ollama instead of OpenAI.
+# genai:
+#   provider: ollama
+#   base_url: http://llm.home.alexjenkinson.com:11434
+#   model: llava

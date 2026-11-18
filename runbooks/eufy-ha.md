@@ -108,10 +108,12 @@ needs. Two pieces:
    user (Settings → People/Users, or the add-on's `logins:`), e.g. `frigate` / a password. This is
    what carries Frigate's detection events to HA; without it you get the camera streams but no
    `binary_sensor.*_motion/_person`.
-2. **Frigate MQTT creds** — MQTT is already enabled in `config.yaml`; run
-   `./configs/frigate/enable-mqtt.sh` on NUC-2 to store that MQTT user/password in the gitignored
-   `.env` (it writes only `.env` — no commit; boxes pull only). Then redeploy with `frigate.sh`.
-   (Order matters: Mosquitto must exist first, or Frigate just logs "can't reach broker".)
+2. **Frigate MQTT creds** — the `mqtt:` block in `config.yaml` is **disabled by default** (so the
+   cameras load even before Mosquitto exists). Once the broker + MQTT user are up: **tell Claude to
+   flip `mqtt.enabled: true` in the repo and push** (boxes pull only — a box can't push that edit),
+   then run `./configs/frigate/enable-mqtt.sh` on NUC-2 to store the MQTT user/password in the
+   gitignored `.env`, `git pull`, and redeploy with `frigate.sh`.
+   (Order matters: Mosquitto first, then the flag, or Frigate boots to safe mode / logs "can't reach broker".)
 3. **Frigate integration** — HACS → install **Frigate** (`blakeblackshear/frigate-hass-integration`)
    → restart HA → Settings → Devices & Services → Add Integration → **Frigate** → URL
    `http://frigate-lxc.home.alexjenkinson.com:8971` (or `:5000`). It auto-discovers the cameras via
