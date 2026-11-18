@@ -69,7 +69,13 @@ pct exec "$CTID" -- chown -R 1000:1000 /opt/recyclarr /opt/qbit_manage /opt/decl
 # Maintainerr (watch-based library cleanup) + Tdarr (re-encode to shrink the library). Maintainerr runs
 # as root in its own data vol; Tdarr runs as uid 1000 with its transcode scratch on the POOL (a 4K
 # transcode needs tens of GB — never the 20 G rootfs). Both are configured in their web UIs.
-pct exec "$CTID" -- bash -c 'mkdir -p /opt/maintainerr/data /opt/tdarr/server /opt/tdarr/configs /opt/tdarr/logs /data/.tdarr_cache && chown -R 1000:1000 /opt/tdarr /data/.tdarr_cache'
+# /opt dirs live on the container rootfs — root-in-CT can make + chown them.
+pct exec "$CTID" -- bash -c 'mkdir -p /opt/maintainerr/data /opt/tdarr/server /opt/tdarr/configs /opt/tdarr/logs && chown -R 1000:1000 /opt/tdarr'
+# Tdarr's transcode scratch lives on the POOL. root inside this unprivileged CT maps to a
+# high host uid and CANNOT write the idmapped /data mount, so make the dir on the HOST pool
+# path (/mnt/media is owned by host 1000 = the CT's media user). It then appears in-CT as
+# /data/.tdarr_cache owned by 1000. (mkdir -p via `pct exec` here fails: Permission denied.)
+mkdir -p /mnt/media/.tdarr_cache && chown 1000:1000 /mnt/media/.tdarr_cache
 
 # Phase 1: bring up only the apps that need no secrets. recyclarr/decluttarr/qbit_manage
 # read .env (API keys + qBit creds) and have nothing to do until those exist, so they're
