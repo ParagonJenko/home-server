@@ -71,3 +71,43 @@ services:
     env_file: .env                                   # QBIT_USER / QBIT_PASS
     volumes: [ /opt/qbit_manage/config:/config, /data:/data ]
     restart: unless-stopped
+
+  # Maintainerr — watch-based library cleanup (R26: media is reconstructable). Rules like "delete
+  # movies unwatched 90d" run against Plex + Radarr/Sonarr; it only calls their APIs, so it needs NO
+  # /data mount. Configure rules in its UI (:6246). storage.md.
+  maintainerr:
+    image: ghcr.io/jorenn92/maintainerr:latest       # ENTER: pin a version tag
+    environment: { TZ: "Europe/London" }
+    volumes: [ /opt/maintainerr/data:/opt/data ]
+    ports: [ "6246:6246" ]
+    mem_limit: 512m
+    restart: unless-stopped
+
+  # Tdarr — re-encode the library to HEVC/AV1 to shrink it (combined server + internal node). CPU
+  # transcoding by default (no GPU passthrough on this unprivileged LXC yet — see the gotcha in
+  # media-pipeline.sh); keep it to ONE worker in the UI so it doesn't peg both cores against the Arrs.
+  # Transcode scratch goes on the POOL (/data/.tdarr_cache), NOT the 20 G rootfs — a 4K transcode
+  # needs tens of GB of scratch. Web UI :8265.
+  tdarr:
+    image: ghcr.io/haveagitgat/tdarr:latest          # ENTER: pin a version tag
+    environment:
+      TZ: "Europe/London"
+      PUID: "1000"
+      PGID: "1000"
+      internalNode: "true"
+      inContainer: "true"
+      serverIP: "0.0.0.0"
+      serverPort: "8266"
+      webUIPort: "8265"
+      nodeName: "mediaNode"
+    ports:
+      - "8265:8265"          # web UI
+      - "8266:8266"          # server (node <-> server)
+    volumes:
+      - /opt/tdarr/server:/app/server
+      - /opt/tdarr/configs:/app/configs
+      - /opt/tdarr/logs:/app/logs
+      - /data:/data                      # the library to transcode
+      - /data/.tdarr_cache:/temp         # transcode scratch — on the pool, not the capped rootfs
+    mem_limit: 2g
+    restart: unless-stopped

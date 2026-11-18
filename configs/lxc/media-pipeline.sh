@@ -66,11 +66,16 @@ pct push "$CTID" ../media-pipeline/decluttarr.config.yaml /opt/decluttarr/config
 # be owned by 1000 or they can't read config / write logs (R6 idmap: host 1000).
 pct exec "$CTID" -- chown -R 1000:1000 /opt/recyclarr /opt/qbit_manage /opt/decluttarr
 
+# Maintainerr (watch-based library cleanup) + Tdarr (re-encode to shrink the library). Maintainerr runs
+# as root in its own data vol; Tdarr runs as uid 1000 with its transcode scratch on the POOL (a 4K
+# transcode needs tens of GB — never the 20 G rootfs). Both are configured in their web UIs.
+pct exec "$CTID" -- bash -c 'mkdir -p /opt/maintainerr/data /opt/tdarr/server /opt/tdarr/configs /opt/tdarr/logs /data/.tdarr_cache && chown -R 1000:1000 /opt/tdarr /data/.tdarr_cache'
+
 # Phase 1: bring up only the apps that need no secrets. recyclarr/decluttarr/qbit_manage
 # read .env (API keys + qBit creds) and have nothing to do until those exist, so they're
 # started in phase 2 after the keys are filled — starting them now just crash-loops them.
 say "start the core apps (qBittorrent + Arr stack)"
 pct exec "$CTID" -- bash -c 'cd /opt/media-pipeline && docker compose up -d \
-  qbittorrent sonarr radarr bazarr prowlarr flaresolverr'
+  qbittorrent sonarr radarr bazarr prowlarr flaresolverr maintainerr tdarr'
 
 ok "Core apps up — qBittorrent + Arr stack running (phase 2 is manual; recyclarr/decluttarr/qbit_manage wait for .env keys)."

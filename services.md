@@ -10,6 +10,8 @@ The service map and the Nginx routing table. Every proxied service has two DNS n
 | qBittorrent | nuc1 | LXC 210 | 8080 | via front name |
 | Sonarr / Radarr / Bazarr / Prowlarr | nuc1 | LXC 210 | 8989 / 7878 / 6767 / 9696 | via front names |
 | FlareSolverr | nuc1 | LXC 210 | 8191 | internal only |
+| Maintainerr | nuc1 | LXC 210 | 6246 | reached directly (add a front name later) |
+| Tdarr | nuc1 | LXC 210 | 8265 (UI), 8266 (node) | reached directly |
 | Plex | nuc1 | LXC 220 | 32400 | via front name |
 | AMP | nuc1 | LXC 230 | TBD | — |
 | Frigate | nuc2 | LXC 111 | 8971 (auth UI), 5000 (**unauth — never expose**) | via front name |

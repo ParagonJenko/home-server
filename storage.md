@@ -63,3 +63,13 @@ Other guests keep their defaults until a `GuestMemoryHigh` alert says otherwise 
 | **Reconstructable** | the media library, model weights | Lighter / excluded by choice — the Arrs/Ollama can re-fetch |
 
 **Excluded from PBS:** Frigate's recording volume (260G of 14-day churn would overrun the 2TB datastore — back up Frigate's config, not its clips) and Ollama model weights.
+
+## Managing library growth
+
+The ~7.2 TB pool (2×4 TB mergerfs, no parity) fills over time. Three levers, in combination:
+
+1. **Grow the pool (R1)** — add a bigger drive as a new mergerfs branch; no data moves, nothing reconfigures. Cheapest, because the library is reconstructable (R26) so it needs no backup.
+2. **Store less — [[Maintainerr]]** (LXC 210, `:6246`): watch-based cleanup rules (e.g. delete movies unwatched 90d) call Radarr/Sonarr to remove files. Turns "hoard forever" into "keep what you watch." Pair with tight **Recyclarr** quality profiles so you don't grab bloated remuxes.
+3. **Store it smaller — [[Tdarr]]** (LXC 210, `:8265`): re-encodes the library to HEVC/AV1 (~half the size) in the background. CPU-bound here (no GPU passthrough on LXC 210 yet; 2 cores → keep to one worker and run off-peak). Scratch goes on the pool, not the rootfs.
+
+Early warning: `DiskUsageHigh` at 80% + mergerfs `minfreespace` (hard stop — Arrs pause grabbing) mean you get a nudge with runway, never a silent 100%.

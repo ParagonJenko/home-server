@@ -46,6 +46,8 @@ scrape_configs:
       - { targets: ['http://media-pipeline.home.alexjenkinson.com:6767/'],    labels: { service: bazarr } }
       - { targets: ['http://media-pipeline.home.alexjenkinson.com:9696/'],    labels: { service: prowlarr } }
       - { targets: ['http://media-pipeline.home.alexjenkinson.com:8080/'],    labels: { service: qbittorrent } }
+      - { targets: ['http://media-pipeline.home.alexjenkinson.com:6246/'],    labels: { service: maintainerr } }
+      - { targets: ['http://media-pipeline.home.alexjenkinson.com:8265/'],    labels: { service: tdarr } }
       - { targets: ['http://pi.home.alexjenkinson.com:8081/'],                labels: { service: adguard } }
       - { targets: ['http://localhost:3000/api/health'],                     labels: { service: grafana } }
       - { targets: ['https://pbs.home.alexjenkinson.com:8007/'],              labels: { service: pbs } }
