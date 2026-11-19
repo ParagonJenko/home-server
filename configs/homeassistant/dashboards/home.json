@@ -1505,6 +1505,62 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "On camera",
+              "heading_style": "title",
+              "icon": "mdi:cctv"
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.living_room_cam_living_room_cat_occupancy",
+              "name": "Living Room",
+              "icon": "mdi:cat",
+              "grid_options": {
+                "columns": 3
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.living_room_cam_kitchen_cat_occupancy",
+              "name": "Kitchen",
+              "icon": "mdi:cat",
+              "grid_options": {
+                "columns": 3
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.bedroom_cam_bedroom_cat_occupancy",
+              "name": "Bedroom",
+              "icon": "mdi:cat",
+              "grid_options": {
+                "columns": 3
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.utility_cam_basement_cat_occupancy",
+              "name": "Basement",
+              "icon": "mdi:cat",
+              "grid_options": {
+                "columns": 3
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.frigate_cat_last_camera",
+              "name": "Last sighting",
+              "icon": "mdi:map-marker",
+              "grid_options": {
+                "columns": 12
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "Controls",
               "heading_style": "title",
               "icon": "mdi:gesture-tap-button"
@@ -1671,6 +1727,138 @@
               "hours_to_show": 0,
               "grid_options": {
                 "columns": 12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Infra",
+      "path": "infra",
+      "type": "sections",
+      "icon": "mdi:server-network",
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Reachability",
+              "heading_style": "title",
+              "icon": "mdi:lan-connect"
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.infra_gateway",
+              "name": "Gateway",
+              "icon": "mdi:router-network",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.infra_internet",
+              "name": "Internet",
+              "icon": "mdi:web",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.infra_pi",
+              "name": "Pi",
+              "icon": "mdi:raspberry-pi",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.infra_nuc1",
+              "name": "NUC-1",
+              "icon": "mdi:server",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.infra_nuc2",
+              "name": "NUC-2",
+              "icon": "mdi:server",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.infra_pbs",
+              "name": "PBS",
+              "icon": "mdi:backup-restore",
+              "grid_options": {
+                "columns": 4
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Health",
+              "heading_style": "title",
+              "icon": "mdi:heart-pulse"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.infra_internet_latency",
+              "name": "Internet latency",
+              "icon": "mdi:speedometer",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.infra_services_down",
+              "name": "Services down",
+              "icon": "mdi:alert-circle",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "gauge",
+              "entity": "sensor.infra_pi_disk_free",
+              "name": "Pi disk free",
+              "min": 0,
+              "max": 100,
+              "severity": {
+                "green": 20,
+                "yellow": 10,
+                "red": 0
+              },
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "gauge",
+              "entity": "sensor.infra_pool_free",
+              "name": "Pool free",
+              "min": 0,
+              "max": 100,
+              "severity": {
+                "green": 20,
+                "yellow": 10,
+                "red": 0
+              },
+              "grid_options": {
+                "columns": 6
               }
             }
           ]

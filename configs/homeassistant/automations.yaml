@@ -157,3 +157,44 @@
       data:
         tag: bin_night
         group: home
+- id: '1795111688049'
+  alias: 'Infra: host unreachable → phone'
+  description: 'A homelab host (Prometheus ICMP bridge) unreachable for 10 min: push an alert naming it.'
+  mode: parallel
+  max: 6
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.infra_nuc1
+    - binary_sensor.infra_nuc2
+    - binary_sensor.infra_pbs
+    - binary_sensor.infra_pi
+    to: 'off'
+    for:
+      minutes: 10
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 🔌 Host unreachable
+      message: '{{ trigger.to_state.attributes.friendly_name | replace(''Infra '','''') }} has been unreachable for 10 min.'
+      data:
+        tag: infra_down_{{ trigger.entity_id }}
+        group: infra
+- id: '1795111688783'
+  alias: 'Infra: service(s) down → phone'
+  description: 'One or more blackbox-http probes failing for 5 min (sensor.infra_services_down > 0): push an alert.'
+  mode: single
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.infra_services_down
+    above: 0
+    for:
+      minutes: 5
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: ⚠️ Service down
+      message: '{{ states(''sensor.infra_services_down'') }} service(s) are down — check Grafana.'
+      data:
+        tag: infra_services_down
+        group: infra

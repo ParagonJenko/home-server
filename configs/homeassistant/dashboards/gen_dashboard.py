@@ -279,6 +279,14 @@ cats = {
             col(4, {"type": "tile", "entity": "sensor.leo_last_seen", "name": "Leo", "icon": "mdi:cat"}),
         ),
         section(
+            heading("On camera", "mdi:cctv"),
+            col(3, {"type": "tile", "entity": "binary_sensor.living_room_cam_living_room_cat_occupancy", "name": "Living Room", "icon": "mdi:cat"}),
+            col(3, {"type": "tile", "entity": "binary_sensor.living_room_cam_kitchen_cat_occupancy", "name": "Kitchen", "icon": "mdi:cat"}),
+            col(3, {"type": "tile", "entity": "binary_sensor.bedroom_cam_bedroom_cat_occupancy", "name": "Bedroom", "icon": "mdi:cat"}),
+            col(3, {"type": "tile", "entity": "binary_sensor.utility_cam_basement_cat_occupancy", "name": "Basement", "icon": "mdi:cat"}),
+            col(12, {"type": "tile", "entity": "sensor.frigate_cat_last_camera", "name": "Last sighting", "icon": "mdi:map-marker"}),
+        ),
+        section(
             heading("Controls", "mdi:gesture-tap-button"),
             col(3, switch_btn("switch.litter_tray_power", "Power", "mdi:power")),
             col(3, switch_btn("switch.litter_tray_auto_cleaning", "Auto clean", "mdi:broom")),
@@ -366,7 +374,32 @@ energy = {
     ],
 }
 
-config = {"views": [home, lights, security, media, energy, cats, phone]}
+# =====================================================================
+# VIEW: INFRA  (read from Prometheus via the REST-sensor bridge)
+# =====================================================================
+infra = {
+    "title": "Infra", "path": "infra", "type": "sections", "icon": "mdi:server-network",
+    "sections": [
+        section(
+            heading("Reachability", "mdi:lan-connect"),
+            col(4, {"type": "tile", "entity": "binary_sensor.infra_gateway", "name": "Gateway", "icon": "mdi:router-network"}),
+            col(4, {"type": "tile", "entity": "binary_sensor.infra_internet", "name": "Internet", "icon": "mdi:web"}),
+            col(4, {"type": "tile", "entity": "binary_sensor.infra_pi", "name": "Pi", "icon": "mdi:raspberry-pi"}),
+            col(4, {"type": "tile", "entity": "binary_sensor.infra_nuc1", "name": "NUC-1", "icon": "mdi:server"}),
+            col(4, {"type": "tile", "entity": "binary_sensor.infra_nuc2", "name": "NUC-2", "icon": "mdi:server"}),
+            col(4, {"type": "tile", "entity": "binary_sensor.infra_pbs", "name": "PBS", "icon": "mdi:backup-restore"}),
+        ),
+        section(
+            heading("Health", "mdi:heart-pulse"),
+            col(6, {"type": "tile", "entity": "sensor.infra_internet_latency", "name": "Internet latency", "icon": "mdi:speedometer"}),
+            col(6, {"type": "tile", "entity": "sensor.infra_services_down", "name": "Services down", "icon": "mdi:alert-circle"}),
+            col(6, {"type": "gauge", "entity": "sensor.infra_pi_disk_free", "name": "Pi disk free", "min": 0, "max": 100, "severity": {"green": 20, "yellow": 10, "red": 0}}),
+            col(6, {"type": "gauge", "entity": "sensor.infra_pool_free", "name": "Pool free", "min": 0, "max": 100, "severity": {"green": 20, "yellow": 10, "red": 0}}),
+        ),
+    ],
+}
+
+config = {"views": [home, lights, security, media, energy, cats, phone, infra]}
 
 OUT.write_text(json.dumps(config, indent=2, ensure_ascii=False))
 print("wrote", OUT, "-", len(json.dumps(config)), "bytes,", len(config["views"]), "views")

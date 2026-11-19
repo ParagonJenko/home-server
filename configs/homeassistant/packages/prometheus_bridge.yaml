@@ -105,21 +105,19 @@ rest:
         unit_of_measurement: "%"
         state_class: measurement
         value_template: >-
-          {{ (value_json.data.result | map(attribute='value') | map('last')
-             | map('float') | first | default(0)) | round(1) }}
+          {% set r = value_json.data.result %}{{ (r[0].value[1] | float | round(1)) if r else 'unknown' }}
 
   # ---- Pi SD/SSD root free % (pi node_exporter is up now) ----
   - resource: http://pi.home.alexjenkinson.com:9090/api/v1/query
     scan_interval: 300
     params:
       query: >-
-        100 * node_filesystem_avail_bytes{instance="pi",mountpoint="/"}
-        / node_filesystem_size_bytes{instance="pi",mountpoint="/"}
+        100 * sum(node_filesystem_avail_bytes{instance="pi",mountpoint="/",fstype!="rootfs"})
+        / sum(node_filesystem_size_bytes{instance="pi",mountpoint="/",fstype!="rootfs"})
     sensor:
       - name: "Infra pi disk free"
         unique_id: infra_pi_disk_free
         unit_of_measurement: "%"
         state_class: measurement
         value_template: >-
-          {{ (value_json.data.result | map(attribute='value') | map('last')
-             | map('float') | first | default(0)) | round(1) }}
+          {% set r = value_json.data.result %}{{ (r[0].value[1] | float | round(1)) if r else 'unknown' }}
