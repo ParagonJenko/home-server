@@ -1122,8 +1122,27 @@
               "icon": "mdi:cat"
             },
             {
+              "type": "tile",
+              "entity": "binary_sensor.litter_tray_wastebin",
+              "name": "Waste bin",
+              "icon": "mdi:delete-alert",
+              "color": "red",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.litter_tray_state",
+              "name": "State",
+              "icon": "mdi:robot",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
               "type": "gauge",
-              "entity": "sensor.carpeted_area_litter_tray_litter_level",
+              "entity": "sensor.litter_tray_litter_level",
               "name": "Litter level",
               "min": 0,
               "max": 100,
@@ -1138,29 +1157,70 @@
             },
             {
               "type": "tile",
-              "entity": "sensor.carpeted_area_litter_tray_state",
-              "name": "State",
-              "icon": "mdi:cat",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "sensor.carpeted_area_litter_tray_times_used",
-              "name": "Uses today",
-              "icon": "mdi:counter",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "sensor.carpeted_area_litter_tray_last_used_by",
+              "entity": "sensor.litter_tray_last_used_by",
               "name": "Last used by",
               "icon": "mdi:paw",
               "grid_options": {
                 "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.litter_tray_litter",
+              "name": "Litter low",
+              "icon": "mdi:cup",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.litter_tray_n50_odor_eliminator",
+              "name": "Odor N50",
+              "icon": "mdi:air-filter",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "The cats",
+              "heading_style": "title",
+              "icon": "mdi:cat"
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "entity": "sensor.misty_latest_weight",
+              "primary": "Misty",
+              "secondary": "{{ states('sensor.misty_latest_weight') }} kg",
+              "picture": "{{ state_attr('sensor.misty_latest_weight','entity_picture') }}",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "entity": "sensor.bella_latest_weight",
+              "primary": "Bella",
+              "secondary": "{{ states('sensor.bella_latest_weight') }} kg",
+              "picture": "{{ state_attr('sensor.bella_latest_weight','entity_picture') }}",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "entity": "sensor.leo_latest_weight",
+              "primary": "Leo",
+              "secondary": "{{ states('sensor.leo_latest_weight') }} kg",
+              "picture": "{{ state_attr('sensor.leo_latest_weight','entity_picture') }}",
+              "grid_options": {
+                "columns": 4
               }
             }
           ]
@@ -1178,7 +1238,7 @@
               "type": "custom:bubble-card",
               "card_type": "button",
               "button_type": "switch",
-              "entity": "switch.carpeted_area_litter_tray_power",
+              "entity": "switch.litter_tray_power",
               "name": "Power",
               "icon": "mdi:power",
               "grid_options": {
@@ -1186,10 +1246,21 @@
               }
             },
             {
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
+              "entity": "switch.litter_tray_auto_cleaning",
+              "name": "Auto clean",
+              "icon": "mdi:broom",
+              "grid_options": {
+                "columns": 3
+              }
+            },
+            {
               "type": "tile",
-              "entity": "button.carpeted_area_litter_tray_scoop",
-              "name": "Scoop",
-              "icon": "mdi:shovel",
+              "entity": "button.litter_tray_start_resume_cleaning",
+              "name": "Clean now",
+              "icon": "mdi:broom",
               "tap_action": {
                 "action": "toggle"
               },
@@ -1199,19 +1270,7 @@
             },
             {
               "type": "tile",
-              "entity": "button.carpeted_area_litter_tray_level_litter",
-              "name": "Level",
-              "icon": "mdi:spirit-level",
-              "tap_action": {
-                "action": "toggle"
-              },
-              "grid_options": {
-                "columns": 3
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "button.carpeted_area_litter_tray_deodorize",
+              "entity": "button.litter_tray_odor_removal",
               "name": "Deodorize",
               "icon": "mdi:spray",
               "tap_action": {
@@ -1220,66 +1279,6 @@
               "grid_options": {
                 "columns": 3
               }
-            }
-          ]
-        },
-        {
-          "type": "grid",
-          "cards": [
-            {
-              "type": "heading",
-              "heading": "Alerts",
-              "heading_style": "title",
-              "icon": "mdi:alert"
-            },
-            {
-              "type": "tile",
-              "entity": "binary_sensor.carpeted_area_litter_tray_wastebin_filled",
-              "name": "Waste bin full",
-              "icon": "mdi:delete-alert",
-              "grid_options": {
-                "columns": 4
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "binary_sensor.carpeted_area_litter_tray_sand_lack",
-              "name": "Sand low",
-              "icon": "mdi:cup",
-              "grid_options": {
-                "columns": 4
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "sensor.carpeted_area_litter_tray_odor_eliminator_n50_left_days",
-              "name": "Odor filter (days)",
-              "icon": "mdi:air-filter",
-              "grid_options": {
-                "columns": 4
-              }
-            },
-            {
-              "type": "custom:bubble-card",
-              "card_type": "button",
-              "button_type": "switch",
-              "entity": "light.carpeted_area_litter_tray_light",
-              "name": "Tray light",
-              "icon": "mdi:lightbulb",
-              "grid_options": {
-                "columns": 12
-              }
-            }
-          ]
-        },
-        {
-          "type": "grid",
-          "cards": [
-            {
-              "type": "heading",
-              "heading": "3 cats · 2 tracked (two read as one on weight)",
-              "heading_style": "subtitle",
-              "icon": "mdi:information-outline"
             }
           ]
         }
