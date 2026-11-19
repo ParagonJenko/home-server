@@ -40,7 +40,7 @@ scrape_configs:
       - { targets: ['http://plex-lxc.home.alexjenkinson.com:32400/identity'], labels: { service: plex } }
       - { targets: ['http://frigate-lxc.home.alexjenkinson.com:8971/'],       labels: { service: frigate } }
       - { targets: ['http://homeassistant.home.alexjenkinson.com:80/'],       labels: { service: homeassistant } }
-      - { targets: ['http://amp.home.alexjenkinson.com:8080/'],               labels: { service: amp } }
+      - { targets: ['http://amp-lxc.home.alexjenkinson.com:8080/'],           labels: { service: amp } }
       - { targets: ['http://media-pipeline.home.alexjenkinson.com:8989/'],    labels: { service: sonarr } }
       - { targets: ['http://media-pipeline.home.alexjenkinson.com:7878/'],    labels: { service: radarr } }
       - { targets: ['http://media-pipeline.home.alexjenkinson.com:6767/'],    labels: { service: bazarr } }

@@ -34,7 +34,7 @@ reservations live in `network.md`; the Nginx routing in `services.md`; day-2 com
 | Tool | URL |
 |---|---|
 | Home Assistant | `http://homeassistant.home.alexjenkinson.com` (`192.168.1.25:80`) |
-| AMP | `http://amp.home.alexjenkinson.com:8080` (`192.168.1.23`) |
+| AMP | `https://amp.home.alexjenkinson.com` (via Nginx; direct: `http://amp-lxc.home.alexjenkinson.com:8080`, `192.168.1.23`) |
 
 ## Infra IPs
 
