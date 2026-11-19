@@ -1257,24 +1257,38 @@
               }
             },
             {
-              "type": "tile",
-              "entity": "button.litter_tray_start_resume_cleaning",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "name",
               "name": "Clean now",
               "icon": "mdi:broom",
-              "tap_action": {
-                "action": "toggle"
+              "button_action": {
+                "tap_action": {
+                  "action": "perform-action",
+                  "perform_action": "button.press",
+                  "target": {
+                    "entity_id": "button.litter_tray_start_resume_cleaning"
+                  }
+                }
               },
               "grid_options": {
                 "columns": 3
               }
             },
             {
-              "type": "tile",
-              "entity": "button.litter_tray_odor_removal",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "name",
               "name": "Deodorize",
               "icon": "mdi:spray",
-              "tap_action": {
-                "action": "toggle"
+              "button_action": {
+                "tap_action": {
+                  "action": "perform-action",
+                  "perform_action": "button.press",
+                  "target": {
+                    "entity_id": "button.litter_tray_odor_removal"
+                  }
+                }
               },
               "grid_options": {
                 "columns": 3

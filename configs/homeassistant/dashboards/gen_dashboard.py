@@ -276,8 +276,10 @@ cats = {
             heading("Controls", "mdi:gesture-tap-button"),
             col(3, switch_btn("switch.litter_tray_power", "Power", "mdi:power")),
             col(3, switch_btn("switch.litter_tray_auto_cleaning", "Auto clean", "mdi:broom")),
-            col(3, {"type": "tile", "entity": "button.litter_tray_start_resume_cleaning", "name": "Clean now", "icon": "mdi:broom", "tap_action": {"action": "toggle"}}),
-            col(3, {"type": "tile", "entity": "button.litter_tray_odor_removal", "name": "Deodorize", "icon": "mdi:spray", "tap_action": {"action": "toggle"}}),
+            col(3, bb(card_type="button", button_type="name", name="Clean now", icon="mdi:broom",
+                      button_action={"tap_action": {"action": "perform-action", "perform_action": "button.press", "target": {"entity_id": "button.litter_tray_start_resume_cleaning"}}})),
+            col(3, bb(card_type="button", button_type="name", name="Deodorize", icon="mdi:spray",
+                      button_action={"tap_action": {"action": "perform-action", "perform_action": "button.press", "target": {"entity_id": "button.litter_tray_odor_removal"}}})),
         ),
     ],
 }
