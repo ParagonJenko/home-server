@@ -73,3 +73,46 @@ The ~7.2 TB pool (2×4 TB mergerfs, no parity) fills over time. Three levers, in
 3. **Store it smaller — [[Tdarr]]** (LXC 210, `:8265`): re-encodes the library to HEVC/AV1 (~half the size) in the background. CPU-bound here (no GPU passthrough on LXC 210 yet; 2 cores → keep to one worker and run off-peak). Scratch goes on the pool, not the rootfs.
 
 Early warning: `DiskUsageHigh` at 80% + mergerfs `minfreespace` (hard stop — Arrs pause grabbing) mean you get a nudge with runway, never a silent 100%.
+
+## Planned: NAS migration (future)
+
+**Decision (2026-11-19):** move the media pool *and* general file storage off the USB DAS onto a
+dedicated DIY NAS running **TrueNAS SCALE** (ZFS), network-attached. Drivers: SATA reliability over
+the flaky USB DAS; real redundancy (recover on a single/double drive failure); store more than media;
+expand with bigger disks over time; decouple storage from nuc1. Irreplaceable data is backed up to
+PBS + offsite regardless (R26), so ZFS integrity is a bonus here, not the load-bearing reason.
+
+**Why ZFS/TrueNAS over unRAID:** real-time parity + snapshots + replication, and TrueNAS config
+exports to a file we commit — so the "rebuild from catastrophe" story holds (disks + a config file,
+not a hand-built appliance).
+
+**Run plain TrueNAS SCALE, not HexOS.** HexOS is a $199–299/server paid layer *on top of* TrueNAS
+SCALE for an easier UI + remote management, but it carries a cloud-auth/identity dependency (even
+local access routes through its managed flow) and is still maturing — mid-2026 reviews steer
+technical DIY builders to vanilla TrueNAS for control + maturity. Since the whole homelab is
+hand-scripted, the hand-holding HexOS sells isn't needed, and vanilla TrueNAS is free and
+git-documentable. HexOS is TrueNAS underneath, so it stays a safe fallback if the UI ever appeals.
+
+**Target layout:**
+- Dedicated NAS box, **6–8 bays** (room to grow). **RAIDZ2** at 5+ disks, RAIDZ1 at 3–4.
+- **One NFS export** holding the whole `/data` tree — `/data/torrents` + `/data/library` on the SAME
+  share (the Arr hardlink/atomic-move flow needs one filesystem; it survives over NFS within one export).
+- NFS-mounted on the nuc1 Proxmox host, bind-mounted into LXC 210 (media-pipeline) and 220 (Plex) at
+  the SAME paths, replacing the mergerfs `/mnt/media` bind. Transcode scratch stays on local SSD.
+- A larger **PBS datastore** also lives on the NAS — the 2 TB USB PBS drive is the tighter constraint
+  today than the media pool.
+- The 2×4 TB DAS disks retire into the NAS as pool members, or the DAS is kept as a cold/offsite copy.
+
+**Migration order:** build + TrueNAS install → create pool + dataset → NFS export → mount on nuc1 +
+bind into the LXCs at the same paths → `rsync /mnt/media/ → /data/` → stop Arrs/Plex, final rsync,
+cut the binds over → verify hardlinks (`find /data -links +1`) + a test import → move/grow PBS →
+decommission or repurpose the DAS. Record every NAS disk by `ata-…_<serial>` in the register above.
+
+**Gotchas:** unprivileged-LXC NFS id-mapping (map the share uid/gid to the container); NFS not SMB for
+Linux→Linux; ZFS sizes a RAIDZ vdev to its smallest disk (plan disk sizes, or use RAIDZ expansion to
+add one at a time); snapshot + replicate the irreplaceable datasets off-box.
+
+**Reference build (ex-disks):** 6–8 bay case (Jonsbo N3 / Fractal Node 804), mATX/mini-ITX board with
+6+ SATA or an LSI HBA in IT mode, low-power CPU (Plex transcoding stays on nuc1, so the NAS CPU can be
+modest), 16–32 GB RAM, small boot SSD. Disks: start with the 2×4 TB + 2–4 new large drives in RAIDZ2.
+Price to budget before buying.
