@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""Generate repo-tracked YAML for the HA automations + helpers created via HA-MCP.
+Faithful copies of what was deployed live, so HA's own config is reproducible like the LXCs."""
+import yaml, pathlib
+
+OUT = pathlib.Path("/home/claude/home-server/configs/homeassistant")
+(OUT / "").mkdir(parents=True, exist_ok=True)
+
+automations = [
+    {
+        "id": "1795039639885",
+        "alias": "Doorbell → phone (snapshot)",
+        "description": "Doorbell pressed: push a live doorbell snapshot to Alex's phone.",
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.doorbell_ringing", "to": "on"}],
+        "actions": [{
+            "action": "notify.mobile_app_alexs_iphone",
+            "data": {"title": "\U0001f514 Doorbell", "message": "Someone's at the front door",
+                     "data": {"image": "/api/camera_proxy/camera.doorbell", "tag": "doorbell", "group": "security"}},
+        }],
+    },
+    {
+        "id": "1795039640817",
+        "alias": "Person detected while away",
+        "description": "Frigate sees a person in a room while Alex is away: push an alert with that room's camera snapshot.",
+        "mode": "parallel",
+        "max": 10,
+        "triggers": [{"trigger": "state",
+                      "entity_id": ["binary_sensor.living_room_person", "binary_sensor.kitchen_person",
+                                    "binary_sensor.bedroom_person", "binary_sensor.basement_person"],
+                      "to": "on"}],
+        "conditions": [{"condition": "state", "entity_id": "person.alex_jenkinson", "state": "not_home"}],
+        "variables": {
+            "cam": ("{{ {'binary_sensor.living_room_person':'camera.living_room_cam_living_room',"
+                    "'binary_sensor.kitchen_person':'camera.living_room_cam_kitchen',"
+                    "'binary_sensor.bedroom_person':'camera.bedroom_cam_bedroom',"
+                    "'binary_sensor.basement_person':'camera.utility_cam_basement'}"
+                    ".get(trigger.entity_id,'camera.doorbell') }}"),
+            "room": "{{ trigger.to_state.attributes.friendly_name | replace(' Person','') }}",
+        },
+        "actions": [{
+            "action": "notify.mobile_app_alexs_iphone",
+            "data": {"title": "\U0001f441️ Person detected — you're away",
+                     "message": "Someone is in the {{ room }}",
+                     "data": {"image": "/api/camera_proxy/{{ cam }}", "tag": "person_away_{{ room }}", "group": "security"}},
+        }],
+    },
+    {
+        "id": "1795039641592",
+        "alias": "Arrive home (dark) → living room lights",
+        "description": "When Alex gets home while the sun is below the horizon, turn on the living room lights.",
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "person.alex_jenkinson", "to": "home"}],
+        "conditions": [{"condition": "state", "entity_id": "sun.sun", "state": "below_horizon"}],
+        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.living_room_living_room"}}],
+    },
+    {
+        "id": "1795039642577",
+        "alias": "Leave home → all lights off",
+        "description": "When Alex leaves (debounced 2 min), turn off all lights. Single occupant, so not_home = empty house.",
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "person.alex_jenkinson", "to": "not_home", "for": {"minutes": 2}}],
+        "actions": [{"action": "light.turn_off", "target": {"entity_id": "all"}}],
+    },
+    {
+        "id": "1795039995065",
+        "alias": "Litter tray full → hourly phone alert",
+        "description": "PetKit Pura Max (RobertD502 integration): binary_sensor.litter_tray_wastebin correctly reports a full waste bin. Fires when it goes on, re-nags hourly, self-clears when emptied.",
+        "mode": "single",
+        "triggers": [
+            {"trigger": "state", "entity_id": "binary_sensor.litter_tray_wastebin", "to": "on"},
+            {"trigger": "time_pattern", "hours": "/1"},
+        ],
+        "conditions": [{"condition": "state", "entity_id": "binary_sensor.litter_tray_wastebin", "state": "on"}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "\U0001f6bd Litter tray full",
+                              "message": "The PetKit waste bin is full — empty it.",
+                              "data": {"tag": "litter_full", "group": "home"}}}],
+    },
+    {
+        "id": "1795040260037",
+        "alias": "Bin day: Monday heads-up",
+        "description": "Every Monday at 12:00, tell Alex which bin is out this week (next collection within 5 days).",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "12:00:00"}],
+        "conditions": [{"condition": "time", "weekday": ["mon"]}],
+        "actions": [
+            {"action": "calendar.get_events",
+             "target": {"entity_id": "calendar.waste_collection_schedule_cheshire_east_council"},
+             "data": {"start_date_time": "{{ now() }}", "end_date_time": "{{ now() + timedelta(days=5) }}"},
+             "response_variable": "ev"},
+            {"variables": {"items": "{{ ev['calendar.waste_collection_schedule_cheshire_east_council'].events }}"}},
+            {"condition": "template", "value_template": "{{ items | count > 0 }}"},
+            {"action": "notify.mobile_app_alexs_iphone",
+             "data": {"title": "\U0001f5d1️ Bin this week",
+                      "message": "This week's bin is {{ items[0].summary }} — out Wednesday.",
+                      "data": {"tag": "bin_week", "group": "home"}}},
+        ],
+    },
+    {
+        "id": "1795040260770",
+        "alias": "Bin day: night-before reminder",
+        "description": "At 20:00 the evening before a collection, remind Alex to put the right bin out.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "20:00:00"}],
+        "actions": [
+            {"action": "calendar.get_events",
+             "target": {"entity_id": "calendar.waste_collection_schedule_cheshire_east_council"},
+             "data": {"start_date_time": "{{ today_at('23:00') }}", "end_date_time": "{{ today_at('23:00') + timedelta(days=1) }}"},
+             "response_variable": "ev"},
+            {"variables": {"items": "{{ ev['calendar.waste_collection_schedule_cheshire_east_council'].events }}"}},
+            {"condition": "template", "value_template": "{{ items | count > 0 }}"},
+            {"action": "notify.mobile_app_alexs_iphone",
+             "data": {"title": "\U0001f319 Bin night",
+                      "message": "Put the {{ items[0].summary }} out tonight — collection tomorrow morning.",
+                      "data": {"tag": "bin_night", "group": "home"}}},
+        ],
+    },
+]
+
+# Reference export of the UI/config helpers (zones + persons). These live in HA's registry;
+# this is the human-readable, diffable record. zone.home comes from core config, not listed here.
+helpers = {
+    "zone": [
+        {"name": "Macclesfield Train Station", "latitude": 53.25944064320947, "longitude": -2.1222772381034076,
+         "radius": 40, "icon": "mdi:map-marker", "passive": False},
+        {"name": "Doncaster", "latitude": 53.51115414503215, "longitude": -1.135862684295688,
+         "radius": 3312, "icon": "mdi:map-marker", "passive": False},
+        {"name": "London Office", "latitude": 51.52117351989759, "longitude": -0.0809378516281356,
+         "radius": 55, "icon": "mdi:office-building", "passive": False},
+    ],
+    "person": [
+        {"name": "Alex Jenkinson", "device_trackers": ["device_tracker.alexs_iphone"]},
+        {"name": "frigate", "device_trackers": []},
+    ],
+    # Utility meters accumulating the Octopus daily cost sensors into week/month
+    # cycles. State = period-to-date cost; `last_period` attribute = previous period.
+    # always_available keeps them up when the source is briefly unknown.
+    "utility_meter": [
+        {"name": "Electricity Cost Weekly",
+         "source": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_accumulative_cost",
+         "cycle": "weekly", "always_available": True},
+        {"name": "Electricity Cost Monthly",
+         "source": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_accumulative_cost",
+         "cycle": "monthly", "always_available": True},
+        {"name": "Gas Cost Weekly",
+         "source": "sensor.octopus_energy_gas_e6s17297892061_9384989210_current_accumulative_cost",
+         "cycle": "weekly", "always_available": True},
+        {"name": "Gas Cost Monthly",
+         "source": "sensor.octopus_energy_gas_e6s17297892061_9384989210_current_accumulative_cost",
+         "cycle": "monthly", "always_available": True},
+    ],
+}
+
+hdr = ("# Deployed live via HA-MCP and committed here as the source of truth.\n"
+       "# Faithful copy of the HA automations; drop into /config/automations.yaml on a rebuild\n"
+       "# (or just restore the HA backup tarball). See README.md.\n")
+with open(OUT / "automations.yaml", "w") as f:
+    f.write(hdr)
+    yaml.safe_dump(automations, f, sort_keys=False, default_flow_style=False, allow_unicode=True, width=120)
+
+with open(OUT / "helpers.yaml", "w") as f:
+    f.write("# Reference export of HA zones + persons (registry-managed). Diffable record, not auto-loaded.\n")
+    yaml.safe_dump(helpers, f, sort_keys=False, default_flow_style=False, allow_unicode=True, width=120)
+
+print("wrote:", sorted(p.name for p in OUT.iterdir()))

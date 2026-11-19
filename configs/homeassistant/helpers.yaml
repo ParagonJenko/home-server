@@ -24,3 +24,20 @@ person:
   - device_tracker.alexs_iphone
 - name: frigate
   device_trackers: []
+utility_meter:
+- name: Electricity Cost Weekly
+  source: sensor.octopus_energy_electricity_19m0059512_1610012030180_current_accumulative_cost
+  cycle: weekly
+  always_available: true
+- name: Electricity Cost Monthly
+  source: sensor.octopus_energy_electricity_19m0059512_1610012030180_current_accumulative_cost
+  cycle: monthly
+  always_available: true
+- name: Gas Cost Weekly
+  source: sensor.octopus_energy_gas_e6s17297892061_9384989210_current_accumulative_cost
+  cycle: weekly
+  always_available: true
+- name: Gas Cost Monthly
+  source: sensor.octopus_energy_gas_e6s17297892061_9384989210_current_accumulative_cost
+  cycle: monthly
+  always_available: true

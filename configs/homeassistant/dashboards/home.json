@@ -1278,6 +1278,104 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "This week",
+              "heading_style": "title",
+              "icon": "mdi:calendar-week"
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "primary": "This week",
+              "icon": "mdi:cash-multiple",
+              "icon_color": "green",
+              "secondary": "£{{ '%.2f'|format(states('sensor.electricity_meter_electricity_cost_weekly')|float(0) + states('sensor.gas_meter_gas_cost_weekly')|float(0)) }}",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "primary": "Last week",
+              "icon": "mdi:cash-clock",
+              "icon_color": "grey",
+              "secondary": "£{{ '%.2f'|format(state_attr('sensor.electricity_meter_electricity_cost_weekly','last_period')|float(0) + state_attr('sensor.gas_meter_gas_cost_weekly','last_period')|float(0)) }}",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.electricity_meter_electricity_cost_weekly",
+              "name": "Electricity",
+              "icon": "mdi:flash",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.gas_meter_gas_cost_weekly",
+              "name": "Gas",
+              "icon": "mdi:fire",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "This month",
+              "heading_style": "title",
+              "icon": "mdi:calendar-month"
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "primary": "This month",
+              "icon": "mdi:cash-multiple",
+              "icon_color": "green",
+              "secondary": "£{{ '%.2f'|format(states('sensor.electricity_meter_electricity_cost_monthly')|float(0) + states('sensor.gas_meter_gas_cost_monthly')|float(0)) }}",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "primary": "Last month",
+              "icon": "mdi:cash-clock",
+              "icon_color": "grey",
+              "secondary": "£{{ '%.2f'|format(state_attr('sensor.electricity_meter_electricity_cost_monthly','last_period')|float(0) + state_attr('sensor.gas_meter_gas_cost_monthly','last_period')|float(0)) }}",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.electricity_meter_electricity_cost_monthly",
+              "name": "Electricity",
+              "icon": "mdi:flash",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.gas_meter_gas_cost_monthly",
+              "name": "Gas",
+              "icon": "mdi:fire",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "Yesterday",
               "heading_style": "title",
               "icon": "mdi:history"
