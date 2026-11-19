@@ -48,6 +48,15 @@ model:
   path: /openvino-model/ssdlite_mobilenet_v2.xml
   labelmap_path: /openvino-model/coco_91cl_bkgr.txt
 
+# Tracked objects (global, all cameras). person is Frigate's default; cat is added to track the cats.
+# NB: the COCO model detects the SPECIES "cat", not the individual — Misty/Bella/Leo cannot be told
+# apart on camera (that's what the PetKit tray's weight ID is for). Cat events record as "detections"
+# (14d retention), not "alerts", so they don't push a notification the way person does.
+objects:
+  track:
+    - person
+    - cat
+
 # go2rtc restreams each camera once and Frigate pulls from it on localhost (127.0.0.1:8554).
 #
 # SOURCE = the eufy-sdk bridge (HA add-on on the HA VM, 192.168.1.25:8554). The bridge holds ONE

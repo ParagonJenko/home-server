@@ -1467,6 +1467,44 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "Last seen",
+              "heading_style": "title",
+              "icon": "mdi:eye-check"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.misty_last_seen",
+              "name": "Misty",
+              "icon": "mdi:cat",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.bella_last_seen",
+              "name": "Bella",
+              "icon": "mdi:cat",
+              "grid_options": {
+                "columns": 4
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.leo_last_seen",
+              "name": "Leo",
+              "icon": "mdi:cat",
+              "grid_options": {
+                "columns": 4
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "Controls",
               "heading_style": "title",
               "icon": "mdi:gesture-tap-button"

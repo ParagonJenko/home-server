@@ -273,6 +273,12 @@ cats = {
                         picture="{{ state_attr('sensor.leo_latest_weight','entity_picture') }}")),
         ),
         section(
+            heading("Last seen", "mdi:eye-check"),
+            col(4, {"type": "tile", "entity": "sensor.misty_last_seen", "name": "Misty", "icon": "mdi:cat"}),
+            col(4, {"type": "tile", "entity": "sensor.bella_last_seen", "name": "Bella", "icon": "mdi:cat"}),
+            col(4, {"type": "tile", "entity": "sensor.leo_last_seen", "name": "Leo", "icon": "mdi:cat"}),
+        ),
+        section(
             heading("Controls", "mdi:gesture-tap-button"),
             col(3, switch_btn("switch.litter_tray_power", "Power", "mdi:power")),
             col(3, switch_btn("switch.litter_tray_auto_cleaning", "Auto clean", "mdi:broom")),

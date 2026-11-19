@@ -133,6 +133,17 @@ helpers = {
         {"name": "Alex Jenkinson", "device_trackers": ["device_tracker.alexs_iphone"]},
         {"name": "frigate", "device_trackers": []},
     ],
+    # Per-cat "last seen" = timestamp of each cat's most recent litter-tray use. The PetKit
+    # tray weight-identifies the individual; Frigate only ever sees a generic "cat". Template
+    # helpers (device_class timestamp -> tiles render "X ago").
+    "template": [
+        {"name": "Misty last seen", "device_class": "timestamp",
+         "state": "{{ ([states.sensor.misty_latest_weight.last_changed, states.sensor.misty_last_use_duration.last_changed] | max).isoformat() }}"},
+        {"name": "Bella last seen", "device_class": "timestamp",
+         "state": "{{ ([states.sensor.bella_latest_weight.last_changed, states.sensor.bella_last_use_duration.last_changed] | max).isoformat() }}"},
+        {"name": "Leo last seen", "device_class": "timestamp",
+         "state": "{{ ([states.sensor.leo_latest_weight.last_changed, states.sensor.leo_last_use_duration.last_changed] | max).isoformat() }}"},
+    ],
 }
 
 # Energy Dashboard preferences (HA .storage/energy — registry-managed, restored
