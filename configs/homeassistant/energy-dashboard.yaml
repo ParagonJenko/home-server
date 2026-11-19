@@ -1,0 +1,11 @@
+# Reference export of the HA Energy Dashboard prefs (.storage/energy, registry-managed).
+# Re-apply on rebuild via Settings > Dashboards > Energy, or the energy/save_prefs API.
+energy_sources:
+- type: grid
+  cost_adjustment_day: 0
+  stat_energy_from: sensor.octopus_energy_electricity_19m0059512_1610012030180_previous_accumulative_consumption
+  stat_cost: sensor.octopus_energy_electricity_19m0059512_1610012030180_previous_accumulative_cost
+- type: gas
+  stat_energy_from: sensor.octopus_energy_gas_e6s17297892061_9384989210_previous_accumulative_consumption_kwh
+  stat_cost: sensor.octopus_energy_gas_e6s17297892061_9384989210_previous_accumulative_cost
+device_consumption: []

@@ -152,6 +152,22 @@ helpers = {
     ],
 }
 
+# Energy Dashboard preferences (HA .storage/energy — registry-managed, restored
+# by the HA backup tarball). Diffable reference so a rebuild can re-enter them via
+# Settings > Dashboards > Energy, or the energy/save_prefs API. Consumption +
+# cost sensors come from the Octopus (BottlecapDave) integration.
+energy_dashboard = {
+    "energy_sources": [
+        {"type": "grid", "cost_adjustment_day": 0,
+         "stat_energy_from": "sensor.octopus_energy_electricity_19m0059512_1610012030180_previous_accumulative_consumption",
+         "stat_cost": "sensor.octopus_energy_electricity_19m0059512_1610012030180_previous_accumulative_cost"},
+        {"type": "gas",
+         "stat_energy_from": "sensor.octopus_energy_gas_e6s17297892061_9384989210_previous_accumulative_consumption_kwh",
+         "stat_cost": "sensor.octopus_energy_gas_e6s17297892061_9384989210_previous_accumulative_cost"},
+    ],
+    "device_consumption": [],
+}
+
 hdr = ("# Deployed live via HA-MCP and committed here as the source of truth.\n"
        "# Faithful copy of the HA automations; drop into /config/automations.yaml on a rebuild\n"
        "# (or just restore the HA backup tarball). See README.md.\n")
@@ -162,5 +178,10 @@ with open(OUT / "automations.yaml", "w") as f:
 with open(OUT / "helpers.yaml", "w") as f:
     f.write("# Reference export of HA zones + persons (registry-managed). Diffable record, not auto-loaded.\n")
     yaml.safe_dump(helpers, f, sort_keys=False, default_flow_style=False, allow_unicode=True, width=120)
+
+with open(OUT / "energy-dashboard.yaml", "w") as f:
+    f.write("# Reference export of the HA Energy Dashboard prefs (.storage/energy, registry-managed).\n"
+            "# Re-apply on rebuild via Settings > Dashboards > Energy, or the energy/save_prefs API.\n")
+    yaml.safe_dump(energy_dashboard, f, sort_keys=False, default_flow_style=False, allow_unicode=True, width=120)
 
 print("wrote:", sorted(p.name for p in OUT.iterdir()))
