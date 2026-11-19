@@ -136,8 +136,8 @@ home = {
                     "name": "General waste", "icon": "mdi:trash-can", "color": "grey"}),
             col(6, {"type": "tile", "entity": "vacuum.robovac", "name": "RoboVac", "icon": "mdi:robot-vacuum",
                     "features": [{"type": "vacuum-commands", "commands": ["start_pause", "stop", "return_home"]}]}),
-            col(6, {"type": "tile", "entity": "sensor.carpeted_area_litter_tray_litter_level",
-                    "name": "Litter level", "icon": "mdi:cat"}),
+            col(6, {"type": "tile", "entity": "binary_sensor.litter_tray_wastebin",
+                    "name": "Litter bin", "icon": "mdi:delete-alert"}),
         ),
         section(
             heading("Now", "mdi:cctv"),

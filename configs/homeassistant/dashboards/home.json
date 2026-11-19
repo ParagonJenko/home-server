@@ -245,9 +245,9 @@
             },
             {
               "type": "tile",
-              "entity": "sensor.carpeted_area_litter_tray_litter_level",
-              "name": "Litter level",
-              "icon": "mdi:cat",
+              "entity": "binary_sensor.litter_tray_wastebin",
+              "name": "Litter bin",
+              "icon": "mdi:delete-alert",
               "grid_options": {
                 "columns": 6
               }
