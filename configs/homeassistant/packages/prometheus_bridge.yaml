@@ -1,0 +1,125 @@
+# configs/homeassistant/packages/prometheus_bridge.yaml
+# Prometheus -> Home Assistant bridge. REST sensors that read infra metrics from the
+# Pi's Prometheus HTTP API (/api/v1/query), so HA can surface and alert on them WITHOUT
+# a second collector. Prometheus stays the single source of truth; HA just queries it.
+#
+# WHY YAML (and not the MCP/connector): HA has no config-flow for a generic JSON REST
+# pull, so these must live in YAML. The dashboard view + alert automations that sit on
+# top of them are created through the connector and are NOT in this file.
+#
+# DEPLOY on HAOS (one-time):
+#   1. Enable packages — in /config/configuration.yaml, under the `homeassistant:` key:
+#          homeassistant:
+#            packages: !include_dir_named packages
+#   2. Copy this file to /config/packages/prometheus_bridge.yaml
+#   3. Developer Tools -> YAML -> "Check configuration", then restart HA
+#      (REST entities load at startup; a restart is the reliable way to pick up a new file).
+#   Entities appear as binary_sensor.infra_* and sensor.infra_*.
+#
+# Prometheus base: the Pi, host-networked, API on :9090 (unauthenticated on the LAN).
+
+rest:
+  # ---- Host/network reachability: one call returns every blackbox-icmp series ----
+  # probe_success == 1 when the target answers ICMP. instance = gateway|internet|nuc1|nuc2|pi|pbs.
+  - resource: http://pi.home.alexjenkinson.com:9090/api/v1/query
+    scan_interval: 60
+    params:
+      query: 'probe_success{job="blackbox-icmp"}'
+    binary_sensor:
+      - name: "Infra gateway"
+        unique_id: infra_reach_gateway
+        device_class: connectivity
+        value_template: >-
+          {{ (value_json.data.result | selectattr('metric.instance','eq','gateway')
+             | map(attribute='value') | map('last') | map('int') | first | default(0)) == 1 }}
+      - name: "Infra internet"
+        unique_id: infra_reach_internet
+        device_class: connectivity
+        value_template: >-
+          {{ (value_json.data.result | selectattr('metric.instance','eq','internet')
+             | map(attribute='value') | map('last') | map('int') | first | default(0)) == 1 }}
+      - name: "Infra nuc1"
+        unique_id: infra_reach_nuc1
+        device_class: connectivity
+        value_template: >-
+          {{ (value_json.data.result | selectattr('metric.instance','eq','nuc1')
+             | map(attribute='value') | map('last') | map('int') | first | default(0)) == 1 }}
+      - name: "Infra nuc2"
+        unique_id: infra_reach_nuc2
+        device_class: connectivity
+        value_template: >-
+          {{ (value_json.data.result | selectattr('metric.instance','eq','nuc2')
+             | map(attribute='value') | map('last') | map('int') | first | default(0)) == 1 }}
+      - name: "Infra pbs"
+        unique_id: infra_reach_pbs
+        device_class: connectivity
+        value_template: >-
+          {{ (value_json.data.result | selectattr('metric.instance','eq','pbs')
+             | map(attribute='value') | map('last') | map('int') | first | default(0)) == 1 }}
+      - name: "Infra pi"
+        unique_id: infra_reach_pi
+        device_class: connectivity
+        value_template: >-
+          {{ (value_json.data.result | selectattr('metric.instance','eq','pi')
+             | map(attribute='value') | map('last') | map('int') | first | default(0)) == 1 }}
+
+  # ---- Internet latency (ICMP RTT to 1.1.1.1), seconds -> ms ----
+  - resource: http://pi.home.alexjenkinson.com:9090/api/v1/query
+    scan_interval: 60
+    params:
+      query: 'probe_icmp_duration_seconds{instance="internet",phase="rtt"}'
+    sensor:
+      - name: "Infra internet latency"
+        unique_id: infra_internet_latency
+        unit_of_measurement: "ms"
+        state_class: measurement
+        value_template: >-
+          {{ (value_json.data.result | map(attribute='value') | map('last')
+             | map('float') | first | default(0) * 1000) | round(0) }}
+
+  # ---- Services down: count of blackbox-http probes currently failing ----
+  - resource: http://pi.home.alexjenkinson.com:9090/api/v1/query
+    scan_interval: 60
+    params:
+      query: 'sum(probe_success{job="blackbox-http"} == bool 0)'
+    sensor:
+      - name: "Infra services down"
+        unique_id: infra_services_down
+        unit_of_measurement: "services"
+        state_class: measurement
+        value_template: >-
+          {{ value_json.data.result | map(attribute='value') | map('last')
+             | map('int') | first | default(0) }}
+
+  # ---- Media pool free % (sum of the two mergerfs branch disks on nuc1) ----
+  # Needs nuc1 node_exporter (:9100) up — unavailable until that exporter runs (H2).
+  - resource: http://pi.home.alexjenkinson.com:9090/api/v1/query
+    scan_interval: 300
+    params:
+      query: >-
+        100 * sum(node_filesystem_avail_bytes{instance="nuc1",mountpoint=~"/mnt/pool/disk.+"})
+        / sum(node_filesystem_size_bytes{instance="nuc1",mountpoint=~"/mnt/pool/disk.+"})
+    sensor:
+      - name: "Infra pool free"
+        unique_id: infra_pool_free
+        unit_of_measurement: "%"
+        state_class: measurement
+        value_template: >-
+          {{ (value_json.data.result | map(attribute='value') | map('last')
+             | map('float') | first | default(0)) | round(1) }}
+
+  # ---- Pi SD/SSD root free % (pi node_exporter is up now) ----
+  - resource: http://pi.home.alexjenkinson.com:9090/api/v1/query
+    scan_interval: 300
+    params:
+      query: >-
+        100 * node_filesystem_avail_bytes{instance="pi",mountpoint="/"}
+        / node_filesystem_size_bytes{instance="pi",mountpoint="/"}
+    sensor:
+      - name: "Infra pi disk free"
+        unique_id: infra_pi_disk_free
+        unit_of_measurement: "%"
+        state_class: measurement
+        value_template: >-
+          {{ (value_json.data.result | map(attribute='value') | map('last')
+             | map('float') | first | default(0)) | round(1) }}
