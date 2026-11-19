@@ -80,23 +80,43 @@
       entity_id: all
 - id: '1795039995065'
   alias: Litter tray full → hourly phone alert
-  description: 'PetKit waste bin full: alert Alex''s phone immediately, then every hour until it''s emptied.'
+  description: 'PetKit Pura Max waste bin full: the Pura Max reports ''full'' as a cleaning-failed-full event in last_event
+    (the wastebin_filled boolean stays off on this model). Fires on those events (or the boolean, as backup) and re-nags hourly
+    until a successful clean clears it after emptying.'
   mode: single
   triggers:
+  - trigger: state
+    entity_id: sensor.carpeted_area_litter_tray_last_event
+    to:
+    - auto_cleaning_failed_full
+    - litter_empty_failed_full
+    - manual_cleaning_failed_full
+    - reset_failed_full
+    - scheduled_cleaning_failed_full
   - trigger: state
     entity_id: binary_sensor.carpeted_area_litter_tray_wastebin_filled
     to: 'on'
   - trigger: time_pattern
     hours: /1
   conditions:
-  - condition: state
-    entity_id: binary_sensor.carpeted_area_litter_tray_wastebin_filled
-    state: 'on'
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: sensor.carpeted_area_litter_tray_last_event
+      state:
+      - auto_cleaning_failed_full
+      - litter_empty_failed_full
+      - manual_cleaning_failed_full
+      - reset_failed_full
+      - scheduled_cleaning_failed_full
+    - condition: state
+      entity_id: binary_sensor.carpeted_area_litter_tray_wastebin_filled
+      state: 'on'
   actions:
   - action: notify.mobile_app_alexs_iphone
     data:
       title: 🚽 Litter tray full
-      message: The PetKit waste bin is full — time to empty it.
+      message: The PetKit waste bin is full — empty it.
       data:
         tag: litter_full
         group: home
