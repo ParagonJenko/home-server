@@ -309,7 +309,58 @@ phone = {
     ],
 }
 
-config = {"views": [home, lights, security, media, cats, phone]}
+# =====================================================================
+# VIEW: ENERGY  (Octopus Energy — BottlecapDave integration)
+# =====================================================================
+E = "sensor.octopus_energy_electricity_19m0059512_1610012030180_"
+G = "sensor.octopus_energy_gas_e6s17297892061_9384989210_"
+EOFF = "binary_sensor.octopus_energy_electricity_19m0059512_1610012030180_off_peak"
+
+energy = {
+    "title": "Energy", "path": "energy", "type": "sections", "icon": "mdi:transmission-tower",
+    "sections": [
+        section(
+            heading("Electricity", "mdi:flash"),
+            col(6, {"type": "tile", "entity": E + "current_rate", "name": "Unit rate", "icon": "mdi:cash"}),
+            col(6, {"type": "tile", "entity": E + "current_standing_charge", "name": "Standing charge", "icon": "mdi:calendar-clock"}),
+            col(6, {"type": "tile", "entity": E + "current_accumulative_cost", "name": "Cost today", "icon": "mdi:cash-multiple", "color": "amber"}),
+            col(6, {"type": "tile", "entity": E + "current_accumulative_consumption", "name": "Used today", "icon": "mdi:lightning-bolt", "color": "amber"}),
+            col(6, {"type": "tile", "entity": EOFF, "name": "Off-peak now", "icon": "mdi:clock-check"}),
+            col(6, {"type": "tile", "entity": E + "next_rate", "name": "Next rate", "icon": "mdi:cash-clock"}),
+        ),
+        section(
+            heading("Unit rate — next 24h", "mdi:chart-line"),
+            col(12, {"type": "custom:mini-graph-card",
+                     "entities": [{"entity": E + "current_rate", "name": "Rate"}],
+                     "name": "Electricity rate", "hours_to_show": 24, "points_per_hour": 2,
+                     "line_width": 3, "show": {"fill": "fade", "extrema": True},
+                     "color_thresholds": [{"value": 0.08, "color": "#44bba4"},
+                                          {"value": 0.18, "color": "#f5a623"},
+                                          {"value": 0.28, "color": "#e5484d"}]}),
+        ),
+        section(
+            heading("Gas", "mdi:fire"),
+            col(6, {"type": "tile", "entity": G + "current_rate", "name": "Unit rate", "icon": "mdi:cash"}),
+            col(6, {"type": "tile", "entity": G + "current_standing_charge", "name": "Standing charge", "icon": "mdi:calendar-clock"}),
+            col(6, {"type": "tile", "entity": G + "current_accumulative_cost", "name": "Cost today", "icon": "mdi:cash-multiple", "color": "deep-orange"}),
+            col(6, {"type": "tile", "entity": G + "current_accumulative_consumption_kwh", "name": "Used today", "icon": "mdi:fire", "color": "deep-orange"}),
+        ),
+        section(
+            heading("Yesterday", "mdi:history"),
+            col(6, {"type": "tile", "entity": E + "previous_accumulative_cost", "name": "Elec cost", "icon": "mdi:flash"}),
+            col(6, {"type": "tile", "entity": E + "previous_accumulative_consumption", "name": "Elec used", "icon": "mdi:lightning-bolt"}),
+            col(6, {"type": "tile", "entity": G + "previous_accumulative_cost", "name": "Gas cost", "icon": "mdi:fire"}),
+            col(6, {"type": "tile", "entity": G + "previous_accumulative_consumption_m3", "name": "Gas used", "icon": "mdi:meter-gas"}),
+        ),
+        section(
+            heading("Octoplus", "mdi:star-circle"),
+            col(12, {"type": "tile", "entity": "sensor.octopus_energy_a_94fb2a47_octoplus_points",
+                     "name": "Octoplus points", "icon": "mdi:star-four-points", "color": "purple"}),
+        ),
+    ],
+}
+
+config = {"views": [home, lights, security, media, energy, cats, phone]}
 
 OUT.write_text(json.dumps(config, indent=2, ensure_ascii=False))
 print("wrote", OUT, "-", len(json.dumps(config)), "bytes,", len(config["views"]), "views")

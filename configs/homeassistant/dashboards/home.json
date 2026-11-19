@@ -1107,6 +1107,243 @@
       ]
     },
     {
+      "title": "Energy",
+      "path": "energy",
+      "type": "sections",
+      "icon": "mdi:transmission-tower",
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Electricity",
+              "heading_style": "title",
+              "icon": "mdi:flash"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_rate",
+              "name": "Unit rate",
+              "icon": "mdi:cash",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_standing_charge",
+              "name": "Standing charge",
+              "icon": "mdi:calendar-clock",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_accumulative_cost",
+              "name": "Cost today",
+              "icon": "mdi:cash-multiple",
+              "color": "amber",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_accumulative_consumption",
+              "name": "Used today",
+              "icon": "mdi:lightning-bolt",
+              "color": "amber",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "binary_sensor.octopus_energy_electricity_19m0059512_1610012030180_off_peak",
+              "name": "Off-peak now",
+              "icon": "mdi:clock-check",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_electricity_19m0059512_1610012030180_next_rate",
+              "name": "Next rate",
+              "icon": "mdi:cash-clock",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Unit rate — next 24h",
+              "heading_style": "title",
+              "icon": "mdi:chart-line"
+            },
+            {
+              "type": "custom:mini-graph-card",
+              "entities": [
+                {
+                  "entity": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_rate",
+                  "name": "Rate"
+                }
+              ],
+              "name": "Electricity rate",
+              "hours_to_show": 24,
+              "points_per_hour": 2,
+              "line_width": 3,
+              "show": {
+                "fill": "fade",
+                "extrema": true
+              },
+              "color_thresholds": [
+                {
+                  "value": 0.08,
+                  "color": "#44bba4"
+                },
+                {
+                  "value": 0.18,
+                  "color": "#f5a623"
+                },
+                {
+                  "value": 0.28,
+                  "color": "#e5484d"
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Gas",
+              "heading_style": "title",
+              "icon": "mdi:fire"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_gas_e6s17297892061_9384989210_current_rate",
+              "name": "Unit rate",
+              "icon": "mdi:cash",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_gas_e6s17297892061_9384989210_current_standing_charge",
+              "name": "Standing charge",
+              "icon": "mdi:calendar-clock",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_gas_e6s17297892061_9384989210_current_accumulative_cost",
+              "name": "Cost today",
+              "icon": "mdi:cash-multiple",
+              "color": "deep-orange",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_gas_e6s17297892061_9384989210_current_accumulative_consumption_kwh",
+              "name": "Used today",
+              "icon": "mdi:fire",
+              "color": "deep-orange",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Yesterday",
+              "heading_style": "title",
+              "icon": "mdi:history"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_electricity_19m0059512_1610012030180_previous_accumulative_cost",
+              "name": "Elec cost",
+              "icon": "mdi:flash",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_electricity_19m0059512_1610012030180_previous_accumulative_consumption",
+              "name": "Elec used",
+              "icon": "mdi:lightning-bolt",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_gas_e6s17297892061_9384989210_previous_accumulative_cost",
+              "name": "Gas cost",
+              "icon": "mdi:fire",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_gas_e6s17297892061_9384989210_previous_accumulative_consumption_m3",
+              "name": "Gas used",
+              "icon": "mdi:meter-gas",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Octoplus",
+              "heading_style": "title",
+              "icon": "mdi:star-circle"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.octopus_energy_a_94fb2a47_octoplus_points",
+              "name": "Octoplus points",
+              "icon": "mdi:star-four-points",
+              "color": "purple",
+              "grid_options": {
+                "columns": 12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "title": "Cats",
       "path": "cats",
       "type": "sections",
