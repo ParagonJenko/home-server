@@ -114,5 +114,10 @@ add one at a time); snapshot + replicate the irreplaceable datasets off-box.
 
 **Reference build (ex-disks):** 6–8 bay case (Jonsbo N3 / Fractal Node 804), mATX/mini-ITX board with
 6+ SATA or an LSI HBA in IT mode, low-power CPU (Plex transcoding stays on nuc1, so the NAS CPU can be
-modest), 16–32 GB RAM, small boot SSD. Disks: start with the 2×4 TB + 2–4 new large drives in RAIDZ2.
-Price to budget before buying.
+modest), 16–32 GB RAM, small boot SSD. Disks: start with a large-disk **mirror** (grow by pairs) or a
+6-disk **RAIDZ2** endgame. Recertified enterprise disks are the value play (data is backed up). Price
+to budget before buying.
+
+**Build + migration procedure:** [`runbooks/nas-migration.md`](runbooks/nas-migration.md) — assemble →
+install TrueNAS → pool/dataset/NFS → mount + bind into LXC 210/220 → hardlink-preserving rsync cutover
+→ verify → move PBS → decommission the DAS, with a rollback that keeps the DAS intact until verified.
