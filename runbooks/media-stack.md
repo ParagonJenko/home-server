@@ -88,6 +88,23 @@ scripts (`arr-setup.py`, `fill-arr-keys.sh`, `recyclarr.yml`, `maintainerr-seed-
 wiring, and the Arr `/config` dirs restore from PBS. The **library itself is reconstructable** (R26), so
 it's deliberately not backed up — the Arrs can re-fetch it.
 
+## Tuning & hardening (why the pool isn't on fire)
+
+The media disks are a **USB-attached DAS**, which has a low ceiling for *concurrent random* I/O.
+Two things keep it from saturating (both set by `arr-setup.py --apply`, so they survive a rebuild):
+
+- **Hardlinks on import** (`copyUsingHardlinks=true` on Sonarr + Radarr). An import is an instant
+  hardlink from `/data/torrents` to `/data/library` — same bytes, no copy, qBit keeps seeding. Pinned
+  in the repo so it can't drift to copying (which would double disk use *and* I/O). Verified working
+  2026-11-19 — mergerfs hardlinks fine within a branch.
+- **qBittorrent seeding caps.** Seeding many torrents at once is a random-read storm the USB DAS can't
+  take (it was pushing nuc1 to ~80% IO-delay with 15 active). So: queueing on, **3 active torrents**,
+  **"don't count slow torrents" OFF** (so the limit actually bites — idle seeders were bypassing it),
+  trimmed connections/upload-slots, and a **ratio-2 / 14-day** seed limit that pauses finished torrents.
+
+Neither is a real fix for the USB ceiling — that's the **NAS migration** (ZFS ARC caches hot pieces in
+RAM, and a single pool means hardlinks are never even in question). See `../storage.md`.
+
 ## Mental model in one line
 
 **Prowlarr** feeds indexers to the **Sonarr/Radarr** brains → they grab via **qBittorrent** → import by

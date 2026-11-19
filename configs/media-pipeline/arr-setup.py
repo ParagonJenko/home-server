@@ -99,6 +99,23 @@ def ensure_min_free_space(base, key, mb, apply):
     print(f"    min free space: set {mb} MB")
 
 
+def ensure_hardlinks(base, key, apply):
+    """Pin copyUsingHardlinks=true on Sonarr/Radarr. The default is already true, but pin it so a
+    rebuild can't drift to copying — a copy doubles disk use and piles read+write I/O on the slow
+    mergerfs/USB pool, instead of an instant hardlink (R1). (mergerfs links fine within a branch;
+    verified 2026-11-19.)"""
+    cfg = http("GET", f"{base}/api/v3/config/mediamanagement", key)
+    if cfg.get("copyUsingHardlinks") is True:
+        print("    hardlinks on import: already enabled")
+        return
+    if not apply:
+        print(f"    hardlinks on import: WOULD enable (was {cfg.get('copyUsingHardlinks')})")
+        return
+    cfg["copyUsingHardlinks"] = True
+    http("PUT", f"{base}/api/v3/config/mediamanagement/{cfg['id']}", key, cfg)
+    print("    hardlinks on import: enabled")
+
+
 def ensure_qbit(base, key, category, env, apply):
     clients = http("GET", f"{base}/api/v3/downloadclient", key)
     if any(c.get("implementation") == "QBittorrent" for c in clients):
@@ -161,14 +178,24 @@ def configure_qbittorrent(env, apply):
         raise RuntimeError("login failed (check QBIT_USER / QBIT_PASS in .env)")
     post("/api/v2/app/setPreferences", {"json": json.dumps(
         {"auto_tmm_enabled": True, "save_path": "/data/torrents",
-         "torrent_changed_tmm_enabled": True, "save_path_changed_tmm_enabled": True})})
+         "torrent_changed_tmm_enabled": True, "save_path_changed_tmm_enabled": True,
+         # --- I/O hardening (2026-11-19): a USB DAS chokes on many concurrent random seeding
+         # reads. Cap how many torrents are actively seeding at once and stop them running away. ---
+         "queueing_enabled": True,
+         "max_active_downloads": 3, "max_active_uploads": 3, "max_active_torrents": 3,
+         "dont_count_slow_torrents": False,   # was true -> the active limit was bypassed by idle seeders
+         "max_connec": 200, "max_connec_per_torrent": 100,
+         "max_uploads": 8, "max_uploads_per_torrent": 4,
+         "max_ratio_enabled": True, "max_ratio": 2.0, "max_ratio_act": 0,     # 0 = pause at ratio 2
+         "max_seeding_time_enabled": True, "max_seeding_time": 20160})})      # ...or after 14 days
     for cat, path in cats.items():
         # createCategory is idempotent-ish; editCategory fixes the path if it already exists
         try:
             post("/api/v2/torrents/createCategory", {"category": cat, "savePath": path})
         except urllib.error.HTTPError:
             post("/api/v2/torrents/editCategory", {"category": cat, "savePath": path})
-    print(f"    qBittorrent: ATM on, save path /data/torrents, categories {', '.join(cats)}")
+    print(f"    qBittorrent: ATM on, save path /data/torrents, seeding caps (3 active, ratio 2 / 14d), "
+          f"categories {', '.join(cats)}")
 
 
 def ensure_tag(base, apiver, key, label):
@@ -376,11 +403,13 @@ def main() -> None:
         step("Sonarr", lambda: (
             ensure_root_folder(sonarr, sk, "/data/library/tv", args.apply),
             ensure_min_free_space(sonarr, sk, min_free, args.apply),
+            ensure_hardlinks(sonarr, sk, args.apply),
             ensure_qbit(sonarr, sk, "tv-sonarr", env, args.apply)))
     if rk:
         step("Radarr", lambda: (
             ensure_root_folder(radarr, rk, "/data/library/movies", args.apply),
             ensure_min_free_space(radarr, rk, min_free, args.apply),
+            ensure_hardlinks(radarr, rk, args.apply),
             ensure_qbit(radarr, rk, "movies-radarr", env, args.apply)))
     if pk:
         step("Prowlarr", lambda: (
