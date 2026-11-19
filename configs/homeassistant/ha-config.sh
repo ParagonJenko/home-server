@@ -123,5 +123,48 @@ YAML
     echo "   2. On the Pi: add HA_TOKEN=<token> to /opt/pi-stack/.env (or run gather-exporter-creds.sh),"
     echo "      then ./configs/pi/redeploy.sh"
     ;;
-  *) echo "usage: $0 [setup-ssh | status | view | port <80|8123> | restart | enable-prometheus]"; exit 1 ;;
+  deploy-prometheus-bridge)
+    need_ssh || exit 1
+    SRC="$HERE/packages/prometheus_bridge.yaml"
+    [ -f "$SRC" ] || { echo "missing $SRC" >&2; exit 1; }
+    echo "== deploy Prometheus->HA REST sensor package (VM ${VMID}) =="
+    # 1) ensure /config/packages exists + the packages include line is present.
+    #    Back up configuration.yaml first; the edit is awk/printf, validated below.
+    run_ha "docker exec -i homeassistant sh -s" <<'REMOTE'
+set -e
+CONF=/config/configuration.yaml
+mkdir -p /config/packages
+cp -f "$CONF" "${CONF}.bak.prombridge"
+if ! grep -q 'packages:[[:space:]]*!include_dir_named[[:space:]]*packages' "$CONF"; then
+  if grep -qE '^homeassistant:[[:space:]]*$' "$CONF"; then
+    # insert as the first key under an existing (empty-header) homeassistant: block
+    awk 'BEGIN{d=0}{print}/^homeassistant:[[:space:]]*$/&&d==0{print "  packages: !include_dir_named packages";d=1}' "$CONF" > "${CONF}.tmp"
+    mv "${CONF}.tmp" "$CONF"
+  elif grep -qE '^homeassistant:' "$CONF"; then
+    echo "WARN: homeassistant: block has inline content — add '  packages: !include_dir_named packages' under it by hand, then re-run." >&2
+  else
+    printf '\nhomeassistant:\n  packages: !include_dir_named packages\n' >> "$CONF"
+  fi
+fi
+REMOTE
+    # 2) write the package file into /config/packages
+    echo "writing /config/packages/prometheus_bridge.yaml..."
+    run_ha "docker exec -i homeassistant sh -c 'cat > /config/packages/prometheus_bridge.yaml'" < "$SRC"
+    # 3) validate; if broken, restore configuration.yaml and abort WITHOUT restarting
+    echo "validating HA config (ha core check)..."
+    if run_ha "ha core check"; then
+      echo "config OK."
+    else
+      echo "!! 'ha core check' FAILED — restoring configuration.yaml, aborting (no restart)." >&2
+      run_ha "docker exec homeassistant sh -c 'cp -f /config/configuration.yaml.bak.prombridge /config/configuration.yaml'"
+      echo "   (The package file was left at /config/packages/ but is not loaded. Fix it, then re-run.)" >&2
+      exit 1
+    fi
+    restart_and_verify
+    echo
+    echo ">> Done. New entities: binary_sensor.infra_* (reachability) and sensor.infra_* (latency, services-down, disk %)."
+    echo "   'Infra pool free' stays unavailable until nuc1 node_exporter is up (Stage H2)."
+    echo "   Tell Claude once it's up and it'll build the Infra dashboard view + push alerts."
+    ;;
+  *) echo "usage: $0 [setup-ssh | status | view | port <80|8123> | restart | enable-prometheus | deploy-prometheus-bridge]"; exit 1 ;;
 esac

@@ -15,7 +15,23 @@ every LXC.
 | `dashboards/home.json` | The 6-view Mushroom dashboard. Deployed live via HA-MCP (`ha_config_set_dashboard`). |
 | `automations.yaml` | The automations, deployed live via HA-MCP and committed here as the source of truth. |
 | `helpers.yaml` | Reference export of zones + persons (registry-managed; diffable record, not auto-loaded). |
-| `prometheus-snippet.yaml` | HA scrape config for the Pi's Prometheus. |
+| `energy-dashboard.yaml` | Reference export of the Energy Dashboard prefs (Octopus consumption + cost stats). |
+| `prometheus-snippet.yaml` | HA scrape config for the Pi's Prometheus (HA → Prometheus, the exporter direction). |
+| `packages/prometheus_bridge.yaml` | REST sensors that read infra metrics back *from* Prometheus (the reverse direction) so HA can alert on host/service/disk state without a second collector. |
+
+## Deploying the Prometheus bridge (HA ← Prometheus)
+
+`packages/prometheus_bridge.yaml` is YAML-only (HA has no config-flow for a generic JSON REST
+pull), so it can't go in live via HA-MCP like the dashboard/automations do. Push it from NUC-2:
+
+```
+./configs/homeassistant/ha-config.sh deploy-prometheus-bridge
+```
+
+That ensures `homeassistant: packages: !include_dir_named packages` is set, copies the file into
+`/config/packages/`, runs `ha core check` (restores `configuration.yaml` and aborts if it fails),
+then restarts + verifies. Entities land as `binary_sensor.infra_*` / `sensor.infra_*`. The Infra
+dashboard view and the push-alert automations on top are created live via HA-MCP, not from YAML.
 
 HA-MCP itself (how Claude reads/writes HA directly) is documented in `runbooks/ha-mcp-cloudflared.md`.
 
