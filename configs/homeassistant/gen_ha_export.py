@@ -133,23 +133,6 @@ helpers = {
         {"name": "Alex Jenkinson", "device_trackers": ["device_tracker.alexs_iphone"]},
         {"name": "frigate", "device_trackers": []},
     ],
-    # Utility meters accumulating the Octopus daily cost sensors into week/month
-    # cycles. State = period-to-date cost; `last_period` attribute = previous period.
-    # always_available keeps them up when the source is briefly unknown.
-    "utility_meter": [
-        {"name": "Electricity Cost Weekly",
-         "source": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_accumulative_cost",
-         "cycle": "weekly", "always_available": True},
-        {"name": "Electricity Cost Monthly",
-         "source": "sensor.octopus_energy_electricity_19m0059512_1610012030180_current_accumulative_cost",
-         "cycle": "monthly", "always_available": True},
-        {"name": "Gas Cost Weekly",
-         "source": "sensor.octopus_energy_gas_e6s17297892061_9384989210_current_accumulative_cost",
-         "cycle": "weekly", "always_available": True},
-        {"name": "Gas Cost Monthly",
-         "source": "sensor.octopus_energy_gas_e6s17297892061_9384989210_current_accumulative_cost",
-         "cycle": "monthly", "always_available": True},
-    ],
 }
 
 # Energy Dashboard preferences (HA .storage/energy — registry-managed, restored
