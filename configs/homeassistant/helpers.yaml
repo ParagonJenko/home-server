@@ -24,6 +24,9 @@ person:
   - device_tracker.alexs_iphone
 - name: frigate
   device_trackers: []
+input_boolean:
+- name: Vitamins taken
+  icon: mdi:pill
 template:
 - name: Misty last seen
   device_class: timestamp

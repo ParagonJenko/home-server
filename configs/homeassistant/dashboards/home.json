@@ -205,6 +205,17 @@
               "icon": "mdi:calendar-today"
             },
             {
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
+              "entity": "input_boolean.vitamins_taken",
+              "name": "Vitamins",
+              "icon": "mdi:pill",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
               "type": "tile",
               "entity": "sensor.waste_collection_schedule_mixed_recycling",
               "name": "Recycling",

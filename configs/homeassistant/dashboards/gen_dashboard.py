@@ -130,6 +130,7 @@ home = {
         ),
         section(
             heading("Today", "mdi:calendar-today"),
+            col(6, switch_btn("input_boolean.vitamins_taken", "Vitamins", "mdi:pill")),
             col(6, {"type": "tile", "entity": "sensor.waste_collection_schedule_mixed_recycling",
                     "name": "Recycling", "icon": "mdi:recycle", "color": "green"}),
             col(6, {"type": "tile", "entity": "sensor.waste_collection_schedule_general_waste",

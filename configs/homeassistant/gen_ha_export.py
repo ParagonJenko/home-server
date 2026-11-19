@@ -143,6 +143,39 @@ automations = [
                               "message": "{{ states('sensor.infra_services_down') }} service(s) are down — check Grafana.",
                               "data": {"tag": "infra_services_down", "group": "infra"}}}],
     },
+    {
+        "id": "1795123263298",
+        "alias": "Vitamins: reset for the new day",
+        "description": "Untick the daily vitamins toggle at 04:00 so it's fresh each morning.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "04:00:00"}],
+        "actions": [{"action": "input_boolean.turn_off", "target": {"entity_id": "input_boolean.vitamins_taken"}}],
+    },
+    {
+        "id": "1795123264172",
+        "alias": "Vitamins: reminder if not taken",
+        "description": "Morning prompt (09:00) and an evening nag (19:30) to take vitamins, only if the toggle is still off. Push carries a 'Mark taken' button.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "09:00:00"}, {"trigger": "time", "at": "19:30:00"}],
+        "conditions": [{"condition": "state", "entity_id": "input_boolean.vitamins_taken", "state": "off"}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "\U0001f48a Vitamins", "message": "You haven't ticked your vitamins today.",
+                              "data": {"tag": "vitamins",
+                                       "actions": [{"action": "VITAMINS_TAKEN", "title": "Mark taken"}]}}}],
+    },
+    {
+        "id": "1795123264992",
+        "alias": "Vitamins: mark taken from notification",
+        "description": "Tapping 'Mark taken' on the reminder ticks the toggle and clears the notification.",
+        "mode": "single",
+        "triggers": [{"trigger": "event", "event_type": "mobile_app_notification_action",
+                      "event_data": {"action": "VITAMINS_TAKEN"}}],
+        "actions": [
+            {"action": "input_boolean.turn_on", "target": {"entity_id": "input_boolean.vitamins_taken"}},
+            {"action": "notify.mobile_app_alexs_iphone",
+             "data": {"message": "clear_notification", "data": {"tag": "vitamins"}}},
+        ],
+    },
 ]
 
 # Reference export of the UI/config helpers (zones + persons). These live in HA's registry;
@@ -159,6 +192,11 @@ helpers = {
     "person": [
         {"name": "Alex Jenkinson", "device_trackers": ["device_tracker.alexs_iphone"]},
         {"name": "frigate", "device_trackers": []},
+    ],
+    # Daily habit toggle. Ticked by the dashboard tile or the push action; reset to off at 04:00
+    # by the "Vitamins: reset for the new day" automation.
+    "input_boolean": [
+        {"name": "Vitamins taken", "icon": "mdi:pill"},
     ],
     # Per-cat "last seen" = timestamp of each cat's most recent litter-tray use. The PetKit
     # tray weight-identifies the individual; Frigate only ever sees a generic "cat". Template
