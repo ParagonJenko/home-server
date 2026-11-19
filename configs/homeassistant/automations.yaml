@@ -189,7 +189,7 @@
     entity_id: sensor.infra_services_down
     above: 0
     for:
-      minutes: 5
+      minutes: 15
   actions:
   - action: notify.mobile_app_alexs_iphone
     data:

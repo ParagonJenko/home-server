@@ -137,7 +137,7 @@ automations = [
         "description": "One or more blackbox-http probes failing for 5 min (sensor.infra_services_down > 0): push an alert.",
         "mode": "single",
         "triggers": [{"trigger": "numeric_state", "entity_id": "sensor.infra_services_down",
-                      "above": 0, "for": {"minutes": 5}}],
+                      "above": 0, "for": {"minutes": 15}}],
         "actions": [{"action": "notify.mobile_app_alexs_iphone",
                      "data": {"title": "⚠️ Service down",
                               "message": "{{ states('sensor.infra_services_down') }} service(s) are down — check Grafana.",

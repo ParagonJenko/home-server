@@ -15,7 +15,9 @@ modules:
   # 2xx/3xx/401/403. insecure_skip_verify lets it probe PBS/nginx TLS (self-signed / internal).
   http_up:
     prober: http
-    timeout: 5s
+    timeout: 15s        # was 5s — LXC-210 services (the Arr stack) can take >5s under load, so a
+                        # batch of them flapped "down" every scrape. A dead service fails fast
+                        # (connection refused), so a generous timeout only forgives SLOW, not DOWN.
     http:
       preferred_ip_protocol: ip4
       fail_if_not_ssl: false

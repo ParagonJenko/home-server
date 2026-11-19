@@ -35,6 +35,7 @@ scrape_configs:
   # for 5m fires ServiceDown. Add a new service's URL here when you build it.
   - job_name: blackbox-http
     metrics_path: /probe
+    scrape_timeout: 20s          # give the 15s http_up module room (blackbox clamps to scrape_timeout)
     params: { module: [http_up] }
     static_configs:
       - { targets: ['http://plex-lxc.home.alexjenkinson.com:32400/identity'], labels: { service: plex } }
