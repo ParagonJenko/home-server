@@ -145,6 +145,25 @@ behind. Pinned in the repo (`settings-subsync-*`) so a rebuild keeps it.
 - **Already out-of-sync subs**: re-sync in place via Bazarr → the series/movie → the subtitle row →
   **Tools → Sync** (there's a mass-select too), or delete the sub and let it re-download — auto-sync
   catches it. ffsubsync needs ffmpeg, which is bundled in the Bazarr image.
+- **Set it by hand** if the `arr-setup.py` Bazarr step ever fails (its settings API is fussy and can
+  500): Bazarr → Settings → Subtitles → *Automatic Subtitles Synchronization* → turn on **"Automatically
+  sync all subtitles after download"** → Save. Same setting, 10 seconds.
+
+### Score threshold — sync-all vs surgical
+
+The sync is set to **sync all** downloaded subs (threshold off), which is what `arr-setup.py` pins
+(`settings-subsync-use_subsync_threshold=false`, `settings-subsync-use_subsync_movie_threshold=false`).
+ffsubsync barely changes a sub that's already in time, so sync-all is the simplest and most reliable
+setting, and on this box the extra CPU is trivial.
+
+To only sync the uncertain ones instead, turn on the **Series/Movies Score threshold** and set both to
+**96%**:
+
+- The threshold is a **percentage of the subtitle's match score** (series scored out of 360, movies out
+  of 120) and means "only sync subs scoring *below* this".
+- A near-perfect match (hash / exact-release) is already byte-aligned to the file, so it's already in
+  time. 96% leaves those alone and syncs everything less certain — which is the stuff that actually
+  drifts. Either way fixes out-of-sync subs; sync-all just also re-times the already-good ones (harmless).
 
 ## Mental model in one line
 
