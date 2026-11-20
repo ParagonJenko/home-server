@@ -1937,6 +1937,79 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "Move goal",
+              "heading_style": "title",
+              "icon": "mdi:walk"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.alexs_iphone_steps",
+              "name": "Steps today",
+              "icon": "mdi:shoe-print",
+              "color": "green",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "input_number.step_goal",
+              "name": "Goal",
+              "icon": "mdi:target",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "gauge",
+              "entity": "sensor.step_goal_progress",
+              "name": "Progress",
+              "min": 0,
+              "max": 100,
+              "needle": true,
+              "severity": {
+                "green": 80,
+                "yellow": 40,
+                "red": 0
+              },
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.steps_to_goal",
+              "name": "To go",
+              "icon": "mdi:walk",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.alexs_iphone_walking_running_distance",
+              "name": "Distance",
+              "icon": "mdi:map-marker-distance",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.alexs_iphone_flights_climbed",
+              "name": "Flights",
+              "icon": "mdi:stairs-up",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "Steps",
               "heading_style": "title",
               "icon": "mdi:shoe-print"

@@ -336,6 +336,16 @@ phone = {
             col(12, {"type": "tile", "entity": "sensor.alexs_iphone_geocoded_location", "name": "Where", "icon": "mdi:map-marker"}),
         ),
         section(
+            heading("Move goal", "mdi:walk"),
+            col(6, {"type": "tile", "entity": "sensor.alexs_iphone_steps", "name": "Steps today", "icon": "mdi:shoe-print", "color": "green"}),
+            col(6, {"type": "tile", "entity": "input_number.step_goal", "name": "Goal", "icon": "mdi:target"}),
+            col(6, {"type": "gauge", "entity": "sensor.step_goal_progress", "name": "Progress", "min": 0, "max": 100,
+                    "needle": True, "severity": {"green": 80, "yellow": 40, "red": 0}}),
+            col(6, {"type": "tile", "entity": "sensor.steps_to_goal", "name": "To go", "icon": "mdi:walk"}),
+            col(6, {"type": "tile", "entity": "sensor.alexs_iphone_walking_running_distance", "name": "Distance", "icon": "mdi:map-marker-distance"}),
+            col(6, {"type": "tile", "entity": "sensor.alexs_iphone_flights_climbed", "name": "Flights", "icon": "mdi:stairs-up"}),
+        ),
+        section(
             heading("Steps", "mdi:shoe-print"),
             col(12, {"type": "custom:mini-graph-card", "entities": [{"entity": "sensor.alexs_iphone_steps", "name": "Steps"}],
                      "name": "Steps", "hours_to_show": 168, "aggregate_func": "max", "group_by": "date",

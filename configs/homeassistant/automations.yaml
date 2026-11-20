@@ -533,3 +533,41 @@
       data:
         tag: energy_budget
         group: home
+- id: '1795215269320'
+  alias: 'Steps: goal reached'
+  description: Celebrate once when today's steps cross the goal. Positive reinforcement, fires once per day.
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.step_goal_met
+    from: 'off'
+    to: 'on'
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 🎉 Step goal hit
+      message: Nice one — {{ states('sensor.alexs_iphone_steps') }} steps today, goal smashed.
+      data:
+        tag: step_goal
+        group: home
+- id: '1795215270081'
+  alias: 'Steps: evening nudge'
+  description: One gentle after-work nudge at 17:30 if the step goal isn't met yet. Encouraging, not naggy - fires at most
+    once a day.
+  mode: single
+  triggers:
+  - trigger: time
+    at: '17:30:00'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.step_goal_met
+    state: 'off'
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 👟 Fancy a walk?
+      message: You're at {{ states('sensor.alexs_iphone_steps') }} steps — about {{ states('sensor.steps_to_goal') }} to your
+        {{ states('input_number.step_goal')|int }} goal. A quick loop would do it, no pressure.
+      data:
+        tag: step_nudge
+        group: home

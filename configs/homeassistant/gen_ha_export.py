@@ -321,6 +321,30 @@ automations = [
                               "message": "Projected this month ≈ £{{ states('sensor.energy_projected_bill') }} — over your £{{ states('input_number.energy_monthly_budget')|int }} budget.",
                               "data": {"tag": "energy_budget", "group": "home"}}}],
     },
+    # ---- Move goal: celebrate hitting the daily step goal, one gentle after-work nudge if behind.
+    {
+        "id": "1795215269320",
+        "alias": "Steps: goal reached",
+        "description": "Celebrate once when today's steps cross the goal. Positive reinforcement, fires once per day.",
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.step_goal_met", "from": "off", "to": "on"}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "\U0001f389 Step goal hit",
+                              "message": "Nice one — {{ states('sensor.alexs_iphone_steps') }} steps today, goal smashed.",
+                              "data": {"tag": "step_goal", "group": "home"}}}],
+    },
+    {
+        "id": "1795215270081",
+        "alias": "Steps: evening nudge",
+        "description": "One gentle after-work nudge at 17:30 if the step goal isn't met yet. Encouraging, not naggy - fires at most once a day.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "17:30:00"}],
+        "conditions": [{"condition": "state", "entity_id": "binary_sensor.step_goal_met", "state": "off"}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "\U0001f45f Fancy a walk?",
+                              "message": "You're at {{ states('sensor.alexs_iphone_steps') }} steps — about {{ states('sensor.steps_to_goal') }} to your {{ states('input_number.step_goal')|int }} goal. A quick loop would do it, no pressure.",
+                              "data": {"tag": "step_nudge", "group": "home"}}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
@@ -418,6 +442,9 @@ helpers = {
          "initial": 8.54, "mode": "box", "unit_of_measurement": "GBP"},
         {"name": "Energy monthly budget", "icon": "mdi:target", "min": 0, "max": 2000, "step": 5,
          "initial": 250, "mode": "box", "unit_of_measurement": "GBP"},
+        # Daily step goal (gentle default, raise as it gets easy). Drives the move-goal tracker + nudge.
+        {"name": "Step goal", "icon": "mdi:shoe-print", "min": 1000, "max": 30000, "step": 500,
+         "initial": 6000, "mode": "box", "unit_of_measurement": "steps"},
     ],
     # Days accrued into the energy month-to-date (run-rate denominator). Reset monthly.
     "counter": [
@@ -440,6 +467,11 @@ helpers = {
         # Projected monthly bill = (month-to-date / days accrued) * days in the current month.
         {"name": "Energy projected bill", "device_class": "monetary", "unit_of_measurement": "GBP",
          "state": "{% set mtd = states('input_number.energy_month_to_date')|float(0) %}{% set days = states('counter.energy_days_accrued')|int(1) %}{% set nm = (now().replace(day=28)+timedelta(days=4)).replace(day=1) %}{% set dim = (nm - timedelta(days=1)).day %}{{ ((mtd / ([days,1]|max)) * dim) | round(2) }}"},
+        # Move goal: steps left to the daily goal, and progress % (for the gauge).
+        {"name": "Steps to goal", "unit_of_measurement": "steps",
+         "state": "{{ [states('input_number.step_goal')|int(6000) - states('sensor.alexs_iphone_steps')|int(0), 0] | max }}"},
+        {"name": "Step goal progress", "unit_of_measurement": "%",
+         "state": "{{ [ (states('sensor.alexs_iphone_steps')|int(0) / ([states('input_number.step_goal')|int(6000),1]|max) * 100) | round, 100] | min }}"},
     ],
     # Template binary_sensors: litter fill-due, and projected bill over budget.
     "template_binary_sensor": [
@@ -447,6 +479,8 @@ helpers = {
          "state": "{{ not is_state('binary_sensor.litter_tray_wastebin','on') and (state_attr('input_datetime.litter_last_emptied','timestamp') | float(now().timestamp()) + states('input_number.litter_fill_days') | float(5) * 86400) - now().timestamp() < 86400 }}"},
         {"name": "Energy over budget", "device_class": "problem",
          "state": "{{ states('sensor.energy_projected_bill')|float(0) > states('input_number.energy_monthly_budget')|float(999999) }}"},
+        {"name": "Step goal met",
+         "state": "{{ states('sensor.alexs_iphone_steps')|int(0) >= states('input_number.step_goal')|int(6000) }}"},
     ],
 }
 
