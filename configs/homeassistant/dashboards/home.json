@@ -223,6 +223,15 @@
               }
             },
             {
+              "type": "tile",
+              "entity": "script.end_work",
+              "name": "End work",
+              "icon": "mdi:briefcase-off",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
               "type": "custom:bubble-card",
               "card_type": "button",
               "button_type": "switch",

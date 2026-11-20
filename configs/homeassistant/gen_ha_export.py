@@ -245,6 +245,15 @@ automations = [
         "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.office_hue_play_1"},
                      "data": {"flash": "long"}}],
     },
+    {
+        "id": "1795203783988",
+        "alias": "Work lighting: re-arm each morning",
+        "description": "Turn the work-lighting master back on at 04:00 on weekdays, so tapping 'End work' early only ends today, not tomorrow.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "04:00:00"}],
+        "conditions": [{"condition": "time", "weekday": ["mon", "tue", "wed", "thu", "fri"]}],
+        "actions": [{"action": "input_boolean.turn_on", "target": {"entity_id": "input_boolean.work_lighting"}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
@@ -258,6 +267,14 @@ scripts = {
         "alias": "Office: break", "icon": "mdi:coffee",
         "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
                       "data": {"color_temp_kelvin": 3000, "brightness_pct": 70, "transition": 2}}],
+    },
+    # One-tap end of day: set the office to the evening warm colour and flip the work-lighting
+    # master off so work-mode won't snap it back to daylight. Re-armed at 04:00 next weekday.
+    "end_work": {
+        "alias": "End work", "icon": "mdi:briefcase-off",
+        "sequence": [{"action": "input_boolean.turn_off", "target": {"entity_id": "input_boolean.work_lighting"}},
+                     {"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                      "data": {"color_temp_kelvin": 2700, "brightness_pct": 60, "transition": 5}}],
     },
 }
 

@@ -22,3 +22,17 @@ office_break:
       color_temp_kelvin: 3000
       brightness_pct: 70
       transition: 2
+end_work:
+  alias: End work
+  icon: mdi:briefcase-off
+  sequence:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.work_lighting
+  - action: light.turn_on
+    target:
+      entity_id: light.office_office
+    data:
+      color_temp_kelvin: 2700
+      brightness_pct: 60
+      transition: 5
