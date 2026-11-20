@@ -77,26 +77,45 @@ PROMPTS = [
 
 def prompt_missing(env, enabled):
     """Fill any missing credential interactively and persist it to .env, so the next run
-    doesn't ask again. Only runs on a TTY — when piped or scheduled (pull-deploy, cron) it
-    does nothing, so the usual 'missing key' note shows and those steps are skipped instead
-    of the script blocking on input. Blank input skips a key (that app's steps are skipped)."""
-    if not enabled or not sys.stdin.isatty():
+    doesn't ask again. Reads and writes the controlling terminal (/dev/tty) directly, so it
+    still prompts when stdin is redirected (a pipe, a heredoc, some SSH wrappers). When there
+    is no terminal at all (cron, fully piped) or --no-prompt is set, it does nothing and the
+    'missing key' note shows instead of the script blocking. Blank input skips a key."""
+    if not enabled:
         return
-    print("  enter credentials (blank = skip; saved to .env so you're only asked once):")
-    for key, label, secret, default in PROMPTS:
-        if env.get(key):
-            continue
+    try:
+        tty = open("/dev/tty", "r+")  # the real terminal, regardless of stdin
+    except OSError:
+        return  # no controlling terminal -> truly non-interactive
+    missing = [p for p in PROMPTS if not env.get(p[0])]
+    if not missing:
+        tty.close()
+        return
+    tty.write("  enter credentials (blank = skip; saved to .env so you're only asked once):\n")
+    tty.flush()
+    for key, label, secret, default in missing:
         hint = f" [{default}]" if default else " (blank to skip)"
+        prompt = f"    {label}{hint}: "
         try:
-            raw = getpass.getpass(f"    {label}{hint}: ") if secret else input(f"    {label}{hint}: ")
+            if secret:
+                raw = getpass.getpass(prompt, stream=tty)  # getpass reads /dev/tty, echo off
+            else:
+                tty.write(prompt)
+                tty.flush()
+                raw = tty.readline()
+                if raw == "":  # EOF on the terminal
+                    raise EOFError
         except (EOFError, KeyboardInterrupt):
-            print("\n  (input cancelled — continuing with whatever is already set)")
-            return
+            tty.write("\n  (input cancelled — continuing with whatever is already set)\n")
+            tty.flush()
+            break
         val = raw.strip() or (default or "")
         if val:
             env[key] = val
             upsert_env(key, val)
-            print(f"      saved {key} to .env")
+            tty.write(f"      saved {key} to .env\n")
+            tty.flush()
+    tty.close()
 
 
 def http(method, url, api_key=None, payload=None):
