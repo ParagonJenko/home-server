@@ -77,45 +77,58 @@ PROMPTS = [
 
 def prompt_missing(env, enabled):
     """Fill any missing credential interactively and persist it to .env, so the next run
-    doesn't ask again. Reads and writes the controlling terminal (/dev/tty) directly, so it
-    still prompts when stdin is redirected (a pipe, a heredoc, some SSH wrappers). When there
-    is no terminal at all (cron, fully piped) or --no-prompt is set, it does nothing and the
+    doesn't ask again. Prompts on stdin when it's a terminal (the normal interactive case);
+    if stdin is redirected but a real terminal exists, falls back to /dev/tty. When neither
+    is interactive (cron, fully piped) or --no-prompt is set, it does nothing and the
     'missing key' note shows instead of the script blocking. Blank input skips a key."""
     if not enabled:
         return
-    try:
-        tty = open("/dev/tty", "r+")  # the real terminal, regardless of stdin
-    except OSError:
-        return  # no controlling terminal -> truly non-interactive
     missing = [p for p in PROMPTS if not env.get(p[0])]
     if not missing:
-        tty.close()
         return
-    tty.write("  enter credentials (blank = skip; saved to .env so you're only asked once):\n")
-    tty.flush()
+    # Pick where to read input. stdin first — that's the usual interactive shell, and it
+    # works where /dev/tty does not (Proxmox web console, ssh without a pty). Only when stdin
+    # is NOT a terminal do we try /dev/tty (covers a redirected stdin with a real terminal).
+    tty = None
+    if not sys.stdin.isatty():
+        try:
+            tty = open("/dev/tty", "r+")
+        except OSError:
+            return  # genuinely no interactive input available
+
+    def write(msg):
+        (tty or sys.stderr).write(msg)
+        (tty or sys.stderr).flush()
+
+    def ask(prompt, secret):
+        """Return the raw input line, or None on EOF (cancel). A blank line returns '' / '\\n'
+        (a skip), which is NOT EOF — only an empty readline() or a raised EOFError is."""
+        if secret:
+            return getpass.getpass(prompt, stream=tty)  # '' = blank; raises EOFError on EOF
+        if tty:
+            tty.write(prompt)
+            tty.flush()
+            line = tty.readline()
+            return None if line == "" else line          # '' = EOF; '\n' = blank line
+        return input(prompt)                             # '' = blank; raises EOFError on EOF
+
+    write("  enter credentials (blank = skip; saved to .env so you're only asked once):\n")
     for key, label, secret, default in missing:
         hint = f" [{default}]" if default else " (blank to skip)"
-        prompt = f"    {label}{hint}: "
         try:
-            if secret:
-                raw = getpass.getpass(prompt, stream=tty)  # getpass reads /dev/tty, echo off
-            else:
-                tty.write(prompt)
-                tty.flush()
-                raw = tty.readline()
-                if raw == "":  # EOF on the terminal
-                    raise EOFError
+            raw = ask(f"    {label}{hint}: ", secret)
         except (EOFError, KeyboardInterrupt):
-            tty.write("\n  (input cancelled — continuing with whatever is already set)\n")
-            tty.flush()
+            raw = None
+        if raw is None:
+            write("\n  (input cancelled — continuing with whatever is already set)\n")
             break
         val = raw.strip() or (default or "")
         if val:
             env[key] = val
             upsert_env(key, val)
-            tty.write(f"      saved {key} to .env\n")
-            tty.flush()
-    tty.close()
+            write(f"      saved {key} to .env\n")
+    if tty:
+        tty.close()
 
 
 def http(method, url, api_key=None, payload=None):
