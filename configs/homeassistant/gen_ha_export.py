@@ -290,6 +290,12 @@ scripts = {
         "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.living_room_living_room"},
                       "data": {"color_temp_kelvin": 2202, "brightness_pct": 30, "transition": 4}}],
     },
+    # Cosy scene for the bedroom only (very warm, low).
+    "bedroom_relax": {
+        "alias": "Bedroom relax", "icon": "mdi:bed",
+        "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.bedroom_bedroom"},
+                      "data": {"color_temp_kelvin": 2000, "brightness_pct": 20, "transition": 4}}],
+    },
     # Gaming: office ceiling off, Play bars + backlights to a purple bias-light glow. Also disables
     # work-lighting so work-mode can't fight it (re-armed 04:00 next weekday).
     "gaming_mode": {

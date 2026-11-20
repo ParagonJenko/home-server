@@ -322,6 +322,19 @@
             },
             {
               "type": "tile",
+              "entity": "script.bedroom_relax",
+              "name": "Bedroom",
+              "icon": "mdi:bed",
+              "grid_options": {
+                "columns": 6
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.bedroom_relax"
+              }
+            },
+            {
+              "type": "tile",
               "entity": "script.gaming_mode",
               "name": "Gaming",
               "icon": "mdi:gamepad-variant",
