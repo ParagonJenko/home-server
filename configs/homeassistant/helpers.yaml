@@ -68,6 +68,28 @@ input_number:
   initial: 5
   mode: box
   unit_of_measurement: d
+- name: Energy month to date
+  icon: mdi:cash-multiple
+  min: 0
+  max: 2000
+  step: 0.01
+  initial: 8.54
+  mode: box
+  unit_of_measurement: GBP
+- name: Energy monthly budget
+  icon: mdi:target
+  min: 0
+  max: 2000
+  step: 5
+  initial: 250
+  mode: box
+  unit_of_measurement: GBP
+counter:
+- name: Energy days accrued
+  icon: mdi:calendar-range
+  initial: 1
+  step: 1
+  minimum: 0
 template:
 - name: Misty last seen
   device_class: timestamp
@@ -89,9 +111,19 @@ template:
   device_class: timestamp
   state: '{{ (as_datetime(state_attr(''input_datetime.litter_last_emptied'',''timestamp'') | float(now().timestamp()) + states(''input_number.litter_fill_days'')
     | float(5) * 86400) | as_local).isoformat() }}'
+- name: Energy projected bill
+  device_class: monetary
+  unit_of_measurement: GBP
+  state: '{% set mtd = states(''input_number.energy_month_to_date'')|float(0) %}{% set days = states(''counter.energy_days_accrued'')|int(1)
+    %}{% set nm = (now().replace(day=28)+timedelta(days=4)).replace(day=1) %}{% set dim = (nm - timedelta(days=1)).day %}{{
+    ((mtd / ([days,1]|max)) * dim) | round(2) }}'
 template_binary_sensor:
 - name: Litter fill due soon
   device_class: problem
   state: '{{ not is_state(''binary_sensor.litter_tray_wastebin'',''on'') and (state_attr(''input_datetime.litter_last_emptied'',''timestamp'')
     | float(now().timestamp()) + states(''input_number.litter_fill_days'') | float(5) * 86400) - now().timestamp() < 86400
+    }}'
+- name: Energy over budget
+  device_class: problem
+  state: '{{ states(''sensor.energy_projected_bill'')|float(0) > states(''input_number.energy_monthly_budget'')|float(999999)
     }}'

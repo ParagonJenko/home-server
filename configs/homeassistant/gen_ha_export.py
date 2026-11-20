@@ -285,6 +285,42 @@ automations = [
                               "message": "The waste bin is likely full within a day (≈{{ as_timestamp(states('sensor.litter_predicted_full')) | timestamp_custom('%a %-d %b') }}). Empty it soon.",
                               "data": {"tag": "litter_due_soon", "group": "home"}}}],
     },
+    # ---- Projected energy bill: accrue yesterday's cost nightly, reset monthly, warn over budget.
+    {
+        "id": "1795214839126",
+        "alias": "Energy: accrue daily cost",
+        "description": "Just after midnight, add yesterday's total electricity + gas cost (both include standing charge) to the month-to-date and tick the days-accrued counter. Feeds the projected-bill run-rate.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "00:10:00"}],
+        "actions": [
+            {"action": "input_number.set_value", "target": {"entity_id": "input_number.energy_month_to_date"},
+             "data": {"value": "{{ (states('input_number.energy_month_to_date')|float(0) + states('sensor.octopus_energy_electricity_19m0059512_1610012030180_previous_accumulative_cost')|float(0) + states('sensor.octopus_energy_gas_e6s17297892061_9384989210_previous_accumulative_cost')|float(0)) | round(2) }}"}},
+            {"action": "counter.increment", "target": {"entity_id": "counter.energy_days_accrued"}},
+        ],
+    },
+    {
+        "id": "1795214840551",
+        "alias": "Energy: reset monthly totals",
+        "description": "On the 1st, zero the month-to-date and days-accrued so the projection restarts for the new month. Runs just before the daily accrual.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "00:05:00"}],
+        "conditions": [{"condition": "template", "value_template": "{{ now().day == 1 }}"}],
+        "actions": [
+            {"action": "input_number.set_value", "target": {"entity_id": "input_number.energy_month_to_date"}, "data": {"value": 0}},
+            {"action": "counter.reset", "target": {"entity_id": "counter.energy_days_accrued"}},
+        ],
+    },
+    {
+        "id": "1795214841217",
+        "alias": "Energy: projected over budget",
+        "description": "When the projected monthly bill crosses the budget, push an alert once.",
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.energy_over_budget", "from": "off", "to": "on"}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "\U0001f4b7 Energy over budget",
+                              "message": "Projected this month ≈ £{{ states('sensor.energy_projected_bill') }} — over your £{{ states('input_number.energy_monthly_budget')|int }} budget.",
+                              "data": {"tag": "energy_budget", "group": "home"}}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
@@ -374,9 +410,18 @@ helpers = {
     ],
     # Adaptive estimate of how many days the litter waste bin takes to fill. Starts at 5 and is
     # self-calibrated by "Litter: learn fill interval" each time the bin reports full (2:1 smoothing).
+    # Energy: month-to-date spend + monthly budget feed the projected-bill run-rate.
     "input_number": [
         {"name": "Litter fill days", "icon": "mdi:calendar-clock", "min": 1, "max": 30, "step": 0.5,
          "initial": 5, "mode": "box", "unit_of_measurement": "d"},
+        {"name": "Energy month to date", "icon": "mdi:cash-multiple", "min": 0, "max": 2000, "step": 0.01,
+         "initial": 8.54, "mode": "box", "unit_of_measurement": "GBP"},
+        {"name": "Energy monthly budget", "icon": "mdi:target", "min": 0, "max": 2000, "step": 5,
+         "initial": 250, "mode": "box", "unit_of_measurement": "GBP"},
+    ],
+    # Days accrued into the energy month-to-date (run-rate denominator). Reset monthly.
+    "counter": [
+        {"name": "Energy days accrued", "icon": "mdi:calendar-range", "initial": 1, "step": 1, "minimum": 0},
     ],
     # Per-cat "last seen" = timestamp of each cat's most recent litter-tray use. The PetKit
     # tray weight-identifies the individual; Frigate only ever sees a generic "cat". Template
@@ -392,11 +437,16 @@ helpers = {
          "state": "{{ ((now().timestamp() - state_attr('input_datetime.litter_last_emptied','timestamp') | float(now().timestamp())) / 86400) | round(1) }}"},
         {"name": "Litter predicted full", "device_class": "timestamp",
          "state": "{{ (as_datetime(state_attr('input_datetime.litter_last_emptied','timestamp') | float(now().timestamp()) + states('input_number.litter_fill_days') | float(5) * 86400) | as_local).isoformat() }}"},
+        # Projected monthly bill = (month-to-date / days accrued) * days in the current month.
+        {"name": "Energy projected bill", "device_class": "monetary", "unit_of_measurement": "GBP",
+         "state": "{% set mtd = states('input_number.energy_month_to_date')|float(0) %}{% set days = states('counter.energy_days_accrued')|int(1) %}{% set nm = (now().replace(day=28)+timedelta(days=4)).replace(day=1) %}{% set dim = (nm - timedelta(days=1)).day %}{{ ((mtd / ([days,1]|max)) * dim) | round(2) }}"},
     ],
-    # Template binary_sensor: on when the bin is predicted to fill within 24h and isn't already full.
+    # Template binary_sensors: litter fill-due, and projected bill over budget.
     "template_binary_sensor": [
         {"name": "Litter fill due soon", "device_class": "problem",
          "state": "{{ not is_state('binary_sensor.litter_tray_wastebin','on') and (state_attr('input_datetime.litter_last_emptied','timestamp') | float(now().timestamp()) + states('input_number.litter_fill_days') | float(5) * 86400) - now().timestamp() < 86400 }}"},
+        {"name": "Energy over budget", "device_class": "problem",
+         "state": "{{ states('sensor.energy_projected_bill')|float(0) > states('input_number.energy_monthly_budget')|float(999999) }}"},
     ],
 }
 

@@ -476,3 +476,60 @@
       data:
         tag: litter_due_soon
         group: home
+- id: '1795214839126'
+  alias: 'Energy: accrue daily cost'
+  description: Just after midnight, add yesterday's total electricity + gas cost (both include standing charge) to the month-to-date
+    and tick the days-accrued counter. Feeds the projected-bill run-rate.
+  mode: single
+  triggers:
+  - trigger: time
+    at: 00:10:00
+  actions:
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.energy_month_to_date
+    data:
+      value: '{{ (states(''input_number.energy_month_to_date'')|float(0) + states(''sensor.octopus_energy_electricity_19m0059512_1610012030180_previous_accumulative_cost'')|float(0)
+        + states(''sensor.octopus_energy_gas_e6s17297892061_9384989210_previous_accumulative_cost'')|float(0)) | round(2)
+        }}'
+  - action: counter.increment
+    target:
+      entity_id: counter.energy_days_accrued
+- id: '1795214840551'
+  alias: 'Energy: reset monthly totals'
+  description: On the 1st, zero the month-to-date and days-accrued so the projection restarts for the new month. Runs just
+    before the daily accrual.
+  mode: single
+  triggers:
+  - trigger: time
+    at: 00:05:00
+  conditions:
+  - condition: template
+    value_template: '{{ now().day == 1 }}'
+  actions:
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.energy_month_to_date
+    data:
+      value: 0
+  - action: counter.reset
+    target:
+      entity_id: counter.energy_days_accrued
+- id: '1795214841217'
+  alias: 'Energy: projected over budget'
+  description: When the projected monthly bill crosses the budget, push an alert once.
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.energy_over_budget
+    from: 'off'
+    to: 'on'
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 💷 Energy over budget
+      message: Projected this month ≈ £{{ states('sensor.energy_projected_bill') }} — over your £{{ states('input_number.energy_monthly_budget')|int
+        }} budget.
+      data:
+        tag: energy_budget
+        group: home

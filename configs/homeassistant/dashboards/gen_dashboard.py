@@ -359,6 +359,13 @@ energy = {
     "title": "Energy", "path": "energy", "type": "sections", "icon": "mdi:transmission-tower",
     "sections": [
         section(
+            heading("This month (projected)", "mdi:cash-clock"),
+            col(6, {"type": "tile", "entity": "sensor.energy_projected_bill", "name": "Projected bill", "icon": "mdi:cash-multiple", "color": "amber"}),
+            col(6, {"type": "tile", "entity": "input_number.energy_monthly_budget", "name": "Budget", "icon": "mdi:target"}),
+            col(6, {"type": "tile", "entity": "input_number.energy_month_to_date", "name": "So far", "icon": "mdi:cash-register"}),
+            col(6, {"type": "tile", "entity": "binary_sensor.energy_over_budget", "name": "On track?", "icon": "mdi:scale-balance"}),
+        ),
+        section(
             heading("Electricity", "mdi:flash"),
             col(6, {"type": "tile", "entity": E + "current_rate", "name": "Unit rate", "icon": "mdi:cash"}),
             col(6, {"type": "tile", "entity": E + "current_standing_charge", "name": "Standing charge", "icon": "mdi:calendar-clock"}),
