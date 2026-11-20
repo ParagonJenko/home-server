@@ -377,12 +377,15 @@ def configure_bazarr(env, sk, rk, apply):
     for series and movies, and automatic subtitle synchronization (ffsubsync aligns every
     downloaded sub to the audio track, fixing offset AND the 23.976-vs-25fps drift common
     with UK releases). Subtitle providers still need your accounts. Bazarr's own API key is
-    read from its config.yaml. One POST /api/system/settings drives all of it."""
+    taken from BAZARR_API_KEY if set (for off-box runs), else read from its config.yaml. One
+    POST /api/system/settings drives all of it."""
     conf = env.get("BAZARR_CONFIG", "/opt/bazarr/config/config/config.yaml")
     base = env.get("BAZARR_URL", "http://localhost:6767")
-    apikey = bazarr_apikey(conf)
+    # BAZARR_API_KEY lets this run off-box (where config.yaml isn't on disk); else read the file.
+    apikey = env.get("BAZARR_API_KEY") or bazarr_apikey(conf)
     if not apikey:
-        print(f"    no API key in {conf} yet — has Bazarr booted once?")
+        print(f"    no API key — set BAZARR_API_KEY in .env (Bazarr → Settings → General → API Key), "
+              f"or run where {conf} exists")
         return
     if not apply:
         print("    WOULD set Sonarr/Radarr connections + an English profile as default")
