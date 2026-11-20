@@ -336,6 +336,23 @@ phone = {
             col(12, {"type": "tile", "entity": "sensor.alexs_iphone_geocoded_location", "name": "Where", "icon": "mdi:map-marker"}),
         ),
         section(
+            heading("Location", "mdi:map"),
+            col(12, {"type": "map", "entities": ["device_tracker.alexs_iphone"], "default_zoom": 11, "hours_to_show": 0}),
+        ),
+    ],
+}
+
+# =====================================================================
+# VIEW: HEALTH  (iPhone / Apple Health — steps, movement, weight, habits)
+# =====================================================================
+health = {
+    "title": "Health", "path": "health", "type": "sections", "icon": "mdi:heart-pulse",
+    "sections": [
+        section(
+            heading("Habits", "mdi:check-decagram"),
+            col(6, switch_btn("input_boolean.vitamins_taken", "Vitamins", "mdi:pill")),
+        ),
+        section(
             heading("Move goal", "mdi:walk"),
             col(6, {"type": "tile", "entity": "sensor.alexs_iphone_steps", "name": "Steps today", "icon": "mdi:shoe-print", "color": "green"}),
             col(6, {"type": "tile", "entity": "input_number.step_goal", "name": "Goal", "icon": "mdi:target"}),
@@ -367,10 +384,6 @@ phone = {
                                    "show_line": True, "show_points": False, "show_legend": False}],
                      "name": "Weight trend", "hours_to_show": 2160, "points_per_hour": 0.05,
                      "line_width": 3, "show": {"fill": "fade", "extrema": True}}),
-        ),
-        section(
-            heading("Location", "mdi:map"),
-            col(12, {"type": "map", "entities": ["device_tracker.alexs_iphone"], "default_zoom": 11, "hours_to_show": 0}),
         ),
     ],
 }
@@ -458,7 +471,7 @@ infra = {
     ],
 }
 
-config = {"views": [home, lights, security, media, energy, cats, phone, infra]}
+config = {"views": [home, lights, security, media, energy, cats, health, phone, infra]}
 
 # Make script tiles run on a single tap (default tile tap opens the more-info dialog instead).
 for _view in config["views"]:

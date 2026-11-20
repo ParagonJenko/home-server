@@ -1889,45 +1889,29 @@
       ]
     },
     {
-      "title": "Phone",
-      "path": "phone",
+      "title": "Health",
+      "path": "health",
       "type": "sections",
-      "icon": "mdi:cellphone",
+      "icon": "mdi:heart-pulse",
       "sections": [
         {
           "type": "grid",
           "cards": [
             {
               "type": "heading",
-              "heading": "Alex's iPhone",
+              "heading": "Habits",
               "heading_style": "title",
-              "icon": "mdi:cellphone"
+              "icon": "mdi:check-decagram"
             },
             {
-              "type": "tile",
-              "entity": "sensor.alexs_iphone_battery_level",
-              "name": "Battery",
-              "icon": "mdi:battery",
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
+              "entity": "input_boolean.vitamins_taken",
+              "name": "Vitamins",
+              "icon": "mdi:pill",
               "grid_options": {
                 "columns": 6
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "sensor.alexs_iphone_activity",
-              "name": "Activity",
-              "icon": "mdi:run",
-              "grid_options": {
-                "columns": 6
-              }
-            },
-            {
-              "type": "tile",
-              "entity": "sensor.alexs_iphone_geocoded_location",
-              "name": "Where",
-              "icon": "mdi:map-marker",
-              "grid_options": {
-                "columns": 12
               }
             }
           ]
@@ -2138,6 +2122,52 @@
                 "fill": "fade",
                 "extrema": true
               },
+              "grid_options": {
+                "columns": 12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Phone",
+      "path": "phone",
+      "type": "sections",
+      "icon": "mdi:cellphone",
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Alex's iPhone",
+              "heading_style": "title",
+              "icon": "mdi:cellphone"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.alexs_iphone_battery_level",
+              "name": "Battery",
+              "icon": "mdi:battery",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.alexs_iphone_activity",
+              "name": "Activity",
+              "icon": "mdi:run",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.alexs_iphone_geocoded_location",
+              "name": "Where",
+              "icon": "mdi:map-marker",
               "grid_options": {
                 "columns": 12
               }
