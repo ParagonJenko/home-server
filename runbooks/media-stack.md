@@ -105,6 +105,19 @@ Two things keep it from saturating (both set by `arr-setup.py --apply`, so they 
 Neither is a real fix for the USB ceiling — that's the **NAS migration** (ZFS ARC caches hot pieces in
 RAM, and a single pool means hardlinks are never even in question). See `../storage.md`.
 
+## Subtitles (Bazarr) — auto-sync
+
+Bazarr fetches subs for the library and **auto-syncs** them. `arr-setup.py` turns on ffsubsync
+(Bazarr → Settings → Subtitles → *Automatic Subtitles Synchronization* → "Automatically sync all
+subtitles after download"), which aligns every downloaded subtitle to the **audio track** — fixing a
+constant offset *and* the 23.976-vs-25fps framerate drift that makes UK releases' subs run ahead or
+behind. Pinned in the repo (`settings-subsync-*`) so a rebuild keeps it.
+
+- **New downloads** are synced automatically on the way in.
+- **Already out-of-sync subs**: re-sync in place via Bazarr → the series/movie → the subtitle row →
+  **Tools → Sync** (there's a mass-select too), or delete the sub and let it re-download — auto-sync
+  catches it. ffsubsync needs ffmpeg, which is bundled in the Bazarr image.
+
 ## Mental model in one line
 
 **Prowlarr** feeds indexers to the **Sonarr/Radarr** brains → they grab via **qBittorrent** → import by

@@ -2,7 +2,8 @@
 """arr-setup.py — wire the Arr stack over their APIs (root folders, qBittorrent
 client + category on Sonarr/Radarr, Prowlarr applications + FlareSolverr proxy,
 qBittorrent's own ATM + save path + categories, Bazarr's Sonarr/Radarr
-connections + a default English language profile, and Forms authentication
+connections + a default English language profile + automatic subtitle sync,
+and Forms authentication
 on Sonarr/Radarr/Prowlarr with a generated login).
 
 Dry-run by default; --apply writes. Idempotent, and asks each app for its own
@@ -302,9 +303,11 @@ def bazarr_apikey(conf_path):
 
 def configure_bazarr(env, sk, rk, apply):
     """Configure Bazarr over its settings API: Sonarr/Radarr connections (by compose
-    service name), an English language filter + profile, and that profile as the default
-    for series and movies. Subtitle providers still need your accounts. Bazarr's own API
-    key is read from its config.yaml. One POST /api/system/settings drives all of it."""
+    service name), an English language filter + profile, that profile as the default
+    for series and movies, and automatic subtitle synchronization (ffsubsync aligns every
+    downloaded sub to the audio track, fixing offset AND the 23.976-vs-25fps drift common
+    with UK releases). Subtitle providers still need your accounts. Bazarr's own API key is
+    read from its config.yaml. One POST /api/system/settings drives all of it."""
     conf = env.get("BAZARR_CONFIG", "/opt/bazarr/config/config/config.yaml")
     base = env.get("BAZARR_URL", "http://localhost:6767")
     apikey = bazarr_apikey(conf)
@@ -338,12 +341,21 @@ def configure_bazarr(env, sk, rk, apply):
         ("settings-general-serie_default_profile", "1"),
         ("settings-general-movie_default_enabled", "true"),
         ("settings-general-movie_default_profile", "1"),
+        # --- Automatic subtitle sync (ffsubsync): align every downloaded sub to the audio
+        # track. Fixes out-of-sync subs at the source — offset AND framerate drift. ---
+        ("settings-subsync-use_subsync", "true"),              # sync after every download
+        ("settings-subsync-use_subsync_threshold", "false"),   # sync all series subs, not only low-score
+        ("settings-subsync-use_subsync_movie_threshold", "false"),  # ...same for movies
+        ("settings-subsync-no_fix_framerate", "false"),        # DO correct framerate (the UK 23.976/25 case)
+        ("settings-subsync-gss", "true"),                      # golden-section search — more accurate alignment
+        ("settings-subsync-max_offset_seconds", "60"),         # cap how far it will shift
+        ("settings-subsync-debug", "false"),
     ]
     url = base + "/api/system/settings?" + urllib.parse.urlencode({"apikey": apikey})
     req = urllib.request.Request(url, data=urllib.parse.urlencode(fields).encode())
     req.add_header("X-API-KEY", apikey)  # Bazarr accepts the key as header or query param
     urllib.request.urlopen(req, timeout=20)  # 204 on success; 406 (validation) raises
-    print("    Sonarr + Radarr connected; English profile set as the default for both")
+    print("    Sonarr + Radarr connected; English profile default for both; auto-sync (ffsubsync) on")
 
 
 def step(label, fn):
