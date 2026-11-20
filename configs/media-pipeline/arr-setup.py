@@ -10,6 +10,9 @@ Dry-run by default; --apply writes. Idempotent, and asks each app for its own
 schema rather than hardcoding field names, so it survives Arr releases.
 Indexers stay manual (they need your accounts). Quality profiles are Recyclarr's job.
 
+On a terminal, any missing API key or password below is prompted for and saved to .env,
+so you set each one once (pass --no-prompt, or run piped/scheduled, to skip asking).
+
 Reads config from .env (gitignored) next to this file, e.g.:
   SONARR_URL=http://media-pipeline.home.alexjenkinson.com:8989
   SONARR_API_KEY=...
@@ -24,7 +27,7 @@ Reads config from .env (gitignored) next to this file, e.g.:
   FLARESOLVERR_URL=http://flaresolverr:8191/
 Stdlib only — runs anywhere that can reach the Arr APIs.
 """
-import argparse, json, os, secrets, sys, urllib.request, urllib.error, urllib.parse
+import argparse, getpass, json, os, secrets, sys, urllib.request, urllib.error, urllib.parse
 from http.cookiejar import CookieJar  # imported by name: the http() func below shadows the module
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -59,6 +62,41 @@ def load_env():
         "PROWLARR_URL", "PROWLARR_API_KEY", "QBIT_HOST", "QBIT_PORT",
         "QBIT_USER", "QBIT_PASS", "FLARESOLVERR_URL")})
     return env
+
+
+# Credentials the script asks for interactively when they're missing from .env.
+# (env key, prompt label, secret?, default) — URLs are left to their localhost defaults.
+PROMPTS = [
+    ("SONARR_API_KEY", "Sonarr API key (Settings -> General -> API Key)", False, None),
+    ("RADARR_API_KEY", "Radarr API key (Settings -> General -> API Key)", False, None),
+    ("PROWLARR_API_KEY", "Prowlarr API key (Settings -> General -> API Key)", False, None),
+    ("QBIT_USER", "qBittorrent WebUI username", False, "admin"),
+    ("QBIT_PASS", "qBittorrent WebUI password", True, None),
+]
+
+
+def prompt_missing(env, enabled):
+    """Fill any missing credential interactively and persist it to .env, so the next run
+    doesn't ask again. Only runs on a TTY — when piped or scheduled (pull-deploy, cron) it
+    does nothing, so the usual 'missing key' note shows and those steps are skipped instead
+    of the script blocking on input. Blank input skips a key (that app's steps are skipped)."""
+    if not enabled or not sys.stdin.isatty():
+        return
+    print("  enter credentials (blank = skip; saved to .env so you're only asked once):")
+    for key, label, secret, default in PROMPTS:
+        if env.get(key):
+            continue
+        hint = f" [{default}]" if default else " (blank to skip)"
+        try:
+            raw = getpass.getpass(f"    {label}{hint}: ") if secret else input(f"    {label}{hint}: ")
+        except (EOFError, KeyboardInterrupt):
+            print("\n  (input cancelled — continuing with whatever is already set)")
+            return
+        val = raw.strip() or (default or "")
+        if val:
+            env[key] = val
+            upsert_env(key, val)
+            print(f"      saved {key} to .env")
 
 
 def http(method, url, api_key=None, payload=None):
@@ -380,9 +418,12 @@ def step(label, fn):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true", help="write changes (default: dry run)")
+    ap.add_argument("--no-prompt", action="store_true",
+                    help="never ask for missing keys interactively (for scheduled/piped runs)")
     args = ap.parse_args()
     env = load_env()
     print("arr-setup:", "APPLY" if args.apply else "DRY RUN")
+    prompt_missing(env, enabled=not args.no_prompt)
 
     # Two kinds of URL. These are how THIS script reaches each app's API — it runs on
     # the LXC host, so localhost + the published ports.
@@ -428,7 +469,7 @@ def main() -> None:
             ensure_prowlarr_proxy(prowlarr, pk, flare, args.apply),
             ensure_prowlarr_app(prowlarr, pk, "Sonarr", sonarr_svc, sk, prowlarr_svc, args.apply),
             ensure_prowlarr_app(prowlarr, pk, "Radarr", radarr_svc, rk, prowlarr_svc, args.apply)))
-    if env.get("QBIT_USER"):
+    if env.get("QBIT_PASS"):
         step("qBittorrent", lambda: configure_qbittorrent(env, args.apply))
     if sk and rk:
         step("Bazarr", lambda: configure_bazarr(env, sk, rk, args.apply))
