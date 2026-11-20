@@ -420,3 +420,59 @@
   - action: input_boolean.turn_on
     target:
       entity_id: input_boolean.work_lighting
+- id: '1795213977620'
+  alias: 'Litter: record emptied'
+  description: When the waste bin clears (full -> not full), stamp 'last emptied' = now, which resets the days-since counter
+    and the predicted-full date.
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.litter_tray_wastebin
+    from: 'on'
+    to: 'off'
+  actions:
+  - action: input_datetime.set_datetime
+    target:
+      entity_id: input_datetime.litter_last_emptied
+    data:
+      timestamp: '{{ now().timestamp() }}'
+- id: '1795213978391'
+  alias: 'Litter: learn fill interval'
+  description: When the bin reports full, fold the days-since-emptied (the just-completed cycle length) into the fill-days
+    estimate with 2:1 smoothing, so the prediction self-calibrates. Skips spurious cycles under 1 day.
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.litter_tray_wastebin
+    from: 'off'
+    to: 'on'
+  conditions:
+  - condition: numeric_state
+    entity_id: sensor.litter_days_since_emptied
+    above: 1
+  actions:
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.litter_fill_days
+    data:
+      value: '{{ (((states(''input_number.litter_fill_days'') | float(5) * 2) + states(''sensor.litter_days_since_emptied'')
+        | float(5)) / 3) | round(1) }}'
+- id: '1795213979121'
+  alias: 'Litter: heads-up before full'
+  description: A day before the waste bin is predicted to fill (and it isn't already full), push a heads-up with the predicted
+    date.
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.litter_fill_due_soon
+    from: 'off'
+    to: 'on'
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: 🐾 Litter bin filling up
+      message: The waste bin is likely full within a day (≈{{ as_timestamp(states('sensor.litter_predicted_full')) | timestamp_custom('%a
+        %-d %b') }}). Empty it soon.
+      data:
+        tag: litter_due_soon
+        group: home

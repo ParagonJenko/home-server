@@ -254,6 +254,37 @@ automations = [
         "conditions": [{"condition": "time", "weekday": ["mon", "tue", "wed", "thu", "fri"]}],
         "actions": [{"action": "input_boolean.turn_on", "target": {"entity_id": "input_boolean.work_lighting"}}],
     },
+    # ---- Litter waste-bin forecast: track last-emptied, self-calibrate the fill interval, warn a day early.
+    {
+        "id": "1795213977620",
+        "alias": "Litter: record emptied",
+        "description": "When the waste bin clears (full -> not full), stamp 'last emptied' = now, which resets the days-since counter and the predicted-full date.",
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.litter_tray_wastebin", "from": "on", "to": "off"}],
+        "actions": [{"action": "input_datetime.set_datetime", "target": {"entity_id": "input_datetime.litter_last_emptied"},
+                     "data": {"timestamp": "{{ now().timestamp() }}"}}],
+    },
+    {
+        "id": "1795213978391",
+        "alias": "Litter: learn fill interval",
+        "description": "When the bin reports full, fold the days-since-emptied (the just-completed cycle length) into the fill-days estimate with 2:1 smoothing, so the prediction self-calibrates. Skips spurious cycles under 1 day.",
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.litter_tray_wastebin", "from": "off", "to": "on"}],
+        "conditions": [{"condition": "numeric_state", "entity_id": "sensor.litter_days_since_emptied", "above": 1}],
+        "actions": [{"action": "input_number.set_value", "target": {"entity_id": "input_number.litter_fill_days"},
+                     "data": {"value": "{{ (((states('input_number.litter_fill_days') | float(5) * 2) + states('sensor.litter_days_since_emptied') | float(5)) / 3) | round(1) }}"}}],
+    },
+    {
+        "id": "1795213979121",
+        "alias": "Litter: heads-up before full",
+        "description": "A day before the waste bin is predicted to fill (and it isn't already full), push a heads-up with the predicted date.",
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.litter_fill_due_soon", "from": "off", "to": "on"}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "\U0001f43e Litter bin filling up",
+                              "message": "The waste bin is likely full within a day (≈{{ as_timestamp(states('sensor.litter_predicted_full')) | timestamp_custom('%a %-d %b') }}). Empty it soon.",
+                              "data": {"tag": "litter_due_soon", "group": "home"}}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
@@ -337,10 +368,19 @@ helpers = {
         {"name": "Work end", "icon": "mdi:clock-end", "has_time": True, "has_date": False, "initial": "17:00:00"},
         {"name": "Bedroom wake time", "icon": "mdi:weather-sunset-up", "has_time": True, "has_date": False, "initial": "07:40:00"},
         {"name": "Bedroom wind down", "icon": "mdi:weather-night", "has_time": True, "has_date": False, "initial": "21:30:00"},
+        # Litter: stamped = now by "Litter: record emptied" when the waste bin clears. Drives the
+        # days-since counter and the predicted-full date.
+        {"name": "Litter last emptied", "icon": "mdi:delete-clock", "has_time": True, "has_date": True, "initial": "2026-11-20 22:00:00"},
+    ],
+    # Adaptive estimate of how many days the litter waste bin takes to fill. Starts at 5 and is
+    # self-calibrated by "Litter: learn fill interval" each time the bin reports full (2:1 smoothing).
+    "input_number": [
+        {"name": "Litter fill days", "icon": "mdi:calendar-clock", "min": 1, "max": 30, "step": 0.5,
+         "initial": 5, "mode": "box", "unit_of_measurement": "d"},
     ],
     # Per-cat "last seen" = timestamp of each cat's most recent litter-tray use. The PetKit
     # tray weight-identifies the individual; Frigate only ever sees a generic "cat". Template
-    # helpers (device_class timestamp -> tiles render "X ago").
+    # helpers (device_class timestamp -> tiles render "X ago"). The litter_* ones forecast the bin.
     "template": [
         {"name": "Misty last seen", "device_class": "timestamp",
          "state": "{{ ([states.sensor.misty_latest_weight.last_changed, states.sensor.misty_last_use_duration.last_changed] | max).isoformat() }}"},
@@ -348,6 +388,15 @@ helpers = {
          "state": "{{ ([states.sensor.bella_latest_weight.last_changed, states.sensor.bella_last_use_duration.last_changed] | max).isoformat() }}"},
         {"name": "Leo last seen", "device_class": "timestamp",
          "state": "{{ ([states.sensor.leo_latest_weight.last_changed, states.sensor.leo_last_use_duration.last_changed] | max).isoformat() }}"},
+        {"name": "Litter days since emptied", "unit_of_measurement": "d",
+         "state": "{{ ((now().timestamp() - state_attr('input_datetime.litter_last_emptied','timestamp') | float(now().timestamp())) / 86400) | round(1) }}"},
+        {"name": "Litter predicted full", "device_class": "timestamp",
+         "state": "{{ (as_datetime(state_attr('input_datetime.litter_last_emptied','timestamp') | float(now().timestamp()) + states('input_number.litter_fill_days') | float(5) * 86400) | as_local).isoformat() }}"},
+    ],
+    # Template binary_sensor: on when the bin is predicted to fill within 24h and isn't already full.
+    "template_binary_sensor": [
+        {"name": "Litter fill due soon", "device_class": "problem",
+         "state": "{{ not is_state('binary_sensor.litter_tray_wastebin','on') and (state_attr('input_datetime.litter_last_emptied','timestamp') | float(now().timestamp()) + states('input_number.litter_fill_days') | float(5) * 86400) - now().timestamp() < 86400 }}"},
     ],
 }
 

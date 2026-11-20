@@ -279,6 +279,13 @@ cats = {
             col(6, {"type": "tile", "entity": "sensor.litter_tray_n50_odor_eliminator", "name": "Odor N50", "icon": "mdi:air-filter"}),
         ),
         section(
+            heading("Bin forecast", "mdi:calendar-clock"),
+            col(6, {"type": "tile", "entity": "sensor.litter_predicted_full", "name": "Likely full", "icon": "mdi:calendar-alert"}),
+            col(6, {"type": "tile", "entity": "sensor.litter_days_since_emptied", "name": "Since emptied", "icon": "mdi:delete-clock"}),
+            col(6, {"type": "tile", "entity": "sensor.litter_tray_times_used", "name": "Uses today", "icon": "mdi:counter"}),
+            col(6, {"type": "tile", "entity": "input_number.litter_fill_days", "name": "Fill estimate", "icon": "mdi:calendar-clock"}),
+        ),
+        section(
             heading("The cats", "mdi:cat"),
             col(4, mush("template", entity="sensor.misty_latest_weight", primary="Misty",
                         secondary="{{ states('sensor.misty_latest_weight') }} kg",

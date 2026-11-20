@@ -1590,6 +1590,53 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "Bin forecast",
+              "heading_style": "title",
+              "icon": "mdi:calendar-clock"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.litter_predicted_full",
+              "name": "Likely full",
+              "icon": "mdi:calendar-alert",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.litter_days_since_emptied",
+              "name": "Since emptied",
+              "icon": "mdi:delete-clock",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.litter_tray_times_used",
+              "name": "Uses today",
+              "icon": "mdi:counter",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "input_number.litter_fill_days",
+              "name": "Fill estimate",
+              "icon": "mdi:calendar-clock",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "The cats",
               "heading_style": "title",
               "icon": "mdi:cat"

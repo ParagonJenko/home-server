@@ -54,6 +54,20 @@ input_datetime:
   has_time: true
   has_date: false
   initial: '21:30:00'
+- name: Litter last emptied
+  icon: mdi:delete-clock
+  has_time: true
+  has_date: true
+  initial: '2026-11-20 22:00:00'
+input_number:
+- name: Litter fill days
+  icon: mdi:calendar-clock
+  min: 1
+  max: 30
+  step: 0.5
+  initial: 5
+  mode: box
+  unit_of_measurement: d
 template:
 - name: Misty last seen
   device_class: timestamp
@@ -66,4 +80,18 @@ template:
 - name: Leo last seen
   device_class: timestamp
   state: '{{ ([states.sensor.leo_latest_weight.last_changed, states.sensor.leo_last_use_duration.last_changed] | max).isoformat()
+    }}'
+- name: Litter days since emptied
+  unit_of_measurement: d
+  state: '{{ ((now().timestamp() - state_attr(''input_datetime.litter_last_emptied'',''timestamp'') | float(now().timestamp()))
+    / 86400) | round(1) }}'
+- name: Litter predicted full
+  device_class: timestamp
+  state: '{{ (as_datetime(state_attr(''input_datetime.litter_last_emptied'',''timestamp'') | float(now().timestamp()) + states(''input_number.litter_fill_days'')
+    | float(5) * 86400) | as_local).isoformat() }}'
+template_binary_sensor:
+- name: Litter fill due soon
+  device_class: problem
+  state: '{{ not is_state(''binary_sensor.litter_tray_wastebin'',''on'') and (state_attr(''input_datetime.litter_last_emptied'',''timestamp'')
+    | float(now().timestamp()) + states(''input_number.litter_fill_days'') | float(5) * 86400) - now().timestamp() < 86400
     }}'
