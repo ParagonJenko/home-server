@@ -278,6 +278,35 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "Modes",
+              "heading_style": "title",
+              "icon": "mdi:lightbulb-group"
+            },
+            {
+              "type": "tile",
+              "entity": "script.relax_mode",
+              "name": "Relax",
+              "icon": "mdi:sofa",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "script.gaming_mode",
+              "name": "Gaming",
+              "icon": "mdi:gamepad-variant",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "Today",
               "heading_style": "title",
               "icon": "mdi:calendar-today"

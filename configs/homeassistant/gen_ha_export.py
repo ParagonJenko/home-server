@@ -276,6 +276,27 @@ scripts = {
                      {"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
                       "data": {"color_temp_kelvin": 2700, "brightness_pct": 60, "transition": 5}}],
     },
+    # Cosy evening: office + living room warm and low. Also disables work-lighting so work-mode
+    # can't fight it (re-armed 04:00 next weekday).
+    "relax_mode": {
+        "alias": "Relax mode", "icon": "mdi:sofa",
+        "sequence": [{"action": "input_boolean.turn_off", "target": {"entity_id": "input_boolean.work_lighting"}},
+                     {"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                      "data": {"color_temp_kelvin": 2000, "brightness_pct": 25, "transition": 4}},
+                     {"action": "light.turn_on", "target": {"entity_id": "light.living_room_living_room"},
+                      "data": {"color_temp_kelvin": 2202, "brightness_pct": 30, "transition": 4}}],
+    },
+    # Gaming: office ceiling off, Play bars + backlights to a purple bias-light glow. Also disables
+    # work-lighting so work-mode can't fight it (re-armed 04:00 next weekday).
+    "gaming_mode": {
+        "alias": "Gaming mode", "icon": "mdi:gamepad-variant",
+        "sequence": [{"action": "input_boolean.turn_off", "target": {"entity_id": "input_boolean.work_lighting"}},
+                     {"action": "light.turn_off", "target": {"entity_id": "light.office_office_light"},
+                      "data": {"transition": 2}},
+                     {"action": "light.turn_on",
+                      "target": {"entity_id": ["light.office_hue_play_1", "light.office_hue_play_2", "light.office_backlights"]},
+                      "data": {"rgb_color": [150, 50, 230], "brightness_pct": 55, "transition": 2}}],
+    },
 }
 
 # Reference export of the UI/config helpers (zones + persons). These live in HA's registry;

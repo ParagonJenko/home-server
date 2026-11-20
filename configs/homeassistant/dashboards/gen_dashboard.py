@@ -139,6 +139,11 @@ home = {
             col(6, {"type": "tile", "entity": "input_datetime.work_end", "name": "Work end", "icon": "mdi:clock-end"}),
         ),
         section(
+            heading("Modes", "mdi:lightbulb-group"),
+            col(6, {"type": "tile", "entity": "script.relax_mode", "name": "Relax", "icon": "mdi:sofa"}),
+            col(6, {"type": "tile", "entity": "script.gaming_mode", "name": "Gaming", "icon": "mdi:gamepad-variant"}),
+        ),
+        section(
             heading("Today", "mdi:calendar-today"),
             col(6, switch_btn("input_boolean.vitamins_taken", "Vitamins", "mdi:pill")),
             col(6, {"type": "tile", "entity": "sensor.waste_collection_schedule_mixed_recycling",
