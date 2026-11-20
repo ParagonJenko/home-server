@@ -129,6 +129,15 @@ home = {
                                                      "target": {"entity_id": "all"}}})),
         ),
         section(
+            heading("Work lighting", "mdi:desk-lamp"),
+            col(6, {"type": "tile", "entity": "script.office_focus", "name": "Focus", "icon": "mdi:brightness-7"}),
+            col(6, {"type": "tile", "entity": "script.office_break", "name": "Break", "icon": "mdi:coffee"}),
+            col(6, switch_btn("input_boolean.work_lighting", "Work lighting", "mdi:desk-lamp")),
+            col(6, switch_btn("input_boolean.work_movement_nudge", "Move nudge", "mdi:seat-recline-normal")),
+            col(6, {"type": "tile", "entity": "input_datetime.work_start", "name": "Work start", "icon": "mdi:clock-start"}),
+            col(6, {"type": "tile", "entity": "input_datetime.work_end", "name": "Work end", "icon": "mdi:clock-end"}),
+        ),
+        section(
             heading("Today", "mdi:calendar-today"),
             col(6, switch_btn("input_boolean.vitamins_taken", "Vitamins", "mdi:pill")),
             col(6, {"type": "tile", "entity": "sensor.waste_collection_schedule_mixed_recycling",

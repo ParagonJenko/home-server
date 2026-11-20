@@ -251,3 +251,147 @@
       message: clear_notification
       data:
         tag: vitamins
+- id: '1795203406117'
+  alias: 'Office: work-mode daylight'
+  description: On weekdays during work hours, hold the office at bright cool-white for focus. Fires at work start and whenever
+    the office light is switched on during work hours.
+  mode: restart
+  triggers:
+  - trigger: time
+    at: input_datetime.work_start
+  - trigger: state
+    entity_id: light.office_office
+    to: 'on'
+  conditions:
+  - condition: time
+    after: input_datetime.work_start
+    before: input_datetime.work_end
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.work_lighting
+    state: 'on'
+  - condition: state
+    entity_id: light.office_office
+    state: 'on'
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.office_office
+    data:
+      color_temp_kelvin: 5300
+      brightness_pct: 100
+      transition: 3
+- id: '1795203406832'
+  alias: 'Office: clock-out warm cue'
+  description: At work end on weekdays, shift the office to warm/dim as a visible 'stop working' boundary. Only if the office
+    light is on.
+  mode: single
+  triggers:
+  - trigger: time
+    at: input_datetime.work_end
+  conditions:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.work_lighting
+    state: 'on'
+  - condition: state
+    entity_id: light.office_office
+    state: 'on'
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.office_office
+    data:
+      color_temp_kelvin: 2700
+      brightness_pct: 60
+      transition: 5
+- id: '1795203407536'
+  alias: 'Bedroom: sunrise wake'
+  description: Gentle 20-minute ramp to soft daylight in the bedroom on weekday mornings.
+  mode: single
+  triggers:
+  - trigger: time
+    at: input_datetime.bedroom_wake_time
+  conditions:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.bedroom_bedroom
+    data:
+      color_temp_kelvin: 4000
+      brightness_pct: 80
+      transition: 1200
+- id: '1795203408273'
+  alias: 'Bedroom: evening wind-down'
+  description: At the wind-down time each night, if the bedroom light is on, drop it to warm/dim to protect sleep.
+  mode: single
+  triggers:
+  - trigger: time
+    at: input_datetime.bedroom_wind_down
+  conditions:
+  - condition: state
+    entity_id: light.bedroom_bedroom
+    state: 'on'
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.bedroom_bedroom
+    data:
+      color_temp_kelvin: 2200
+      brightness_pct: 30
+      transition: 60
+- id: '1795203408978'
+  alias: 'Office: movement nudge'
+  description: A gentle Play-bar flash at intervals through the workday to prompt standing up / looking away. Lunch gap around
+    13:00. Toggle with input_boolean.work_movement_nudge.
+  mode: single
+  triggers:
+  - trigger: time
+    at: '10:30:00'
+  - trigger: time
+    at: '12:00:00'
+  - trigger: time
+    at: '14:30:00'
+  - trigger: time
+    at: '16:00:00'
+  conditions:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: input_boolean.work_lighting
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.work_movement_nudge
+    state: 'on'
+  - condition: state
+    entity_id: light.office_hue_play_1
+    state: 'on'
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.office_hue_play_1
+    data:
+      flash: long

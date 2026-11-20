@@ -200,6 +200,75 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "Work lighting",
+              "heading_style": "title",
+              "icon": "mdi:desk-lamp"
+            },
+            {
+              "type": "tile",
+              "entity": "script.office_focus",
+              "name": "Focus",
+              "icon": "mdi:brightness-7",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "script.office_break",
+              "name": "Break",
+              "icon": "mdi:coffee",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
+              "entity": "input_boolean.work_lighting",
+              "name": "Work lighting",
+              "icon": "mdi:desk-lamp",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "custom:bubble-card",
+              "card_type": "button",
+              "button_type": "switch",
+              "entity": "input_boolean.work_movement_nudge",
+              "name": "Move nudge",
+              "icon": "mdi:seat-recline-normal",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "input_datetime.work_start",
+              "name": "Work start",
+              "icon": "mdi:clock-start",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "input_datetime.work_end",
+              "name": "Work end",
+              "icon": "mdi:clock-end",
+              "grid_options": {
+                "columns": 6
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "Today",
               "heading_style": "title",
               "icon": "mdi:calendar-today"

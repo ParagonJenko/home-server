@@ -176,7 +176,89 @@ automations = [
              "data": {"message": "clear_notification", "data": {"tag": "vitamins"}}},
         ],
     },
+    # ---- WFH circadian lighting (08:00-17:00). Office is schedule-driven (decoupled from the sun so
+    # it doesn't warm/dim through dark winter afternoons); the rest of the flat stays on Adaptive Lighting.
+    {
+        "id": "1795203406117",
+        "alias": "Office: work-mode daylight",
+        "description": "On weekdays during work hours, hold the office at bright cool-white for focus. Fires at work start and whenever the office light is switched on during work hours.",
+        "mode": "restart",
+        "triggers": [{"trigger": "time", "at": "input_datetime.work_start"},
+                     {"trigger": "state", "entity_id": "light.office_office", "to": "on"}],
+        "conditions": [
+            {"condition": "time", "after": "input_datetime.work_start", "before": "input_datetime.work_end",
+             "weekday": ["mon", "tue", "wed", "thu", "fri"]},
+            {"condition": "state", "entity_id": "input_boolean.work_lighting", "state": "on"},
+            {"condition": "state", "entity_id": "light.office_office", "state": "on"},
+        ],
+        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                     "data": {"color_temp_kelvin": 5300, "brightness_pct": 100, "transition": 3}}],
+    },
+    {
+        "id": "1795203406832",
+        "alias": "Office: clock-out warm cue",
+        "description": "At work end on weekdays, shift the office to warm/dim as a visible 'stop working' boundary. Only if the office light is on.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "input_datetime.work_end"}],
+        "conditions": [
+            {"condition": "time", "weekday": ["mon", "tue", "wed", "thu", "fri"]},
+            {"condition": "state", "entity_id": "input_boolean.work_lighting", "state": "on"},
+            {"condition": "state", "entity_id": "light.office_office", "state": "on"},
+        ],
+        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                     "data": {"color_temp_kelvin": 2700, "brightness_pct": 60, "transition": 5}}],
+    },
+    {
+        "id": "1795203407536",
+        "alias": "Bedroom: sunrise wake",
+        "description": "Gentle 20-minute ramp to soft daylight in the bedroom on weekday mornings.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "input_datetime.bedroom_wake_time"}],
+        "conditions": [{"condition": "time", "weekday": ["mon", "tue", "wed", "thu", "fri"]}],
+        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.bedroom_bedroom"},
+                     "data": {"color_temp_kelvin": 4000, "brightness_pct": 80, "transition": 1200}}],
+    },
+    {
+        "id": "1795203408273",
+        "alias": "Bedroom: evening wind-down",
+        "description": "At the wind-down time each night, if the bedroom light is on, drop it to warm/dim to protect sleep.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "input_datetime.bedroom_wind_down"}],
+        "conditions": [{"condition": "state", "entity_id": "light.bedroom_bedroom", "state": "on"}],
+        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.bedroom_bedroom"},
+                     "data": {"color_temp_kelvin": 2200, "brightness_pct": 30, "transition": 60}}],
+    },
+    {
+        "id": "1795203408978",
+        "alias": "Office: movement nudge",
+        "description": "A gentle Play-bar flash at intervals through the workday to prompt standing up / looking away. Lunch gap around 13:00. Toggle with input_boolean.work_movement_nudge.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "10:30:00"}, {"trigger": "time", "at": "12:00:00"},
+                     {"trigger": "time", "at": "14:30:00"}, {"trigger": "time", "at": "16:00:00"}],
+        "conditions": [
+            {"condition": "time", "weekday": ["mon", "tue", "wed", "thu", "fri"]},
+            {"condition": "state", "entity_id": "input_boolean.work_lighting", "state": "on"},
+            {"condition": "state", "entity_id": "input_boolean.work_movement_nudge", "state": "on"},
+            {"condition": "state", "entity_id": "light.office_hue_play_1", "state": "on"},
+        ],
+        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.office_hue_play_1"},
+                     "data": {"flash": "long"}}],
+    },
 ]
+
+# Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
+scripts = {
+    "office_focus": {
+        "alias": "Office: focus", "icon": "mdi:brightness-7",
+        "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                      "data": {"color_temp_kelvin": 5300, "brightness_pct": 100, "transition": 2}}],
+    },
+    "office_break": {
+        "alias": "Office: break", "icon": "mdi:coffee",
+        "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                      "data": {"color_temp_kelvin": 3000, "brightness_pct": 70, "transition": 2}}],
+    },
+}
 
 # Reference export of the UI/config helpers (zones + persons). These live in HA's registry;
 # this is the human-readable, diffable record. zone.home comes from core config, not listed here.
@@ -193,10 +275,19 @@ helpers = {
         {"name": "Alex Jenkinson", "device_trackers": ["device_tracker.alexs_iphone"]},
         {"name": "frigate", "device_trackers": []},
     ],
-    # Daily habit toggle. Ticked by the dashboard tile or the push action; reset to off at 04:00
-    # by the "Vitamins: reset for the new day" automation.
+    # Toggles. Vitamins: reset off at 04:00 by its automation. Work lighting: master enable for the
+    # WFH circadian automations. Work movement nudge: enables the workday Play-bar nudge.
     "input_boolean": [
         {"name": "Vitamins taken", "icon": "mdi:pill"},
+        {"name": "Work lighting", "icon": "mdi:desk-lamp", "initial": True},
+        {"name": "Work movement nudge", "icon": "mdi:seat-recline-normal", "initial": True},
+    ],
+    # Tunable times for the WFH lighting automations (edit on the dashboard without touching YAML).
+    "input_datetime": [
+        {"name": "Work start", "icon": "mdi:clock-start", "has_time": True, "has_date": False, "initial": "08:00:00"},
+        {"name": "Work end", "icon": "mdi:clock-end", "has_time": True, "has_date": False, "initial": "17:00:00"},
+        {"name": "Bedroom wake time", "icon": "mdi:weather-sunset-up", "has_time": True, "has_date": False, "initial": "07:40:00"},
+        {"name": "Bedroom wind down", "icon": "mdi:weather-night", "has_time": True, "has_date": False, "initial": "21:30:00"},
     ],
     # Per-cat "last seen" = timestamp of each cat's most recent litter-tray use. The PetKit
     # tray weight-identifies the individual; Frigate only ever sees a generic "cat". Template
@@ -242,5 +333,10 @@ with open(OUT / "energy-dashboard.yaml", "w") as f:
     f.write("# Reference export of the HA Energy Dashboard prefs (.storage/energy, registry-managed).\n"
             "# Re-apply on rebuild via Settings > Dashboards > Energy, or the energy/save_prefs API.\n")
     yaml.safe_dump(energy_dashboard, f, sort_keys=False, default_flow_style=False, allow_unicode=True, width=120)
+
+with open(OUT / "scripts.yaml", "w") as f:
+    f.write("# Deployed live via HA-MCP and committed here as source of truth.\n"
+            "# Faithful copy of the HA scripts; drop into /config/scripts.yaml on a rebuild.\n")
+    yaml.safe_dump(scripts, f, sort_keys=False, default_flow_style=False, allow_unicode=True, width=120)
 
 print("wrote:", sorted(p.name for p in OUT.iterdir()))
