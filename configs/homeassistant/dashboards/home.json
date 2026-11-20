@@ -293,6 +293,15 @@
             },
             {
               "type": "tile",
+              "entity": "script.living_room_relax",
+              "name": "Living room",
+              "icon": "mdi:sofa-outline",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
               "entity": "script.gaming_mode",
               "name": "Gaming",
               "icon": "mdi:gamepad-variant",

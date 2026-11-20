@@ -141,6 +141,7 @@ home = {
         section(
             heading("Modes", "mdi:lightbulb-group"),
             col(6, {"type": "tile", "entity": "script.relax_mode", "name": "Relax", "icon": "mdi:sofa"}),
+            col(6, {"type": "tile", "entity": "script.living_room_relax", "name": "Living room", "icon": "mdi:sofa-outline"}),
             col(6, {"type": "tile", "entity": "script.gaming_mode", "name": "Gaming", "icon": "mdi:gamepad-variant"}),
         ),
         section(
