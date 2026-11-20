@@ -105,6 +105,34 @@ Two things keep it from saturating (both set by `arr-setup.py --apply`, so they 
 Neither is a real fix for the USB ceiling — that's the **NAS migration** (ZFS ARC caches hot pieces in
 RAM, and a single pool means hardlinks are never even in question). See `../storage.md`.
 
+## Running `arr-setup.py` (seed/repair the wiring)
+
+`arr-setup.py` configures the stack over the app APIs (root folders, qBit client + categories,
+Prowlarr apps, hardlink pin, qBit seeding caps, Bazarr connections + English profile + subtitle
+auto-sync, Forms auth). It's **idempotent** and dry-run by default.
+
+It must run **inside LXC 210** (that's where the APIs are on `localhost` and Bazarr's `config.yaml`
+is on disk). From the Proxmox host (`nuc1`), use the wrapper — it `pct exec`s into the container for
+you, so there's nothing to configure:
+
+```bash
+cd ~/home-server
+# first time only: fill in API keys + qBit password (prompts, saves to the gitignored .env)
+python3 configs/media-pipeline/arr-setup.py            # on the host; API calls fail on localhost
+                                                        # but the keys get saved — that's all this is for
+# then run it for real, inside the container:
+./configs/media-pipeline/run-arr-setup.sh              # dry run in LXC 210
+./configs/media-pipeline/run-arr-setup.sh --apply      # write
+```
+
+The wrapper stages `.env` into the container, runs there, pulls back any keys the run generated, and
+cleans up. `.env` stays on the host (gitignored, source of truth). Override the container id with
+`MEDIA_CTID=NNN` if 210 ever changes. Needs `python3` in the LXC (`apt-get install -y python3` if not).
+
+> Running it straight on the host instead works too, but then you must set `SONARR_URL` /
+> `RADARR_URL` / `PROWLARR_URL` / `QBIT_HOST` / `BAZARR_URL` + `BAZARR_API_KEY` in `.env` to reach
+> the LXC over the LAN. The wrapper avoids all of that.
+
 ## Subtitles (Bazarr) — auto-sync
 
 Bazarr fetches subs for the library and **auto-syncs** them. `arr-setup.py` turns on ffsubsync
