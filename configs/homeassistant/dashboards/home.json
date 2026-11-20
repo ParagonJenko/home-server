@@ -2046,6 +2046,109 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "Weight",
+              "heading_style": "title",
+              "icon": "mdi:scale-bathroom"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.alexs_iphone_weight",
+              "name": "Current",
+              "icon": "mdi:scale-bathroom",
+              "color": "blue",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.weight_lost",
+              "name": "Lost so far",
+              "icon": "mdi:trending-down",
+              "color": "green",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.weight_to_target",
+              "name": "To target",
+              "icon": "mdi:target",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.weight_to_ideal",
+              "name": "To ideal",
+              "icon": "mdi:target",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "input_number.weight_target",
+              "name": "Target",
+              "icon": "mdi:flag",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "input_number.weight_ideal",
+              "name": "Ideal",
+              "icon": "mdi:flag-checkered",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "custom:mini-graph-card",
+              "entities": [
+                {
+                  "entity": "sensor.alexs_iphone_weight",
+                  "name": "Weight"
+                },
+                {
+                  "entity": "input_number.weight_target",
+                  "name": "Target",
+                  "color": "#f5a623",
+                  "show_line": true,
+                  "show_points": false,
+                  "show_legend": false
+                },
+                {
+                  "entity": "input_number.weight_ideal",
+                  "name": "Ideal",
+                  "color": "#44bba4",
+                  "show_line": true,
+                  "show_points": false,
+                  "show_legend": false
+                }
+              ],
+              "name": "Weight trend",
+              "hours_to_show": 2160,
+              "points_per_hour": 0.05,
+              "line_width": 3,
+              "show": {
+                "fill": "fade",
+                "extrema": true
+              },
+              "grid_options": {
+                "columns": 12
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "Location",
               "heading_style": "title",
               "icon": "mdi:map"

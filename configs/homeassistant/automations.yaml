@@ -571,3 +571,24 @@
       data:
         tag: step_nudge
         group: home
+- id: '1795215539343'
+  alias: 'Weight: Sunday weigh-in reminder'
+  description: Every Sunday morning, a gentle reminder to do the weekly weigh-in. Weekly cadence tracks the trend without
+    fixating on daily noise.
+  mode: single
+  triggers:
+  - trigger: time
+    at: 09:00:00
+  conditions:
+  - condition: time
+    weekday:
+    - sun
+  actions:
+  - action: notify.mobile_app_alexs_iphone
+    data:
+      title: ⚖️ Weekly weigh-in
+      message: Hop on the scales when you're up — same time each week keeps the trend honest. Currently {{ states('sensor.alexs_iphone_weight')
+        }} kg, {{ states('sensor.weight_to_target') }} kg from your {{ states('input_number.weight_target')|int }}kg target.
+      data:
+        tag: weigh_in
+        group: home

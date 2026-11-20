@@ -345,6 +345,18 @@ automations = [
                               "message": "You're at {{ states('sensor.alexs_iphone_steps') }} steps — about {{ states('sensor.steps_to_goal') }} to your {{ states('input_number.step_goal')|int }} goal. A quick loop would do it, no pressure.",
                               "data": {"tag": "step_nudge", "group": "home"}}}],
     },
+    {
+        "id": "1795215539343",
+        "alias": "Weight: Sunday weigh-in reminder",
+        "description": "Every Sunday morning, a gentle reminder to do the weekly weigh-in. Weekly cadence tracks the trend without fixating on daily noise.",
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "09:00:00"}],
+        "conditions": [{"condition": "time", "weekday": ["sun"]}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "⚖️ Weekly weigh-in",
+                              "message": "Hop on the scales when you're up — same time each week keeps the trend honest. Currently {{ states('sensor.alexs_iphone_weight') }} kg, {{ states('sensor.weight_to_target') }} kg from your {{ states('input_number.weight_target')|int }}kg target.",
+                              "data": {"tag": "weigh_in", "group": "home"}}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
@@ -445,6 +457,13 @@ helpers = {
         # Daily step goal (gentle default, raise as it gets easy). Drives the move-goal tracker + nudge.
         {"name": "Step goal", "icon": "mdi:shoe-print", "min": 1000, "max": 30000, "step": 500,
          "initial": 6000, "mode": "box", "unit_of_measurement": "steps"},
+        # Weight goals (kg). target = near-term, ideal = stretch, start = baseline for "lost so far".
+        {"name": "Weight target", "icon": "mdi:scale-bathroom", "min": 40, "max": 200, "step": 0.1,
+         "initial": 85, "mode": "box", "unit_of_measurement": "kg"},
+        {"name": "Weight ideal", "icon": "mdi:scale-bathroom", "min": 40, "max": 200, "step": 0.1,
+         "initial": 80, "mode": "box", "unit_of_measurement": "kg"},
+        {"name": "Weight start", "icon": "mdi:flag-checkered", "min": 40, "max": 200, "step": 0.1,
+         "initial": 93.5, "mode": "box", "unit_of_measurement": "kg"},
     ],
     # Days accrued into the energy month-to-date (run-rate denominator). Reset monthly.
     "counter": [
@@ -472,6 +491,13 @@ helpers = {
          "state": "{{ [states('input_number.step_goal')|int(6000) - states('sensor.alexs_iphone_steps')|int(0), 0] | max }}"},
         {"name": "Step goal progress", "unit_of_measurement": "%",
          "state": "{{ [ (states('sensor.alexs_iphone_steps')|int(0) / ([states('input_number.step_goal')|int(6000),1]|max) * 100) | round, 100] | min }}"},
+        # Weight: kg still to go to target/ideal, and kg lost since the baseline. Source = Apple Health.
+        {"name": "Weight to target", "unit_of_measurement": "kg",
+         "state": "{{ (states('sensor.alexs_iphone_weight')|float(0) - states('input_number.weight_target')|float(85)) | round(1) }}"},
+        {"name": "Weight to ideal", "unit_of_measurement": "kg",
+         "state": "{{ (states('sensor.alexs_iphone_weight')|float(0) - states('input_number.weight_ideal')|float(80)) | round(1) }}"},
+        {"name": "Weight lost", "unit_of_measurement": "kg",
+         "state": "{{ (states('input_number.weight_start')|float(0) - states('sensor.alexs_iphone_weight')|float(0)) | round(1) }}"},
     ],
     # Template binary_sensors: litter fill-due, and projected bill over budget.
     "template_binary_sensor": [

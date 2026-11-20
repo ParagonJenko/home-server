@@ -92,6 +92,30 @@ input_number:
   initial: 6000
   mode: box
   unit_of_measurement: steps
+- name: Weight target
+  icon: mdi:scale-bathroom
+  min: 40
+  max: 200
+  step: 0.1
+  initial: 85
+  mode: box
+  unit_of_measurement: kg
+- name: Weight ideal
+  icon: mdi:scale-bathroom
+  min: 40
+  max: 200
+  step: 0.1
+  initial: 80
+  mode: box
+  unit_of_measurement: kg
+- name: Weight start
+  icon: mdi:flag-checkered
+  min: 40
+  max: 200
+  step: 0.1
+  initial: 93.5
+  mode: box
+  unit_of_measurement: kg
 counter:
 - name: Energy days accrued
   icon: mdi:calendar-range
@@ -132,6 +156,18 @@ template:
   unit_of_measurement: '%'
   state: '{{ [ (states(''sensor.alexs_iphone_steps'')|int(0) / ([states(''input_number.step_goal'')|int(6000),1]|max) * 100)
     | round, 100] | min }}'
+- name: Weight to target
+  unit_of_measurement: kg
+  state: '{{ (states(''sensor.alexs_iphone_weight'')|float(0) - states(''input_number.weight_target'')|float(85)) | round(1)
+    }}'
+- name: Weight to ideal
+  unit_of_measurement: kg
+  state: '{{ (states(''sensor.alexs_iphone_weight'')|float(0) - states(''input_number.weight_ideal'')|float(80)) | round(1)
+    }}'
+- name: Weight lost
+  unit_of_measurement: kg
+  state: '{{ (states(''input_number.weight_start'')|float(0) - states(''sensor.alexs_iphone_weight'')|float(0)) | round(1)
+    }}'
 template_binary_sensor:
 - name: Litter fill due soon
   device_class: problem
