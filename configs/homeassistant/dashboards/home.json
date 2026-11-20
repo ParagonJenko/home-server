@@ -211,6 +211,10 @@
               "icon": "mdi:brightness-7",
               "grid_options": {
                 "columns": 6
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.office_focus"
               }
             },
             {
@@ -220,6 +224,10 @@
               "icon": "mdi:coffee",
               "grid_options": {
                 "columns": 6
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.office_break"
               }
             },
             {
@@ -229,6 +237,10 @@
               "icon": "mdi:briefcase-off",
               "grid_options": {
                 "columns": 6
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.end_work"
               }
             },
             {
@@ -289,6 +301,10 @@
               "icon": "mdi:sofa",
               "grid_options": {
                 "columns": 6
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.relax_mode"
               }
             },
             {
@@ -298,6 +314,10 @@
               "icon": "mdi:sofa-outline",
               "grid_options": {
                 "columns": 6
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.living_room_relax"
               }
             },
             {
@@ -307,6 +327,10 @@
               "icon": "mdi:gamepad-variant",
               "grid_options": {
                 "columns": 6
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.gaming_mode"
               }
             }
           ]

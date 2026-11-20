@@ -418,6 +418,13 @@ infra = {
 
 config = {"views": [home, lights, security, media, energy, cats, phone, infra]}
 
+# Make script tiles run on a single tap (default tile tap opens the more-info dialog instead).
+for _view in config["views"]:
+    for _sec in _view.get("sections", []):
+        for _card in _sec.get("cards", []):
+            if _card.get("type") == "tile" and _card.get("entity", "").startswith("script."):
+                _card["tap_action"] = {"action": "perform-action", "perform_action": _card["entity"]}
+
 OUT.write_text(json.dumps(config, indent=2, ensure_ascii=False))
 print("wrote", OUT, "-", len(json.dumps(config)), "bytes,", len(config["views"]), "views")
 # sanity: reparse
