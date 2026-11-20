@@ -341,12 +341,19 @@
       transition: 1200
 - id: '1795203408273'
   alias: 'Bedroom: evening wind-down'
-  description: At the wind-down time each night, if the bedroom light is on, drop it to warm/dim to protect sleep.
+  description: On weekday nights at the wind-down time, if the bedroom light is on, drop it to warm/dim to protect sleep.
   mode: single
   triggers:
   - trigger: time
     at: input_datetime.bedroom_wind_down
   conditions:
+  - condition: time
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
   - condition: state
     entity_id: light.bedroom_bedroom
     state: 'on'
@@ -360,16 +367,14 @@
       transition: 60
 - id: '1795203408978'
   alias: 'Office: movement nudge'
-  description: A gentle Play-bar flash at intervals through the workday to prompt standing up / looking away. Lunch gap around
-    13:00. Toggle with input_boolean.work_movement_nudge.
+  description: A gentle Play-bar flash through the workday to prompt standing up / looking away. Lunch at 12:00, so the midday
+    gap is 12:00-13:00. Toggle with input_boolean.work_movement_nudge.
   mode: single
   triggers:
   - trigger: time
     at: '10:30:00'
   - trigger: time
-    at: '12:00:00'
-  - trigger: time
-    at: '14:30:00'
+    at: '14:00:00'
   - trigger: time
     at: '16:00:00'
   conditions:
