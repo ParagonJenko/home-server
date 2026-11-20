@@ -357,6 +357,19 @@ automations = [
                               "message": "Hop on the scales when you're up — same time each week keeps the trend honest. Currently {{ states('sensor.alexs_iphone_weight') }} kg, {{ states('sensor.weight_to_target') }} kg from your {{ states('input_number.weight_target')|int }}kg target.",
                               "data": {"tag": "weigh_in", "group": "home"}}}],
     },
+    {
+        "id": "1795216112338",
+        "alias": "Doorbell: low battery reminder",
+        "description": "Warn at 20% and again at 10% on the doorbell battery so it gets charged before it dies. The template condition is the recommended guard against re-firing when the sensor blips to unavailable (trigger.from_state has no native condition).",
+        "mode": "single",
+        "triggers": [{"trigger": "numeric_state", "entity_id": "sensor.doorbell_battery", "below": 20, "id": "low"},
+                     {"trigger": "numeric_state", "entity_id": "sensor.doorbell_battery", "below": 10, "id": "critical"}],
+        "conditions": [{"condition": "template", "value_template": "{{ trigger.from_state.state not in ['unknown','unavailable'] }}"}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "{{ '🪫 Doorbell battery critical' if trigger.id == 'critical' else '🔋 Doorbell battery low' }}",
+                              "message": "Doorbell is at {{ states('sensor.doorbell_battery') }}% — {{ 'charge it now.' if trigger.id == 'critical' else 'charge it soon.' }}",
+                              "data": {"tag": "doorbell_battery", "group": "home"}}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
