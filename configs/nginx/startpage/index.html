@@ -75,9 +75,9 @@
     font-family:var(--font-head); font-weight:600; font-size:.95rem;
     background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--accent);
   }
-  .meta{min-width:0}
-  .name{font-weight:550; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .host{font-family:var(--font-mono); font-size:.68rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .meta{flex:1; min-width:0}
+  .name{display:block; font-weight:550; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .host{display:block; font-family:var(--font-mono); font-size:.68rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
   .empty{color:var(--muted); font-size:.9rem; padding:1rem 0; display:none}
   footer{margin-top:1rem; color:var(--faint); font-size:.72rem; font-family:var(--font-mono)}
@@ -151,6 +151,7 @@
       <div class="grid">
         <a class="card" href="https://ideasquared.co.uk"><span class="badge">iS</span><span class="meta"><span class="name">ideaSquared</span><span class="host">ideasquared.co.uk</span></span></a>
         <a class="card" href="https://github.com/ideaSquared/adopt-dont-shop"><span class="badge">AD</span><span class="meta"><span class="name">AdoptDontShop</span><span class="host">github · repo</span></span></a>
+        <a class="card" href="https://www.servercontrolpanel.de/scp-ui/servers/976874/screen"><span class="badge">SV</span><span class="meta"><span class="name">ADS server</span><span class="host">servercontrolpanel.de</span></span></a>
       </div>
     </div>
 
@@ -167,9 +168,9 @@
     <div class="group">
       <p class="group-label">Cloud &amp; admin</p>
       <div class="grid">
-        <a class="card" href="https://console.hetzner.cloud"><span class="badge">Hz</span><span class="meta"><span class="name">Hetzner Cloud</span><span class="host">console.hetzner.cloud</span></span></a>
+        <a class="card" href="https://dash.cloudflare.com/"><span class="badge">CF</span><span class="meta"><span class="name">Cloudflare</span><span class="host">dash.cloudflare.com</span></span></a>
+        <a class="card" href="https://mail.zoho.eu/zm/"><span class="badge">@</span><span class="meta"><span class="name">Zoho Mail</span><span class="host">mail.zoho.eu</span></span></a>
         <a class="card" href="https://drive.google.com"><span class="badge">Dr</span><span class="meta"><span class="name">Google Drive</span><span class="host">drive.google.com</span></span></a>
-        <a class="card" href="https://mail.google.com"><span class="badge">@</span><span class="meta"><span class="name">Workspace mail</span><span class="host">mail.google.com</span></span></a>
       </div>
     </div>
   </section>

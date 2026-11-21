@@ -42,7 +42,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 
 Three groups — nothing resolves without all three. `configs/pi/adguard-rewrites.py` reads this table and pushes them over the API.
 
-1. **Front names → Nginx's IP** (`.20`): `plex.home.alexjenkinson.com`, `frigate.home.alexjenkinson.com`, `sonarr.home.alexjenkinson.com`, `radarr.home.alexjenkinson.com`, `bazarr.home.alexjenkinson.com`, `prowlarr.home.alexjenkinson.com`, `qbittorrent.home.alexjenkinson.com`, `amp.home.alexjenkinson.com`.
+1. **Front names → Nginx's IP** (`.20`): `plex.home.alexjenkinson.com`, `frigate.home.alexjenkinson.com`, `sonarr.home.alexjenkinson.com`, `radarr.home.alexjenkinson.com`, `bazarr.home.alexjenkinson.com`, `prowlarr.home.alexjenkinson.com`, `qbittorrent.home.alexjenkinson.com`, `amp.home.alexjenkinson.com`, `start.home.alexjenkinson.com` (static start page served by Nginx, not a proxy).
 2. **Backend names → the container's own IP**: `plex-lxc.home.alexjenkinson.com`, `frigate-lxc.home.alexjenkinson.com`, `media-pipeline.home.alexjenkinson.com`, `amp-lxc.home.alexjenkinson.com`.
 3. **Hosts & cameras → their own IP**: `cam-*.home.alexjenkinson.com`, `homeassistant.home.alexjenkinson.com`, `nuc1`, `nuc2`, `pbs`, `pi.home.alexjenkinson.com`.
 
