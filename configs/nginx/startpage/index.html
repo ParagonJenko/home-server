@@ -1,0 +1,220 @@
+<title>Command Center</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: a quiet dark console — greeting + live clock up top, a filter, then two
+     zones (home server / ideaSquared) of grouped link cards in an auto-fitting grid. */
+  :root{
+    --bg:#0d1017; --surface:#161b24; --surface-hi:#1d2430; --border:#262e3b;
+    --fg:#e8ecf4; --muted:#8b95a7; --faint:#5b6577;
+    --home:#38c7b4;      /* home-server accent */
+    --idea:#f0a84a;      /* ideaSquared accent */
+    --focus:#6ea8ff;
+    color-scheme:dark;
+    --font-head:"Space Grotesk",system-ui,sans-serif;
+    --font-body:"Inter",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme="dark"]){
+      --bg:#f4f6fb; --surface:#ffffff; --surface-hi:#eef1f8; --border:#dde2ec;
+      --fg:#1a2030; --muted:#5a6476; --faint:#9aa3b4;
+      --home:#128577; --idea:#b9792a; --focus:#2563eb; color-scheme:light;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f6fb; --surface:#ffffff; --surface-hi:#eef1f8; --border:#dde2ec;
+    --fg:#1a2030; --muted:#5a6476; --faint:#9aa3b4;
+    --home:#128577; --idea:#b9792a; --focus:#2563eb; color-scheme:light;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg); color:var(--fg); font-family:var(--font-body);
+    line-height:1.5; margin:0;
+    padding-inline:max(20px,env(safe-area-inset-left,0px)) max(20px,env(safe-area-inset-right,0px));
+    padding-block:2.4rem 3rem;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px; margin:0 auto}
+
+  header{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:.6rem 1.2rem}
+  .greeting{font-family:var(--font-head); font-size:clamp(1.5rem,3.4vw,2.1rem); font-weight:600; letter-spacing:-.02em; text-wrap:balance; margin:0}
+  .clock{font-family:var(--font-mono); font-size:clamp(1.4rem,3vw,2rem); font-weight:500; font-variant-numeric:tabular-nums; color:var(--fg)}
+  .date{font-family:var(--font-mono); font-size:.8rem; color:var(--muted); text-align:right; display:block; margin-top:.15rem}
+
+  .search{margin:1.9rem 0 2.2rem; position:relative}
+  .search input{
+    width:100%; background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    color:var(--fg); font-family:var(--font-body); font-size:1rem; padding:.85rem 1rem .85rem 2.7rem;
+  }
+  .search input::placeholder{color:var(--faint)}
+  .search input:focus{outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 28%,transparent)}
+  .search svg{position:absolute; left:.9rem; top:50%; transform:translateY(-50%); width:1.1rem; height:1.1rem; color:var(--faint); pointer-events:none}
+
+  .zone{margin-bottom:2.6rem}
+  .zone-head{display:flex; align-items:center; gap:.7rem; margin:0 0 1.2rem}
+  .zone-head h2{font-family:var(--font-head); font-size:1.05rem; font-weight:600; letter-spacing:.01em; margin:0}
+  .dot{width:.6rem; height:.6rem; border-radius:50%; flex:0 0 auto}
+  .zone.home .dot{background:var(--home)} .zone.idea .dot{background:var(--idea)}
+  .zone-head .rule{flex:1; height:1px; background:var(--border)}
+
+  .group{margin-bottom:1.5rem}
+  .group-label{font-family:var(--font-mono); font-size:.68rem; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 .6rem}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(178px,1fr)); gap:.7rem}
+
+  .card{
+    display:flex; align-items:center; gap:.75rem; min-width:0;
+    background:var(--surface); border:1px solid var(--border); border-radius:11px;
+    padding:.7rem .8rem; text-decoration:none; color:inherit; transition:border-color .12s,background .12s,transform .12s;
+  }
+  .card:hover{background:var(--surface-hi); border-color:var(--accent,var(--home)); transform:translateY(-1px)}
+  .card:focus-visible{outline:none; border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 30%,transparent)}
+  .zone.home .card{--accent:var(--home)} .zone.idea .card{--accent:var(--idea)}
+  .badge{
+    flex:0 0 auto; width:2.1rem; height:2.1rem; border-radius:8px; display:grid; place-items:center;
+    font-family:var(--font-head); font-weight:600; font-size:.95rem;
+    background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--accent);
+  }
+  .meta{min-width:0}
+  .name{font-weight:550; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .host{font-family:var(--font-mono); font-size:.68rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
+  .empty{color:var(--muted); font-size:.9rem; padding:1rem 0; display:none}
+  footer{margin-top:1rem; color:var(--faint); font-size:.72rem; font-family:var(--font-mono)}
+  @media (max-width:420px){ body{padding-block:1.6rem 2.4rem} .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))} }
+</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+  <header>
+    <h1 class="greeting" id="greeting">Hello, Alex</h1>
+    <div><span class="clock" id="clock">--:--</span><span class="date" id="date"></span></div>
+  </header>
+
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="filter" type="text" placeholder="Filter services…  (press / to focus, Enter to open the top match)" autocomplete="off" spellcheck="false" aria-label="Filter services">
+  </div>
+
+  <section class="zone home">
+    <div class="zone-head"><span class="dot"></span><h2>Home server</h2><span class="rule"></span></div>
+
+    <div class="group">
+      <p class="group-label">Media</p>
+      <div class="grid">
+        <a class="card" href="https://plex.home.alexjenkinson.com"><span class="badge">P</span><span class="meta"><span class="name">Plex</span><span class="host">plex.home</span></span></a>
+        <a class="card" href="https://sonarr.home.alexjenkinson.com"><span class="badge">S</span><span class="meta"><span class="name">Sonarr</span><span class="host">sonarr.home</span></span></a>
+        <a class="card" href="https://radarr.home.alexjenkinson.com"><span class="badge">R</span><span class="meta"><span class="name">Radarr</span><span class="host">radarr.home</span></span></a>
+        <a class="card" href="https://bazarr.home.alexjenkinson.com"><span class="badge">B</span><span class="meta"><span class="name">Bazarr</span><span class="host">bazarr.home</span></span></a>
+        <a class="card" href="https://prowlarr.home.alexjenkinson.com"><span class="badge">Pr</span><span class="meta"><span class="name">Prowlarr</span><span class="host">prowlarr.home</span></span></a>
+        <a class="card" href="https://qbittorrent.home.alexjenkinson.com"><span class="badge">qB</span><span class="meta"><span class="name">qBittorrent</span><span class="host">qbittorrent.home</span></span></a>
+        <a class="card" href="http://media-pipeline.home.alexjenkinson.com:6246"><span class="badge">M</span><span class="meta"><span class="name">Maintainerr</span><span class="host">media-pipeline:6246</span></span></a>
+        <a class="card" href="http://media-pipeline.home.alexjenkinson.com:8265"><span class="badge">T</span><span class="meta"><span class="name">Tdarr</span><span class="host">media-pipeline:8265</span></span></a>
+        <a class="card" href="https://amp.home.alexjenkinson.com"><span class="badge">A</span><span class="meta"><span class="name">AMP (games)</span><span class="host">amp.home</span></span></a>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-label">Home &amp; cameras</p>
+      <div class="grid">
+        <a class="card" href="http://homeassistant.home.alexjenkinson.com"><span class="badge">HA</span><span class="meta"><span class="name">Home Assistant</span><span class="host">homeassistant.home</span></span></a>
+        <a class="card" href="https://frigate.home.alexjenkinson.com"><span class="badge">F</span><span class="meta"><span class="name">Frigate</span><span class="host">frigate.home</span></span></a>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-label">Monitoring</p>
+      <div class="grid">
+        <a class="card" href="http://pi.home.alexjenkinson.com:3000"><span class="badge">G</span><span class="meta"><span class="name">Grafana</span><span class="host">pi:3000</span></span></a>
+        <a class="card" href="http://pi.home.alexjenkinson.com:9090"><span class="badge">Pm</span><span class="meta"><span class="name">Prometheus</span><span class="host">pi:9090</span></span></a>
+        <a class="card" href="http://pi.home.alexjenkinson.com:9093"><span class="badge">Am</span><span class="meta"><span class="name">Alertmanager</span><span class="host">pi:9093</span></span></a>
+        <a class="card" href="http://pi.home.alexjenkinson.com:8081"><span class="badge">Ad</span><span class="meta"><span class="name">AdGuard</span><span class="host">pi:8081</span></span></a>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-label">Proxmox &amp; backup</p>
+      <div class="grid">
+        <a class="card" href="https://nuc1.home.alexjenkinson.com:8006"><span class="badge">N1</span><span class="meta"><span class="name">Proxmox — nuc1</span><span class="host">nuc1:8006</span></span></a>
+        <a class="card" href="https://nuc2.home.alexjenkinson.com:8006"><span class="badge">N2</span><span class="meta"><span class="name">Proxmox — nuc2</span><span class="host">nuc2:8006</span></span></a>
+        <a class="card" href="https://pbs.home.alexjenkinson.com:8007"><span class="badge">PB</span><span class="meta"><span class="name">Backup (PBS)</span><span class="host">pbs:8007</span></span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="zone idea">
+    <div class="zone-head"><span class="dot"></span><h2>ideaSquared</h2><span class="rule"></span></div>
+
+    <div class="group">
+      <p class="group-label">Project</p>
+      <div class="grid">
+        <a class="card" href="https://ideasquared.co.uk"><span class="badge">iS</span><span class="meta"><span class="name">ideaSquared</span><span class="host">ideasquared.co.uk</span></span></a>
+        <a class="card" href="https://github.com/ideaSquared/adopt-dont-shop"><span class="badge">AD</span><span class="meta"><span class="name">AdoptDontShop</span><span class="host">github · repo</span></span></a>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-label">Code</p>
+      <div class="grid">
+        <a class="card" href="https://github.com/ideaSquared"><span class="badge">GH</span><span class="meta"><span class="name">GitHub org</span><span class="host">github.com/ideaSquared</span></span></a>
+        <a class="card" href="https://github.com/ideaSquared/adopt-dont-shop/actions"><span class="badge">CI</span><span class="meta"><span class="name">ADS Actions</span><span class="host">github · CI</span></span></a>
+        <a class="card" href="https://github.com/orgs/ideaSquared/packages"><span class="badge">PK</span><span class="meta"><span class="name">GHCR packages</span><span class="host">github · ghcr</span></span></a>
+        <a class="card" href="https://github.com/ParagonJenko/home-server"><span class="badge">HS</span><span class="meta"><span class="name">home-server</span><span class="host">github · repo</span></span></a>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-label">Cloud &amp; admin</p>
+      <div class="grid">
+        <a class="card" href="https://console.hetzner.cloud"><span class="badge">Hz</span><span class="meta"><span class="name">Hetzner Cloud</span><span class="host">console.hetzner.cloud</span></span></a>
+        <a class="card" href="https://drive.google.com"><span class="badge">Dr</span><span class="meta"><span class="name">Google Drive</span><span class="host">drive.google.com</span></span></a>
+        <a class="card" href="https://mail.google.com"><span class="badge">@</span><span class="meta"><span class="name">Workspace mail</span><span class="host">mail.google.com</span></span></a>
+      </div>
+    </div>
+  </section>
+
+  <p class="empty" id="empty">No services match that filter.</p>
+  <footer>Self-hosted start page · home.alexjenkinson.com</footer>
+</div>
+
+<script>
+  // Greeting + live clock
+  var greet = document.getElementById('greeting'),
+      clk = document.getElementById('clock'),
+      dt = document.getElementById('date');
+  function tick(){
+    var n = new Date(), h = n.getHours();
+    var part = h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    greet.textContent = part + ', Alex';
+    clk.textContent = String(h).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+    dt.textContent = n.toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short'});
+  }
+  tick(); setInterval(tick, 10000);
+
+  // Live filter — hide non-matching cards and any group/zone left empty; Enter opens top match
+  var input = document.getElementById('filter'),
+      cards = Array.prototype.slice.call(document.querySelectorAll('.card')),
+      groups = Array.prototype.slice.call(document.querySelectorAll('.group')),
+      zones = Array.prototype.slice.call(document.querySelectorAll('.zone')),
+      empty = document.getElementById('empty');
+  cards.forEach(function(c){ c.dataset.search = c.textContent.toLowerCase().replace(/\s+/g,' ').trim(); });
+
+  function apply(){
+    var q = input.value.toLowerCase().trim(), any = false;
+    cards.forEach(function(c){ var m = !q || c.dataset.search.indexOf(q) !== -1; c.hidden = !m; if(m) any = true; });
+    groups.forEach(function(g){ g.hidden = !g.querySelector('.card:not([hidden])'); });
+    zones.forEach(function(z){ z.hidden = !z.querySelector('.card:not([hidden])'); });
+    empty.style.display = any ? 'none' : 'block';
+  }
+  input.addEventListener('input', apply);
+  input.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ var first = cards.find(function(c){ return !c.hidden; }); if(first) window.open(first.href, '_blank'); }
+    if(e.key === 'Escape'){ input.value = ''; apply(); }
+  });
+  // "/" focuses the filter from anywhere
+  document.addEventListener('keydown', function(e){
+    if(e.key === '/' && document.activeElement !== input){ e.preventDefault(); input.focus(); }
+  });
+  input.focus();
+</script>
