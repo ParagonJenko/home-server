@@ -336,13 +336,36 @@ automations = [
     {
         "id": "1795215270081",
         "alias": "Steps: evening nudge",
-        "description": "One gentle after-work nudge at 17:30 if the step goal isn't met yet. Encouraging, not naggy - fires at most once a day.",
+        "description": ("One gentle after-work nudge at 17:30 if the step goal isn't met. Scales the "
+                        "suggestion to how far off you are (no 'quick loop' when you're miles off) and "
+                        "swaps to indoor options (walking pad / weights) when weather.home is wet."),
         "mode": "single",
         "triggers": [{"trigger": "time", "at": "17:30:00"}],
         "conditions": [{"condition": "state", "entity_id": "binary_sensor.step_goal_met", "state": "off"}],
+        # Title flips to an indoor prompt when it's wet; message picks a tier (quick / decent / far-off)
+        # from steps remaining, and a dry vs indoor variant from the weather. Walking pad is the indoor
+        # step substitute; weights/bench get a mention for variety (they don't add steps but keep moving).
         "actions": [{"action": "notify.mobile_app_alexs_iphone",
-                     "data": {"title": "\U0001f45f Fancy a walk?",
-                              "message": "You're at {{ states('sensor.alexs_iphone_steps') }} steps — about {{ states('sensor.steps_to_goal') }} to your {{ states('input_number.step_goal')|int }} goal. A quick loop would do it, no pressure.",
+                     "data": {"title": ("{{ '\U0001f3e0 Too wet to walk?' if states('weather.home') in "
+                                        "['rainy','pouring','snowy','snowy-rainy','hail','lightning-rainy'] "
+                                        "else '\U0001f45f Fancy a walk?' }}"),
+                              "message": (
+                                  "{%- set rem = states('sensor.steps_to_goal')|int(0) -%}\n"
+                                  "{%- set cur = states('sensor.alexs_iphone_steps')|int(0) -%}\n"
+                                  "{%- set goal = states('input_number.step_goal')|int(6000) -%}\n"
+                                  "{%- set wet = states('weather.home') in "
+                                  "['rainy','pouring','snowy','snowy-rainy','hail','lightning-rainy'] -%}\n"
+                                  "{%- if rem <= 1500 -%}{%- set tier = 0 -%}"
+                                  "{%- elif rem <= 3500 -%}{%- set tier = 1 -%}"
+                                  "{%- else -%}{%- set tier = 2 -%}{%- endif -%}\n"
+                                  "{%- set dry = ['A quick loop would do it, no pressure.', "
+                                  "'A decent walk would get you there.', "
+                                  "'A fair way off — even a short walk or a stint on the walking pad chips at it.'] -%}\n"
+                                  "{%- set indoor = ['Too wet out — 15 min on the walking pad would finish it.', "
+                                  "'Too wet out — a walking-pad session would get you there.', "
+                                  "'Too wet out — hop on the walking pad; even part counts, or grab the weights for a change.'] -%}\n"
+                                  "You're at {{ cur }} steps, {{ rem }} off your {{ goal }}. "
+                                  "{{ (indoor if wet else dry)[tier] }}"),
                               "data": {"tag": "step_nudge", "group": "home"}}}],
     },
     {
