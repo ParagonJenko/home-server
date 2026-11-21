@@ -36,6 +36,24 @@ services:
     ports: [ "6767:6767" ]
     mem_limit: 1g
     restart: unless-stopped
+  # Whisper ASR — generates subtitles FROM the audio track when no provider has one (and because
+  # the result is timed to the audio, it's in sync by construction — the fix for both "can't find
+  # subs" and "subs are out of sync"). Free, local, CPU-only (no GPU on this unprivileged LXC).
+  # Bazarr's built-in "whisperai" provider points at http://whisper:9000 over the compose network,
+  # so no host port is published (R20). arr-setup.py wires the provider; this just runs the engine.
+  # MODEL KNOB — ASR_MODEL: tiny < base < small < medium < large-v3 (bigger = better + slower).
+  # `small` is the CPU sweet spot; drop to `base` if the NUC struggles alongside Tdarr/the Arrs,
+  # raise to `medium` for quality if you can wait. faster_whisper (int8) is the quick CPU engine.
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest   # ENTER: pin a version tag
+    environment:
+      ASR_ENGINE: "faster_whisper"
+      ASR_MODEL: "small"
+      TZ: "Europe/London"
+    volumes:
+      - /opt/whisper/cache:/root/.cache     # persist the downloaded model across restarts
+    mem_limit: 4g                           # small int8 fits; medium/large need more
+    restart: unless-stopped
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest      # ENTER: pin a version tag
     environment: { PUID: "1000", PGID: "1000", TZ: "Europe/London" }

@@ -165,6 +165,49 @@ To only sync the uncertain ones instead, turn on the **Series/Movies Score thres
   time. 96% leaves those alone and syncs everything less certain — which is the stuff that actually
   drifts. Either way fixes out-of-sync subs; sync-all just also re-times the already-good ones (harmless).
 
+## No subtitle exists? Generate it (Whisper)
+
+When no provider has a subtitle (or you don't want to pay for one), the **whisper** service transcribes
+the **audio track** into a subtitle. It's free, runs locally, and — because the text is timed to the
+actual audio — the result is **in sync by construction**, so it also sidesteps the out-of-sync problem
+entirely for anything it makes. Bazarr's built-in **`whisperai`** provider drives it.
+
+- **How it fits**: Whisper is a **last-resort** provider (low score), so Bazarr only uses it when the
+  normal providers come up empty. English audio → English subs; non-English audio → it can translate to
+  English. It runs on a missing-sub search (automatic or manual).
+- **Where it runs**: `whisper` container in the LXC 210 compose, reached at `http://whisper:9000` over
+  the compose network (no host port). CPU-only — there's no GPU on this unprivileged LXC.
+- **Model knob** (`docker-compose.yaml` → `whisper` → `ASR_MODEL`): `tiny < base < small < medium <
+  large-v3`. Default **`small`** (the CPU sweet spot). Drop to `base` if the NUC struggles next to Tdarr/
+  the Arrs; raise to `medium` for quality if you can wait. The model downloads once into
+  `/opt/whisper/cache` and persists. A 45-min episode on `small`/CPU is minutes, not seconds — it's a
+  background job, not instant.
+- **Pinned in the repo**: the service is in `docker-compose.yaml`; `arr-setup.py` enables the provider
+  (`settings-whisperai-*`) and **appends** `whisperai` to your enabled providers without wiping any free
+  ones you already have.
+- **Set it by hand** if the `arr-setup.py` Bazarr step 500s: Bazarr → Settings → Providers → **add
+  Whisper** → Endpoint `http://whisper:9000` → Save; then Settings → Subtitles and make sure your
+  language profile is applied. Then re-search a title with no sub.
+
+### Deploy (pull-only boxes)
+
+From `root@nuc1`, after `git pull`:
+
+```bash
+pct push 210 configs/media-pipeline/docker-compose.yaml /opt/media-pipeline/docker-compose.yaml
+pct exec 210 -- docker compose -f /opt/media-pipeline/docker-compose.yaml up -d whisper   # pulls model on first run
+pct exec 210 -- ls /opt/whisper/cache 2>/dev/null   # (docker creates the bind dir; model lands here)
+```
+
+Then apply the Bazarr wiring with the usual wrapper (runs `arr-setup.py` inside LXC 210):
+
+```bash
+configs/media-pipeline/run-arr-setup.sh --apply
+```
+
+**Already-wrong / missing subs on existing files**: trigger a fresh search in Bazarr (per-item, or the
+mass-edit → *Search* ) — found subs get auto-synced, and anything still missing gets a Whisper sub.
+
 ## Mental model in one line
 
 **Prowlarr** feeds indexers to the **Sonarr/Radarr** brains → they grab via **qBittorrent** → import by
