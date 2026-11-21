@@ -370,6 +370,33 @@ automations = [
                               "message": "Doorbell is at {{ states('sensor.doorbell_battery') }}% — {{ 'charge it now.' if trigger.id == 'critical' else 'charge it soon.' }}",
                               "data": {"tag": "doorbell_battery", "group": "home"}}}],
     },
+    {
+        "id": "1795281091250",
+        "alias": "Office weekend sunset lights",
+        "description": ("On weekends, when the sun gets low (the SE-facing office darkens well before "
+                        "true sunset), turn the office lights on warm IF I'm in there and they're off. "
+                        "Triggered on sun elevation rather than a lux sensor: the Hue motion sensor's "
+                        "illuminance reads ~0 all day (it isn't by the window), so it can't stand in for "
+                        "window light level. Drop the `below` elevation to fire later, raise it for earlier. "
+                        "A proper lux sensor on the SE windowsill would let this switch to true light-level "
+                        "triggering (see sensors-to-buy.md)."),
+        "mode": "single",
+        # elevation below 5 deg ~= 45-60 min before sunset in UK winter; tracks the seasons automatically.
+        "triggers": [{"trigger": "numeric_state", "entity_id": "sun.sun", "attribute": "elevation", "below": 5}],
+        # Weekend only; office occupied (motion now, or cleared within 20 min — I sit still at the desk);
+        # and only if the office lights are currently off, so it won't stomp a scene/relax mode I've set.
+        # The recency template has no native equivalent (native `for:` measures continuous time, the opposite).
+        "conditions": [
+            {"condition": "time", "weekday": ["sat", "sun"]},
+            {"condition": "template",
+             "value_template": ("{{ is_state('binary_sensor.hue_motion_sensor_motion','on') or "
+                                "(states.binary_sensor.hue_motion_sensor_motion.last_changed is not none and "
+                                "(now() - states.binary_sensor.hue_motion_sensor_motion.last_changed).total_seconds() < 1200) }}")},
+            {"condition": "state", "entity_id": "light.office_office", "state": "off"},
+        ],
+        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                     "data": {"color_temp_kelvin": 2500, "brightness_pct": 60}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).

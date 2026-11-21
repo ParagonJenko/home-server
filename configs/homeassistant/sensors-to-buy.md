@@ -22,6 +22,7 @@ If you don't already have one on the HA box, everything below needs it (one-time
 | **Water leak** | Aqara Water Leak Sensor T1 | ~£15 | 2–3 | Leak **alerts** under sink / washing machine / boiler (alert only — see note) |
 | **Door/window contact** | Aqara Door & Window Sensor (`MCCGQ11LM`) | ~£13 | 3–5 | "Window open while heating's on", "front door left open", feeds an alarm |
 | **Motion** | Sonoff SNZB-03 (~£7) or Aqara P1 (`RTCGQ14LM`, ~£15) | £7–15 | 2–3 | **Night motion lights** (low-brightness hall/bathroom), alarm trigger |
+| **Ambient light (lux)** | Aqara Light Sensor T1 (`GZCGQ11LM`) | ~£15 | 1–2 | **True light-level triggers** — put one on the SE office windowsill and the weekend sunset-lights automation can fire on real room brightness instead of sun elevation. The Hue motion sensor's built-in illuminance reads ~0 all day, so it can't do this. |
 | **Power-monitoring smart plug** | Aqara Smart Plug EU (`SP-EUC01`) or Sonoff S60TPF | ~£18 | 2–3 | **Appliance-done pings** (washer/dryer/dishwasher) + populates the empty `device_consumption` in your Energy Dashboard |
 | **Zigbee siren** *(optional)* | Sonoff/Heiman Zigbee siren | ~£20 | 1 | Audible alarm if you add Alarmo (arm-away using the contact/motion sensors) |
 
@@ -37,6 +38,7 @@ If you don't already have one on the HA box, everything below needs it (one-time
 Once these are paired, these are build-ready (I can script them into the repo + go live, same as vitamins):
 - **Mould/dewpoint** ← temp+humidity sensors
 - **Night motion lights** ← motion sensors (+ your existing Hue)
+- **True light-level lighting** (incl. the weekend office sunset automation) ← ambient light/lux sensor on the SE windowsill
 - **Window-open-while-heating / door-left-open** ← contact sensors
 - **Appliance-done + per-device energy** ← power plugs
 - **Leak alerts** ← leak sensors
