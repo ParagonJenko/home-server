@@ -379,8 +379,10 @@ def configure_bazarr(env, sk, rk, apply):
     with UK releases), and the free local Whisper provider (generates a sub from the audio
     when no provider has one — in-sync by construction). Paid providers still need accounts;
     Whisper needs none, just the whisper compose service. Bazarr's own API key is
-    taken from BAZARR_API_KEY if set (for off-box runs), else read from its config.yaml. One
-    POST /api/system/settings drives all of it."""
+    taken from BAZARR_API_KEY if set (for off-box runs), else read from its config.yaml. Posted
+    as four labelled chunks (connections / profile / auto-sync / Whisper) so Bazarr's fussy
+    settings API can't let one bad field 500 the whole thing — each chunk reports ok or fails
+    on its own, and the next run names which section it rejected."""
     conf = env.get("BAZARR_CONFIG", "/opt/bazarr/config/config/config.yaml")
     base = env.get("BAZARR_URL", "http://localhost:6767")
     # BAZARR_API_KEY lets this run off-box (where config.yaml isn't on disk); else read the file.
@@ -397,7 +399,31 @@ def configure_bazarr(env, sk, rk, apply):
                 "items": [{"id": 1, "language": "en", "audio_exclude": "False",
                            "hi": "False", "forced": "False"}],
                 "mustContain": [], "mustNotContain": [], "originalFormat": None, "tag": None}]
-    fields = [
+    base_q = base + "/api/system/settings?" + urllib.parse.urlencode({"apikey": apikey})
+
+    def post(label, group):
+        """POST one labelled group of settings. Bazarr's settings API 500s easily on a single
+        bad field, so each group goes on its own request — a failure in one (e.g. the language
+        profile) no longer blocks the others, above all auto-sync, which is what actually fixes
+        out-of-sync subs. Prints ok / the failure, and returns success."""
+        try:
+            req = urllib.request.Request(base_q, data=urllib.parse.urlencode(group).encode())
+            req.add_header("X-API-KEY", apikey)
+            urllib.request.urlopen(req, timeout=30)  # 204 on success
+            print(f"    {label}: ok")
+            return True
+        except urllib.error.HTTPError as e:
+            body = ""
+            try:
+                body = e.read().decode()[:200]
+            except Exception:
+                pass
+            print(f"    {label}: FAILED HTTP {e.code} — {body}")
+        except urllib.error.URLError as e:
+            print(f"    {label}: FAILED — {e}")
+        return False
+
+    post("Sonarr + Radarr connections", [
         ("settings-general-use_sonarr", "true"),
         ("settings-sonarr-ip", env.get("SONARR_SVC_HOST", "sonarr")),
         ("settings-sonarr-port", "8989"),
@@ -410,14 +436,19 @@ def configure_bazarr(env, sk, rk, apply):
         ("settings-radarr-base_url", "/"),
         ("settings-radarr-ssl", "false"),
         ("settings-radarr-apikey", rk),
+    ])
+    post("English profile + defaults", [
         ("languages-enabled", "en"),
         ("languages-profiles", json.dumps(profile)),
         ("settings-general-serie_default_enabled", "true"),
         ("settings-general-serie_default_profile", "1"),
         ("settings-general-movie_default_enabled", "true"),
         ("settings-general-movie_default_profile", "1"),
-        # --- Automatic subtitle sync (ffsubsync): align every downloaded sub to the audio
-        # track. Fixes out-of-sync subs at the source — offset AND framerate drift. ---
+    ])
+    # The one that matters for out-of-sync subs: ffsubsync aligns every downloaded sub to the
+    # audio track (fixes offset AND the 23.976-vs-25fps drift). Posted on its own so a failure
+    # elsewhere can't stop it being enabled.
+    post("auto-sync (ffsubsync)", [
         ("settings-subsync-use_subsync", "true"),              # sync after every download
         ("settings-subsync-use_subsync_threshold", "false"),   # sync all series subs, not only low-score
         ("settings-subsync-use_subsync_movie_threshold", "false"),  # ...same for movies
@@ -425,16 +456,10 @@ def configure_bazarr(env, sk, rk, apply):
         ("settings-subsync-gss", "true"),                      # golden-section search — more accurate alignment
         ("settings-subsync-max_offset_seconds", "60"),         # cap how far it will shift
         ("settings-subsync-debug", "false"),
-        # --- Whisper: generate a sub from the audio when no provider has one. Free, local,
-        # last-resort (low score), and in-sync by construction. Endpoint is the compose service. ---
-        ("settings-whisperai-endpoint", env.get("WHISPER_URL", "http://whisper:9000")),
-        ("settings-whisperai-response", "5"),      # seconds to wait for the engine to answer a probe
-        ("settings-whisperai-timeout", "3600"),    # max seconds per transcription (CPU can be slow)
-        ("settings-whisperai-loglevel", "INFO"),
-    ]
-    # Turn the whisperai provider ON without wiping any free providers already enabled: read the
-    # current list and append. enabled_providers is a repeated form field (Flask getlist).
-    base_q = base + "/api/system/settings?" + urllib.parse.urlencode({"apikey": apikey})
+    ])
+    # Whisper: generate a sub from the audio when no provider has one (free, local, last-resort,
+    # in-sync by construction). Read current providers and append whisperai so free ones survive;
+    # enabled_providers is a repeated form field (Flask getlist).
     greq = urllib.request.Request(base_q)
     greq.add_header("X-API-KEY", apikey)
     try:
@@ -446,14 +471,12 @@ def configure_bazarr(env, sk, rk, apply):
         prov = []                                  # worst case: set just whisperai (UI keeps the rest)
     if "whisperai" not in prov:
         prov.append("whisperai")
-    fields += [("settings-general-enabled_providers", p) for p in prov]
-
-    url = base + "/api/system/settings?" + urllib.parse.urlencode({"apikey": apikey})
-    req = urllib.request.Request(url, data=urllib.parse.urlencode(fields).encode())
-    req.add_header("X-API-KEY", apikey)  # Bazarr accepts the key as header or query param
-    urllib.request.urlopen(req, timeout=20)  # 204 on success; 406 (validation) raises
-    print("    Sonarr + Radarr connected; English profile default; auto-sync on; "
-          f"Whisper generation enabled ({', '.join(prov)})")
+    post(f"Whisper provider ({', '.join(prov)})", [
+        ("settings-whisperai-endpoint", env.get("WHISPER_URL", "http://whisper:9000")),
+        ("settings-whisperai-response", "5"),      # seconds to wait for the engine to answer a probe
+        ("settings-whisperai-timeout", "3600"),    # max seconds per transcription (CPU can be slow)
+        ("settings-whisperai-loglevel", "INFO"),
+    ] + [("settings-general-enabled_providers", p) for p in prov])
 
 
 def step(label, fn):
