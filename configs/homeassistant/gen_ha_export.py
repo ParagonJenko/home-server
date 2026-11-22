@@ -431,6 +431,24 @@ automations = [
         "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
                      "data": {"color_temp_kelvin": 2500, "brightness_pct": 60}}],
     },
+    {
+        "id": "1795366119564",
+        "alias": "RoboVac: scheduled runs",
+        "description": ("Starts the vacuum at 12:00 daily. Also at 19:00, but only if it's docked — a "
+                        "proxy for 'fully charged', since this RoboVac (Eufy) exposes no battery level. "
+                        "Docked at 7pm means it's been charging since the midday run; if it's still "
+                        "cleaning, stuck or errored it won't be docked, so the evening run is skipped."),
+        "mode": "single",
+        "triggers": [{"trigger": "time", "at": "12:00:00", "id": "midday"},
+                     {"trigger": "time", "at": "19:00:00", "id": "evening"}],
+        # Midday always; evening only when docked (the available stand-in for a battery check).
+        "conditions": [{"condition": "or", "conditions": [
+            {"condition": "trigger", "id": "midday"},
+            {"condition": "and", "conditions": [
+                {"condition": "trigger", "id": "evening"},
+                {"condition": "state", "entity_id": "vacuum.robovac", "state": "docked"}]}]}],
+        "actions": [{"action": "vacuum.start", "target": {"entity_id": "vacuum.robovac"}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
