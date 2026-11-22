@@ -409,6 +409,25 @@
             },
             {
               "type": "tile",
+              "entity": "sensor.robovac_error",
+              "name": "Vac error",
+              "icon": "mdi:robot-vacuum-alert",
+              "color": "red",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.robovac_battery",
+              "name": "Vac battery",
+              "icon": "mdi:battery-charging",
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
               "entity": "binary_sensor.litter_tray_wastebin",
               "name": "Litter bin",
               "icon": "mdi:delete-alert",

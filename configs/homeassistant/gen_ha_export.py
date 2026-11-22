@@ -450,6 +450,24 @@ automations = [
                 {"condition": "numeric_state", "entity_id": "sensor.robovac_battery", "above": 94}]}]}],
         "actions": [{"action": "vacuum.start", "target": {"entity_id": "vacuum.robovac"}}],
     },
+    {
+        "id": "1795368136888",
+        "alias": "RoboVac: error alert",
+        "description": ("Push when the RoboVac reports a real device error (stuck, brush/wheel jam, bin, "
+                        "etc.) so it surfaces in HA, not just the Eufy app. Fires when sensor.robovac_error "
+                        "is anything but 'No error'/unavailable/unknown. Connection drops are deliberately "
+                        "ignored (too frequent — they show on the vacuum entity, not this sensor)."),
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "sensor.robovac_error"}],
+        # `not (state in [the non-error values])` — native, no template. A real error string passes.
+        "conditions": [{"condition": "not", "conditions": [
+            {"condition": "state", "entity_id": "sensor.robovac_error",
+             "state": ["No error", "unavailable", "unknown", "none", ""]}]}],
+        "actions": [{"action": "notify.mobile_app_alexs_iphone",
+                     "data": {"title": "\U0001f916 RoboVac error",
+                              "message": "{{ states('sensor.robovac_error') }} — needs a hand.",
+                              "data": {"tag": "robovac_error", "group": "home"}}}],
+    },
 ]
 
 # Scripts created via HA-MCP (tappable from the Home dashboard's "Work lighting" section).
