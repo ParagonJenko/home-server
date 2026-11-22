@@ -434,19 +434,20 @@ automations = [
     {
         "id": "1795366119564",
         "alias": "RoboVac: scheduled runs",
-        "description": ("Starts the vacuum at 12:00 daily. Also at 19:00, but only if it's docked — a "
-                        "proxy for 'fully charged', since this RoboVac (Eufy) exposes no battery level. "
-                        "Docked at 7pm means it's been charging since the midday run; if it's still "
-                        "cleaning, stuck or errored it won't be docked, so the evening run is skipped."),
+        "description": ("Starts the vacuum at 12:00 daily. Also at 19:00, but only if the battery is "
+                        "at/above 95% (fully charged after the midday run). Offline/unavailable or not "
+                        "charged → evening run skipped. The Eufy 30C exposes battery + error only, no "
+                        "bin-full sensor, so emptying the bin stays manual."),
         "mode": "single",
         "triggers": [{"trigger": "time", "at": "12:00:00", "id": "midday"},
                      {"trigger": "time", "at": "19:00:00", "id": "evening"}],
-        # Midday always; evening only when docked (the available stand-in for a battery check).
+        # Midday always; evening only when fully charged. `above: 94` = >=95% (unavailable fails it,
+        # so an offline vac is skipped). sensor.robovac_battery is the real charge level the 30C reports.
         "conditions": [{"condition": "or", "conditions": [
             {"condition": "trigger", "id": "midday"},
             {"condition": "and", "conditions": [
                 {"condition": "trigger", "id": "evening"},
-                {"condition": "state", "entity_id": "vacuum.robovac", "state": "docked"}]}]}],
+                {"condition": "numeric_state", "entity_id": "sensor.robovac_battery", "above": 94}]}]}],
         "actions": [{"action": "vacuum.start", "target": {"entity_id": "vacuum.robovac"}}],
     },
 ]
