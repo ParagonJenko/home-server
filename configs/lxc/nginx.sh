@@ -38,4 +38,21 @@ rm -f "$TMP"
 pct push "$CTID" ../nginx/ssl.conf        /opt/nginx/ssl.conf
 pct push "$CTID" ../nginx/enable-tls.sh   /opt/nginx/enable-tls.sh
 pct push "$CTID" ../nginx/verify-nginx.sh /opt/nginx/verify-nginx.sh
-ok "nginx ${CTID} up — serving default site; proxy config + TLS tooling staged in /opt/nginx."
+
+# Re-run after TLS is live (cert exists): promote the staged config and reload, so a new
+# server block in homelab.conf actually takes effect. Before TLS, enable-tls.sh does this.
+if pct exec "$CTID" -- test -f /etc/nginx/conf.d/homelab.conf; then
+  say "TLS already live — promote the new homelab.conf + reload (only if nginx -t passes)"
+  pct exec "$CTID" -- cp /etc/nginx/conf.d/homelab.conf /etc/nginx/conf.d/homelab.conf.bak
+  pct exec "$CTID" -- install -m 644 /opt/nginx/homelab.conf /etc/nginx/conf.d/homelab.conf
+  if pct exec "$CTID" -- nginx -t; then
+    pct exec "$CTID" -- systemctl reload nginx
+    pct exec "$CTID" -- rm -f /etc/nginx/conf.d/homelab.conf.bak
+    ok "nginx ${CTID} reloaded with the updated homelab.conf."
+  else
+    pct exec "$CTID" -- mv /etc/nginx/conf.d/homelab.conf.bak /etc/nginx/conf.d/homelab.conf
+    warn "nginx -t FAILED — restored the previous config, nothing reloaded. Fix homelab.conf and re-run."
+  fi
+else
+  ok "nginx ${CTID} up — serving default site; proxy config + TLS tooling staged in /opt/nginx."
+fi
