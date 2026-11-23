@@ -38,6 +38,9 @@ rm -f "$TMP"
 pct push "$CTID" ../nginx/ssl.conf        /opt/nginx/ssl.conf
 pct push "$CTID" ../nginx/enable-tls.sh   /opt/nginx/enable-tls.sh
 pct push "$CTID" ../nginx/verify-nginx.sh /opt/nginx/verify-nginx.sh
+# start page (static, served by the start.home block) — always refresh it
+pct exec "$CTID" -- mkdir -p /etc/nginx/startpage
+pct push "$CTID" ../nginx/startpage/index.html /etc/nginx/startpage/index.html
 
 # Re-run after TLS is live (cert exists): promote the staged config and reload, so a new
 # server block in homelab.conf actually takes effect. Before TLS, enable-tls.sh does this.
