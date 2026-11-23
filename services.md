@@ -15,7 +15,6 @@ The service map and the Nginx routing table. Every proxied service has two DNS n
 | maintainerr-keeper (Discord bot) | nuc1 | LXC 210 | — (outbound gateway only) | — |
 | Plex | nuc1 | LXC 220 | 32400 | via front name |
 | AMP | nuc1 | LXC 230 | TBD | — |
-| social-generator (personal project) | nuc1 | LXC 250 | 8087 | via front name |
 | property-finder (personal project) | nuc1 | LXC 260 | 3000 (UI), 3001 (API) | via front name (UI; it proxies `/api` itself) |
 | Frigate | nuc2 | LXC 111 | 8971 (auth UI), 5000 (**unauth — never expose**) | via front name |
 | Home Assistant | nuc2 | VM 910 | 80 | — (direct; serves on :80 from a restored config, HAOS default is 8123) |
@@ -39,7 +38,6 @@ Routes by `Host:` header. Backends are addressed by name, through the Pi resolve
 | `radarr.home.alexjenkinson.com` | `media-pipeline.home.alexjenkinson.com:7878` |
 | `bazarr.home.alexjenkinson.com` | `media-pipeline.home.alexjenkinson.com:6767` |
 | `prowlarr.home.alexjenkinson.com` | `media-pipeline.home.alexjenkinson.com:9696` |
-| `social.home.alexjenkinson.com` | `social-lxc.home.alexjenkinson.com:8087` |
 | `property.home.alexjenkinson.com` | `property-lxc.home.alexjenkinson.com:3000` |
 
 ## Notes

@@ -33,7 +33,6 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | amp — LXC 230 | reserved | `192.168.1.23` | BC:24:11:07:4E:37 | amp-lxc.home.alexjenkinson.com (front: amp.home.alexjenkinson.com) | Proxied by Nginx (:443 → backend :8080). Backend name points here; front points at Nginx |
 | frigate — LXC 111 (nuc2, privileged) | reserved | `192.168.1.24` | BC:24:11:93:A9:FA | frigate-lxc.home.alexjenkinson.com (front: frigate.home.alexjenkinson.com) | Port 5000 is unauthenticated — never proxy/expose |
 | homeassistant — VM 910 (nuc2) | reserved | `192.168.1.25` | bc:24:11:27:42:ce | homeassistant.home.alexjenkinson.com | Accessed directly on :80 (restored config; HAOS default is 8123). Proxying needs `use_x_forwarded_for` + `trusted_proxies` in HA's config |
-| social-generator — LXC 250 | reserved | `192.168.1.26` | TBD | social-lxc.home.alexjenkinson.com (front: social.home.alexjenkinson.com) | Personal project. Review page :8087, proxied by Nginx. Drafts — LAN only |
 | property-finder — LXC 260 | reserved | `192.168.1.27` | TBD | property-lxc.home.alexjenkinson.com (front: property.home.alexjenkinson.com) | Personal project. UI :3000 (API :3001 behind it), proxied by Nginx. LAN only |
 | cam-living-room | reserved | `192.168.1.30` | 10:2C:B1:DB:1A:F6 | cam-living-room.home.alexjenkinson.com | Frigate opens RTSP by name — a lost reservation breaks recording. **Different vendor OUI (10:2C:B1) from the Eufy cams — confirm its RTSP path isn't `/live0`** |
 | cam-kitchen | reserved | `192.168.1.31` | 04:17:B6:6E:CD:14 | cam-kitchen.home.alexjenkinson.com | Eufy/Anker (04:17:B6) |
@@ -44,8 +43,8 @@ MACs are generated at `pct create`, so collect them off the real device after St
 
 Three groups — nothing resolves without all three. `configs/pi/adguard-rewrites.py` reads this table and pushes them over the API.
 
-1. **Front names → Nginx's IP** (`.20`): `plex.home.alexjenkinson.com`, `frigate.home.alexjenkinson.com`, `sonarr.home.alexjenkinson.com`, `radarr.home.alexjenkinson.com`, `bazarr.home.alexjenkinson.com`, `prowlarr.home.alexjenkinson.com`, `qbittorrent.home.alexjenkinson.com`, `amp.home.alexjenkinson.com`, `social.home.alexjenkinson.com`, `property.home.alexjenkinson.com`, `start.home.alexjenkinson.com` (static start page served by Nginx, not a proxy).
-2. **Backend names → the container's own IP**: `plex-lxc.home.alexjenkinson.com`, `frigate-lxc.home.alexjenkinson.com`, `media-pipeline.home.alexjenkinson.com`, `amp-lxc.home.alexjenkinson.com`, `social-lxc.home.alexjenkinson.com`, `property-lxc.home.alexjenkinson.com`.
+1. **Front names → Nginx's IP** (`.20`): `plex.home.alexjenkinson.com`, `frigate.home.alexjenkinson.com`, `sonarr.home.alexjenkinson.com`, `radarr.home.alexjenkinson.com`, `bazarr.home.alexjenkinson.com`, `prowlarr.home.alexjenkinson.com`, `qbittorrent.home.alexjenkinson.com`, `amp.home.alexjenkinson.com`, `property.home.alexjenkinson.com`, `start.home.alexjenkinson.com` (static start page served by Nginx, not a proxy).
+2. **Backend names → the container's own IP**: `plex-lxc.home.alexjenkinson.com`, `frigate-lxc.home.alexjenkinson.com`, `media-pipeline.home.alexjenkinson.com`, `amp-lxc.home.alexjenkinson.com`, `property-lxc.home.alexjenkinson.com`.
 3. **Hosts & cameras → their own IP**: `cam-*.home.alexjenkinson.com`, `homeassistant.home.alexjenkinson.com`, `nuc1`, `nuc2`, `pbs`, `pi.home.alexjenkinson.com`.
 
 ## Resolver policy

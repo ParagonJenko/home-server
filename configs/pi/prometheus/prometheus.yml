@@ -42,7 +42,6 @@ scrape_configs:
       - { targets: ['http://frigate-lxc.home.alexjenkinson.com:8971/'],       labels: { service: frigate } }
       - { targets: ['http://homeassistant.home.alexjenkinson.com:80/'],       labels: { service: homeassistant } }
       - { targets: ['http://amp-lxc.home.alexjenkinson.com:8080/'],           labels: { service: amp } }
-      - { targets: ['http://social-lxc.home.alexjenkinson.com:8087/'],        labels: { service: social-generator } }
       - { targets: ['http://property-lxc.home.alexjenkinson.com:3001/health'], labels: { service: property-finder } }
       - { targets: ['http://media-pipeline.home.alexjenkinson.com:8989/'],    labels: { service: sonarr } }
       - { targets: ['http://media-pipeline.home.alexjenkinson.com:7878/'],    labels: { service: radarr } }
