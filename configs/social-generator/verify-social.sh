@@ -26,8 +26,8 @@ case "$code" in
 esac
 
 echo "== last pass =="
-st="$(curl -s --max-time 10 "http://localhost:${PORT}/status.json")"
-if [ -z "$st" ]; then warn "no status.json yet — first pass still running?"
+st="$(curl -sf --max-time 10 "http://localhost:${PORT}/status.json")"   # -f: a 404 page counts as empty
+if [ -z "$st" ]; then warn "no status.json yet — first pass still running (docker compose logs -f runner)"
 elif echo "$st" | grep -q '"ok": *true'; then pass "last pass ok"
 else fail "last pass failed — docker compose logs runner | grep FAILED"; fi
 
