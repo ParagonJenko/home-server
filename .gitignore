@@ -62,6 +62,11 @@ configs/pi/adguard.creds
 # pve-exporter rendered config (holds the token)
 **/pve/pve.yml
 
+# Personal-project per-box files (Discord webhooks / Google key)
+configs/property-finder/config.yaml
+configs/social-generator/secrets/
+service-account.json
+
 # Home Assistant bearer token rendered for Prometheus
 configs/pi/prometheus/ha_token
 **/prometheus/ha_token

@@ -30,4 +30,9 @@ pause "Sign in to Plex; add libraries at /library/movies and /library/tv"
 run ./configs/lxc/nginx.sh                         # E3
 run ./configs/lxc/amp.sh                           # E4
 
+# Personal projects (own repos). Each waits for its per-box secrets before starting — see
+# configs/social-generator/README.md and configs/property-finder/README.md.
+run ./configs/lxc/social-generator.sh              # LXC 250
+run ./configs/lxc/property-finder.sh               # LXC 260 (pauses for a GitHub deploy key)
+
 echo "=== NUC-1 done. Next: ./bootstrap-nuc2.sh, then the Pi's monitoring (Stage H). ==="

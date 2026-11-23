@@ -24,6 +24,8 @@ The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headr
 | plex (LXC 220) rootfs | nuc1 local-lvm | 32 G | Stops importing, keeps serving |
 | amp (LXC 230) rootfs | nuc1 local-lvm | TBD G | — |
 | nginx (LXC 240) rootfs | nuc1 local-lvm | TBD G | — |
+| social-generator (LXC 250) rootfs | nuc1 local-lvm | 20 G | Renders fail; review page keeps serving the last output |
+| property-finder (LXC 260) rootfs | nuc1 local-lvm | 16 G | SQLite writes fail; scrapes stop, UI keeps serving |
 | frigate (LXC 111) rootfs | nuc2 local-lvm | 260 G | Prunes oldest (14-day motion retention) |
 | pbs (VM 900) system disk | nuc2 local-lvm | 16 G | — |
 | homeassistant (VM 910) system disk | nuc2 local-lvm | 32 G | — |
@@ -39,6 +41,8 @@ The sum of local-lvm LV caps on each SSD must be under SSD size minus ~10% headr
 | Guest | RAM | Swap | Notes |
 |---|---|---|---|
 | media-pipeline (LXC 210) | **6 GB** | 2 GB | Was 2 GB — too tight for the 6-service Arr stack; a spike (Bazarr scan / FlareSolverr Chrome) swap-thrashed into 504s (2026-11-18). `GuestMemoryHigh` alert (>90%) now catches it early. |
+| social-generator (LXC 250) | 2.5 GB | 1 GB | Just above the runner's compose `mem_limit: 2g` (Chromium + ffmpeg). |
+| property-finder (LXC 260) | 1.5 GB | 1 GB | Scraper's headless Chromium is the spike (every 6 h). nuc1 total with 210/220/230/240: ~14.5 GB of 15 — ceilings, not reservations, but watch `GuestMemoryHigh`. |
 
 Other guests keep their defaults until a `GuestMemoryHigh` alert says otherwise — raise + record here.
 

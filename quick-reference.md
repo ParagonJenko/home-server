@@ -29,6 +29,13 @@ reservations live in `network.md`; the Nginx routing in `services.md`; day-2 com
 | Prowlarr | `https://prowlarr.home.alexjenkinson.com` | `192.168.1.21:9696` |
 | qBittorrent | `https://qbittorrent.home.alexjenkinson.com` | `192.168.1.21:8080` |
 
+## Personal projects
+
+| Project | Front (via Nginx) | Direct |
+|---|---|---|
+| social-generator (LXC 250) | `https://social.home.alexjenkinson.com` | `192.168.1.26:8087` |
+| property-finder (LXC 260) | `https://property.home.alexjenkinson.com` | `192.168.1.27:3000` |
+
 ## Direct (not behind Nginx yet)
 
 | Tool | URL |
