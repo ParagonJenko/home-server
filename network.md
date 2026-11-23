@@ -33,7 +33,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | amp — LXC 230 | reserved | `192.168.1.23` | BC:24:11:07:4E:37 | amp-lxc.home.alexjenkinson.com (front: amp.home.alexjenkinson.com) | Proxied by Nginx (:443 → backend :8080). Backend name points here; front points at Nginx |
 | frigate — LXC 111 (nuc2, privileged) | reserved | `192.168.1.24` | BC:24:11:93:A9:FA | frigate-lxc.home.alexjenkinson.com (front: frigate.home.alexjenkinson.com) | Port 5000 is unauthenticated — never proxy/expose |
 | homeassistant — VM 910 (nuc2) | reserved | `192.168.1.25` | bc:24:11:27:42:ce | homeassistant.home.alexjenkinson.com | Accessed directly on :80 (restored config; HAOS default is 8123). Proxying needs `use_x_forwarded_for` + `trusted_proxies` in HA's config |
-| property-finder — LXC 260 | reserved | `192.168.1.27` | TBD | property-lxc.home.alexjenkinson.com (front: property.home.alexjenkinson.com) | Personal project. UI :3000 (API :3001 behind it), proxied by Nginx. LAN only |
+| property-finder — LXC 260 | reserved | `192.168.1.27` | BC:24:11:9D:B7:BE | property-lxc.home.alexjenkinson.com (front: property.home.alexjenkinson.com) | Personal project. UI :3000 (API :3001 behind it), proxied by Nginx. LAN only |
 | cam-living-room | reserved | `192.168.1.30` | 10:2C:B1:DB:1A:F6 | cam-living-room.home.alexjenkinson.com | Frigate opens RTSP by name — a lost reservation breaks recording. **Different vendor OUI (10:2C:B1) from the Eufy cams — confirm its RTSP path isn't `/live0`** |
 | cam-kitchen | reserved | `192.168.1.31` | 04:17:B6:6E:CD:14 | cam-kitchen.home.alexjenkinson.com | Eufy/Anker (04:17:B6) |
 | cam-bedroom | reserved | `192.168.1.32` | 04:17:B6:4A:9C:FE | cam-bedroom.home.alexjenkinson.com | Eufy/Anker |
