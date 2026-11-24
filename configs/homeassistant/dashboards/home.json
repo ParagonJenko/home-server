@@ -282,6 +282,45 @@
               "grid_options": {
                 "columns": 6
               }
+            },
+            {
+              "type": "tile",
+              "entity": "input_number.office_target_lux",
+              "name": "Work lux",
+              "icon": "mdi:brightness-6",
+              "features": [
+                {
+                  "type": "numeric-input",
+                  "style": "slider"
+                }
+              ],
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "input_number.office_weekend_target_lux",
+              "name": "Weekend lux",
+              "icon": "mdi:brightness-4",
+              "features": [
+                {
+                  "type": "numeric-input",
+                  "style": "slider"
+                }
+              ],
+              "grid_options": {
+                "columns": 6
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.hue_motion_sensor_illuminance",
+              "name": "Office now",
+              "icon": "mdi:white-balance-sunny",
+              "grid_options": {
+                "columns": 6
+              }
             }
           ]
         },

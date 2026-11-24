@@ -240,6 +240,58 @@ automations = [
         ],
     },
     {
+        "id": "1795512525495",
+        "alias": "Office: hold cosy lux (weekends)",
+        "description": ("Weekend version of the office daylight-harvesting loop, but cosy: holds "
+                        "input_number.office_weekend_target_lux (default 150) with warm 2500K light, capped at "
+                        "a cosy 70% brightness. Dims as daylight rises, warms the room as it fades, off when "
+                        "daylight alone exceeds target. Sat/Sun 08:00-23:00 while I'm in there and office "
+                        "auto-lighting (work_lighting) is on — so Relax/Gaming (which switch that off) suspend "
+                        "it until the 04:00 re-arm. Set the weekend target slider to taste."),
+        "mode": "single",
+        "triggers": [
+            {"trigger": "time_pattern", "minutes": "/2"},
+            {"trigger": "state", "entity_id": "light.office_office", "to": "on"},
+            {"trigger": "state", "entity_id": "binary_sensor.hue_motion_sensor_motion", "to": "on"},
+        ],
+        "conditions": [
+            {"condition": "time", "after": "08:00:00", "before": "23:00:00", "weekday": ["sat", "sun"]},
+            {"condition": "state", "entity_id": "input_boolean.work_lighting", "state": "on"},
+            {"condition": "template",
+             "value_template": ("{{ is_state('binary_sensor.hue_motion_sensor_motion','on') or "
+                                "(states.binary_sensor.hue_motion_sensor_motion.last_changed is not none and "
+                                "(now() - states.binary_sensor.hue_motion_sensor_motion.last_changed).total_seconds() < 1200) }}")},
+        ],
+        # Same proportional nudge as the weekday loop, but warm 2500K and capped at a cosy 70% (floor 10).
+        "actions": [
+            {"variables": {
+                "target": "{{ states('input_number.office_weekend_target_lux')|float(150) }}",
+                "lux": "{{ states('sensor.hue_motion_sensor_illuminance')|float(0) }}",
+                "curbri": "{{ (state_attr('light.office_office','brightness')|float(0)) / 2.55 }}",
+                "ison": "{{ is_state('light.office_office','on') }}",
+                "db": 40,
+                "newbri": ("{{ [[ ((state_attr('light.office_office','brightness')|float(0))/2.55 + "
+                           "[[ (((states('input_number.office_weekend_target_lux')|float(150)) - "
+                           "(states('sensor.hue_motion_sensor_illuminance')|float(0))) * 0.12)|round, 15]|min, -15]|max), "
+                           "70]|min, 10]|max | round }}"),
+            }},
+            {"choose": [
+                {"conditions": "{{ not ison and lux < target - db }}",
+                 "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                               "data": {"color_temp_kelvin": 2500, "brightness_pct": 50, "transition": 2}}]},
+                {"conditions": "{{ ison and lux < target - db }}",
+                 "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                               "data": {"color_temp_kelvin": 2500, "brightness_pct": "{{ newbri }}", "transition": 4}}]},
+                {"conditions": "{{ ison and lux > target + db and curbri <= 15 }}",
+                 "sequence": [{"action": "light.turn_off", "target": {"entity_id": "light.office_office"},
+                               "data": {"transition": 4}}]},
+                {"conditions": "{{ ison and lux > target + db }}",
+                 "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                               "data": {"color_temp_kelvin": 2500, "brightness_pct": "{{ newbri }}", "transition": 4}}]},
+            ]},
+        ],
+    },
+    {
         "id": "1795203406832",
         "alias": "Office: clock-out warm cue",
         "description": "At work end on weekdays, shift the office to warm/dim as a visible 'stop working' boundary. Only if the office light is on.",
@@ -293,10 +345,13 @@ automations = [
     {
         "id": "1795203783988",
         "alias": "Work lighting: re-arm each morning",
-        "description": "Turn the work-lighting master back on at 04:00 on weekdays, so tapping 'End work' early only ends today, not tomorrow.",
+        "description": ("Turn the office auto-lighting master (input_boolean.work_lighting) back on at 04:00 "
+                        "EVERY day, so tapping End work / Relax / Gaming only suspends auto-lighting until the "
+                        "next morning — weekdays (work-mode daylight) and weekends (cosy) alike."),
         "mode": "single",
         "triggers": [{"trigger": "time", "at": "04:00:00"}],
-        "conditions": [{"condition": "time", "weekday": ["mon", "tue", "wed", "thu", "fri"]}],
+        # No weekday filter: weekends need the master re-armed too (for the cosy loop).
+        "conditions": [],
         "actions": [{"action": "input_boolean.turn_on", "target": {"entity_id": "input_boolean.work_lighting"}}],
     },
     # ---- Litter waste-bin forecast: track last-emptied, self-calibrate the fill interval, warn a day early.
@@ -622,9 +677,12 @@ helpers = {
          "initial": 80, "mode": "box", "unit_of_measurement": "kg"},
         {"name": "Weight start", "icon": "mdi:flag-checkered", "min": 40, "max": 200, "step": 0.1,
          "initial": 93.5, "mode": "box", "unit_of_measurement": "kg"},
-        # Target room brightness the office daylight-harvesting loop aims to hold during work hours.
+        # Target room brightness the office daylight-harvesting loops hold: bright for weekday work,
+        # cosy (dimmer, warm) for weekends.
         {"name": "Office target lux", "icon": "mdi:brightness-6", "min": 50, "max": 800, "step": 10,
          "initial": 350, "mode": "slider", "unit_of_measurement": "lx"},
+        {"name": "Office weekend target lux", "icon": "mdi:brightness-4", "min": 50, "max": 800, "step": 10,
+         "initial": 150, "mode": "slider", "unit_of_measurement": "lx"},
     ],
     # Days accrued into the energy month-to-date (run-rate denominator). Reset monthly.
     "counter": [

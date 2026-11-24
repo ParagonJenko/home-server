@@ -137,6 +137,13 @@ home = {
             col(6, switch_btn("input_boolean.work_movement_nudge", "Move nudge", "mdi:seat-recline-normal")),
             col(6, {"type": "tile", "entity": "input_datetime.work_start", "name": "Work start", "icon": "mdi:clock-start"}),
             col(6, {"type": "tile", "entity": "input_datetime.work_end", "name": "Work end", "icon": "mdi:clock-end"}),
+            # Daylight-harvesting targets the office holds, + the live room lux for tuning them.
+            col(6, {"type": "tile", "entity": "input_number.office_target_lux", "name": "Work lux",
+                    "icon": "mdi:brightness-6", "features": [{"type": "numeric-input", "style": "slider"}]}),
+            col(6, {"type": "tile", "entity": "input_number.office_weekend_target_lux", "name": "Weekend lux",
+                    "icon": "mdi:brightness-4", "features": [{"type": "numeric-input", "style": "slider"}]}),
+            col(6, {"type": "tile", "entity": "sensor.hue_motion_sensor_illuminance", "name": "Office now",
+                    "icon": "mdi:white-balance-sunny"}),
         ),
         section(
             heading("Modes", "mdi:lightbulb-group"),

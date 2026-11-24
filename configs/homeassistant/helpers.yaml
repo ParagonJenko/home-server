@@ -124,6 +124,14 @@ input_number:
   initial: 350
   mode: slider
   unit_of_measurement: lx
+- name: Office weekend target lux
+  icon: mdi:brightness-4
+  min: 50
+  max: 800
+  step: 10
+  initial: 150
+  mode: slider
+  unit_of_measurement: lx
 counter:
 - name: Energy days accrued
   icon: mdi:calendar-range
