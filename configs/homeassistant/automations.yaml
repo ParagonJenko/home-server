@@ -251,54 +251,20 @@
       message: clear_notification
       data:
         tag: vitamins
-- id: '1795203406117'
-  alias: 'Office: work-mode daylight'
-  description: On weekdays during work hours, hold the office at bright cool-white for focus. Fires at work start and whenever
-    the office light is switched on during work hours.
-  mode: restart
+- id: '1795512029407'
+  alias: 'Office: hold target lux (work hours)'
+  description: 'Daylight-harvesting: through weekday work hours, nudge the office light so the room holds input_number.office_target_lux
+    (default 350). Dims as daylight rises, brightens as it fades, turns off when daylight alone exceeds target, turns on when
+    the room drops below it. Small clamped steps (max 15%) on a 2-min loop with a +/-40 lux deadband, so it eases rather than
+    flickers on the bouncy Hue sensor. Replaces the old fixed-100% work-mode + auto-bright automations. Set the target-lux
+    slider to taste.'
+  mode: single
   triggers:
-  - trigger: time
-    at: input_datetime.work_start
+  - trigger: time_pattern
+    minutes: /2
   - trigger: state
     entity_id: light.office_office
     to: 'on'
-  conditions:
-  - condition: time
-    after: input_datetime.work_start
-    before: input_datetime.work_end
-    weekday:
-    - mon
-    - tue
-    - wed
-    - thu
-    - fri
-  - condition: state
-    entity_id: input_boolean.work_lighting
-    state: 'on'
-  - condition: state
-    entity_id: light.office_office
-    state: 'on'
-  actions:
-  - action: light.turn_on
-    target:
-      entity_id: light.office_office
-    data:
-      color_temp_kelvin: 5300
-      brightness_pct: 100
-      transition: 3
-- id: '1795511411017'
-  alias: 'Office: auto-bright on dark work days'
-  description: During weekday work hours, if the office is dim (below 100 lux) and I'm in there with the lights off, bring
-    them up to bright daylight — so I never work in the dark on a gloomy winter morning/afternoon. Complements 'work-mode
-    daylight' (which holds daylight once the light is on); THIS one does the turning-on. Raise the lux number to keep it bright
-    more of the day; lower it to only kick in when quite dark.
-  mode: restart
-  triggers:
-  - trigger: numeric_state
-    entity_id: sensor.hue_motion_sensor_illuminance
-    below: 100
-    for:
-      minutes: 2
   - trigger: state
     entity_id: binary_sensor.hue_motion_sensor_motion
     to: 'on'
@@ -317,23 +283,56 @@
   - condition: state
     entity_id: input_boolean.work_lighting
     state: 'on'
-  - condition: numeric_state
-    entity_id: sensor.hue_motion_sensor_illuminance
-    below: 100
-  - condition: state
-    entity_id: light.office_office
-    state: 'off'
   - condition: template
     value_template: '{{ is_state(''binary_sensor.hue_motion_sensor_motion'',''on'') or (states.binary_sensor.hue_motion_sensor_motion.last_changed
       is not none and (now() - states.binary_sensor.hue_motion_sensor_motion.last_changed).total_seconds() < 1200) }}'
   actions:
-  - action: light.turn_on
-    target:
-      entity_id: light.office_office
-    data:
-      color_temp_kelvin: 5300
-      brightness_pct: 100
-      transition: 3
+  - variables:
+      target: '{{ states(''input_number.office_target_lux'')|float(350) }}'
+      lux: '{{ states(''sensor.hue_motion_sensor_illuminance'')|float(0) }}'
+      curbri: '{{ (state_attr(''light.office_office'',''brightness'')|float(0)) / 2.55 }}'
+      ison: '{{ is_state(''light.office_office'',''on'') }}'
+      db: 40
+      step: '{{ [[ (((states(''input_number.office_target_lux'')|float(350)) - (states(''sensor.hue_motion_sensor_illuminance'')|float(0)))
+        * 0.12)|round, 15]|min, -15]|max }}'
+      newbri: '{{ [[ ((state_attr(''light.office_office'',''brightness'')|float(0))/2.55 + [[ (((states(''input_number.office_target_lux'')|float(350))
+        - (states(''sensor.hue_motion_sensor_illuminance'')|float(0))) * 0.12)|round, 15]|min, -15]|max), 100]|min, 10]|max
+        | round }}'
+  - choose:
+    - conditions: '{{ not ison and lux < target - db }}'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.office_office
+        data:
+          color_temp_kelvin: 5300
+          brightness_pct: 80
+          transition: 2
+    - conditions: '{{ ison and lux < target - db }}'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.office_office
+        data:
+          color_temp_kelvin: 5300
+          brightness_pct: '{{ newbri }}'
+          transition: 4
+    - conditions: '{{ ison and lux > target + db and curbri <= 15 }}'
+      sequence:
+      - action: light.turn_off
+        target:
+          entity_id: light.office_office
+        data:
+          transition: 4
+    - conditions: '{{ ison and lux > target + db }}'
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.office_office
+        data:
+          color_temp_kelvin: 5300
+          brightness_pct: '{{ newbri }}'
+          transition: 4
 - id: '1795203406832'
   alias: 'Office: clock-out warm cue'
   description: At work end on weekdays, shift the office to warm/dim as a visible 'stop working' boundary. Only if the office

@@ -179,54 +179,65 @@ automations = [
     # ---- WFH circadian lighting (08:00-17:00). Office is schedule-driven (decoupled from the sun so
     # it doesn't warm/dim through dark winter afternoons); the rest of the flat stays on Adaptive Lighting.
     {
-        "id": "1795203406117",
-        "alias": "Office: work-mode daylight",
-        "description": "On weekdays during work hours, hold the office at bright cool-white for focus. Fires at work start and whenever the office light is switched on during work hours.",
-        "mode": "restart",
-        "triggers": [{"trigger": "time", "at": "input_datetime.work_start"},
-                     {"trigger": "state", "entity_id": "light.office_office", "to": "on"}],
-        "conditions": [
-            {"condition": "time", "after": "input_datetime.work_start", "before": "input_datetime.work_end",
-             "weekday": ["mon", "tue", "wed", "thu", "fri"]},
-            {"condition": "state", "entity_id": "input_boolean.work_lighting", "state": "on"},
-            {"condition": "state", "entity_id": "light.office_office", "state": "on"},
-        ],
-        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
-                     "data": {"color_temp_kelvin": 5300, "brightness_pct": 100, "transition": 3}}],
-    },
-    {
-        "id": "1795511411017",
-        "alias": "Office: auto-bright on dark work days",
-        "description": ("During weekday work hours, if the office is dim (below 100 lux) and I'm in there "
-                        "with the lights off, bring them up to bright daylight — so I never work in the dark "
-                        "on a gloomy winter morning/afternoon. Complements 'work-mode daylight' (which holds "
-                        "daylight once the light is on); THIS one does the turning-on. Raise the lux number "
-                        "to keep it bright more of the day; lower it to only kick in when quite dark."),
-        "mode": "restart",
-        # Fires when the room darkens, when I arrive (motion), or at work start if it's already dark.
+        "id": "1795512029407",
+        "alias": "Office: hold target lux (work hours)",
+        "description": ("Daylight-harvesting: through weekday work hours, nudge the office light so the room "
+                        "holds input_number.office_target_lux (default 350). Dims as daylight rises, brightens "
+                        "as it fades, turns off when daylight alone exceeds target, turns on when the room drops "
+                        "below it. Small clamped steps (max 15%) on a 2-min loop with a +/-40 lux deadband, so it "
+                        "eases rather than flickers on the bouncy Hue sensor. Replaces the old fixed-100% "
+                        "work-mode + auto-bright automations. Set the target-lux slider to taste."),
+        "mode": "single",
         "triggers": [
-            {"trigger": "numeric_state", "entity_id": "sensor.hue_motion_sensor_illuminance", "below": 100,
-             "for": {"minutes": 2}},
+            {"trigger": "time_pattern", "minutes": "/2"},
+            {"trigger": "state", "entity_id": "light.office_office", "to": "on"},
             {"trigger": "state", "entity_id": "binary_sensor.hue_motion_sensor_motion", "to": "on"},
             {"trigger": "time", "at": "input_datetime.work_start"},
         ],
-        # Weekday work hours (the time window also blocks the dawn re-arm of the numeric trigger); dim NOW;
-        # lights currently off (so it only turns on — work-mode daylight keeps them bright after); and I'm
-        # about (motion now or within 20 min). Occupancy + light-off keep it from lighting an empty office
-        # or fighting a manual off in bright conditions.
         "conditions": [
             {"condition": "time", "after": "input_datetime.work_start", "before": "input_datetime.work_end",
              "weekday": ["mon", "tue", "wed", "thu", "fri"]},
             {"condition": "state", "entity_id": "input_boolean.work_lighting", "state": "on"},
-            {"condition": "numeric_state", "entity_id": "sensor.hue_motion_sensor_illuminance", "below": 100},
-            {"condition": "state", "entity_id": "light.office_office", "state": "off"},
+            # occupied: motion now, or cleared within 20 min (I sit still at the desk). No native equivalent.
             {"condition": "template",
              "value_template": ("{{ is_state('binary_sensor.hue_motion_sensor_motion','on') or "
                                 "(states.binary_sensor.hue_motion_sensor_motion.last_changed is not none and "
                                 "(now() - states.binary_sensor.hue_motion_sensor_motion.last_changed).total_seconds() < 1200) }}")},
         ],
-        "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
-                     "data": {"color_temp_kelvin": 5300, "brightness_pct": 100, "transition": 3}}],
+        # Proportional nudge toward target lux. step = clamp(err*0.12, -15..15) %; newbri = clamp(cur% + step,
+        # 10..100). Branches: turn on strong when dark+off; step up when too dim; step down — or off at the
+        # floor — when daylight exceeds target. Deadband (+/-40 lux) means no change when already close.
+        # Templates are unavoidable here: the logic compares a sensor against a helper with arithmetic, which
+        # numeric_state/state can't express.
+        "actions": [
+            {"variables": {
+                "target": "{{ states('input_number.office_target_lux')|float(350) }}",
+                "lux": "{{ states('sensor.hue_motion_sensor_illuminance')|float(0) }}",
+                "curbri": "{{ (state_attr('light.office_office','brightness')|float(0)) / 2.55 }}",
+                "ison": "{{ is_state('light.office_office','on') }}",
+                "db": 40,
+                "step": ("{{ [[ (((states('input_number.office_target_lux')|float(350)) - "
+                         "(states('sensor.hue_motion_sensor_illuminance')|float(0))) * 0.12)|round, 15]|min, -15]|max }}"),
+                "newbri": ("{{ [[ ((state_attr('light.office_office','brightness')|float(0))/2.55 + "
+                           "[[ (((states('input_number.office_target_lux')|float(350)) - "
+                           "(states('sensor.hue_motion_sensor_illuminance')|float(0))) * 0.12)|round, 15]|min, -15]|max), "
+                           "100]|min, 10]|max | round }}"),
+            }},
+            {"choose": [
+                {"conditions": "{{ not ison and lux < target - db }}",
+                 "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                               "data": {"color_temp_kelvin": 5300, "brightness_pct": 80, "transition": 2}}]},
+                {"conditions": "{{ ison and lux < target - db }}",
+                 "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                               "data": {"color_temp_kelvin": 5300, "brightness_pct": "{{ newbri }}", "transition": 4}}]},
+                {"conditions": "{{ ison and lux > target + db and curbri <= 15 }}",
+                 "sequence": [{"action": "light.turn_off", "target": {"entity_id": "light.office_office"},
+                               "data": {"transition": 4}}]},
+                {"conditions": "{{ ison and lux > target + db }}",
+                 "sequence": [{"action": "light.turn_on", "target": {"entity_id": "light.office_office"},
+                               "data": {"color_temp_kelvin": 5300, "brightness_pct": "{{ newbri }}", "transition": 4}}]},
+            ]},
+        ],
     },
     {
         "id": "1795203406832",
@@ -611,6 +622,9 @@ helpers = {
          "initial": 80, "mode": "box", "unit_of_measurement": "kg"},
         {"name": "Weight start", "icon": "mdi:flag-checkered", "min": 40, "max": 200, "step": 0.1,
          "initial": 93.5, "mode": "box", "unit_of_measurement": "kg"},
+        # Target room brightness the office daylight-harvesting loop aims to hold during work hours.
+        {"name": "Office target lux", "icon": "mdi:brightness-6", "min": 50, "max": 800, "step": 10,
+         "initial": 350, "mode": "slider", "unit_of_measurement": "lx"},
     ],
     # Days accrued into the energy month-to-date (run-rate denominator). Reset monthly.
     "counter": [
