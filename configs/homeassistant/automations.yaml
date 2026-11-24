@@ -486,6 +486,35 @@
       color_temp_kelvin: 2200
       brightness_pct: 30
       transition: 60
+- id: '1795512737484'
+  alias: Bedroom off when I reach the office
+  description: 'Weekday work hours: when office motion is detected (I''ve come through to the desk), turn the bedroom light
+    off if it''s still on. Self-limiting — once off, further motion is a no-op. Work-hours gated so it won''t kill the bedroom
+    light at random evening visits.'
+  mode: single
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.hue_motion_sensor_motion
+    to: 'on'
+  conditions:
+  - condition: time
+    after: input_datetime.work_start
+    before: input_datetime.work_end
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+  - condition: state
+    entity_id: light.bedroom_bedroom
+    state: 'on'
+  actions:
+  - action: light.turn_off
+    target:
+      entity_id: light.bedroom_bedroom
+    data:
+      transition: 2
 - id: '1795203408978'
   alias: 'Office: movement nudge'
   description: A gentle Play-bar flash through the workday to prompt standing up / looking away. Lunch at 12:00, so the midday
