@@ -447,11 +447,12 @@
               }
             },
             {
-              "type": "tile",
+              "type": "custom:mushroom-template-card",
               "entity": "sensor.basement_robovac_error_message",
-              "name": "Vac error",
+              "primary": "Vac error",
+              "secondary": "{{ 'OK' if states('sensor.basement_robovac_error_message') in ['','unknown','unavailable','none','No error'] else states('sensor.basement_robovac_error_message') }}",
               "icon": "mdi:robot-vacuum-alert",
-              "color": "red",
+              "icon_color": "{{ 'green' if states('sensor.basement_robovac_error_message') in ['','unknown','unavailable','none','No error'] else 'red' }}",
               "grid_options": {
                 "columns": 6
               }

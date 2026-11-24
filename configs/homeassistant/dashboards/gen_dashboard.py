@@ -161,8 +161,14 @@ home = {
                     "name": "General waste", "icon": "mdi:trash-can", "color": "grey"}),
             col(6, {"type": "tile", "entity": "vacuum.basement_robovac", "name": "RoboVac", "icon": "mdi:robot-vacuum",
                     "features": [{"type": "vacuum-commands", "commands": ["start_pause", "stop", "return_home"]}]}),
-            col(6, {"type": "tile", "entity": "sensor.basement_robovac_error_message", "name": "Vac error",
-                    "icon": "mdi:robot-vacuum-alert", "color": "red"}),
+            # Colour by state: green "OK" when the error message is empty, red + the message on a real error.
+            col(6, mush("template", entity="sensor.basement_robovac_error_message", primary="Vac error",
+                        secondary=("{{ 'OK' if states('sensor.basement_robovac_error_message') in "
+                                   "['','unknown','unavailable','none','No error'] "
+                                   "else states('sensor.basement_robovac_error_message') }}"),
+                        icon="mdi:robot-vacuum-alert",
+                        icon_color=("{{ 'green' if states('sensor.basement_robovac_error_message') in "
+                                    "['','unknown','unavailable','none','No error'] else 'red' }}"))),
             col(6, {"type": "tile", "entity": "sensor.basement_robovac_battery", "name": "Vac battery",
                     "icon": "mdi:battery-charging"}),
             col(6, {"type": "tile", "entity": "binary_sensor.litter_tray_wastebin",
