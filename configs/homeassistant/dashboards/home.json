@@ -482,6 +482,23 @@
           "cards": [
             {
               "type": "heading",
+              "heading": "Weather",
+              "heading_style": "title",
+              "icon": "mdi:weather-partly-cloudy"
+            },
+            {
+              "type": "weather-forecast",
+              "entity": "weather.home",
+              "forecast_type": "daily",
+              "show_current": true
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
               "heading": "Now",
               "heading_style": "title",
               "icon": "mdi:cctv"

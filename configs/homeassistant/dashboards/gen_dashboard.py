@@ -175,6 +175,10 @@ home = {
                     "name": "Litter bin", "icon": "mdi:delete-alert"}),
         ),
         section(
+            heading("Weather", "mdi:weather-partly-cloudy"),
+            {"type": "weather-forecast", "entity": "weather.home", "forecast_type": "daily", "show_current": True},
+        ),
+        section(
             heading("Now", "mdi:cctv"),
             cam("camera.living_room_cam_living_room", "Living Room"),
             cam("camera.bedroom_cam_bedroom", "Bedroom"),
