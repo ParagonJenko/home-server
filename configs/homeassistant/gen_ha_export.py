@@ -552,21 +552,45 @@ automations = [
     {
         "id": "1795366119564",
         "alias": "RoboVac: scheduled runs",
-        "description": ("Starts the vacuum at 12:00 daily. Also at 19:00, but only if the battery is "
-                        "at/above 95% (fully charged after the midday run). Offline/unavailable or not "
-                        "charged → evening run skipped. The Eufy 30C exposes battery + error only, no "
-                        "bin-full sensor, so emptying the bin stays manual."),
+        "description": ("Starts the vacuum at 12:00 daily, and at 19:00 only if battery >=95% (fully charged "
+                        "after the midday run). The Eufy integration drops its connection and doesn't self-heal, "
+                        "so FIRST: if the vac is error/unavailable/unknown, reload its config entry and wait up "
+                        "to 2 min for it to reconnect, THEN start — otherwise vacuum.start hits a dead link and "
+                        "nothing happens (the reason a manual app-start was needed). No bin-full sensor on the "
+                        "30C, so emptying the bin is manual."),
         "mode": "single",
         "triggers": [{"trigger": "time", "at": "12:00:00", "id": "midday"},
                      {"trigger": "time", "at": "19:00:00", "id": "evening"}],
-        # Midday always; evening only when fully charged. `above: 94` = >=95% (unavailable fails it,
-        # so an offline vac is skipped). sensor.robovac_battery is the real charge level the 30C reports.
-        "conditions": [{"condition": "or", "conditions": [
-            {"condition": "trigger", "id": "midday"},
-            {"condition": "and", "conditions": [
-                {"condition": "trigger", "id": "evening"},
-                {"condition": "numeric_state", "entity_id": "sensor.robovac_battery", "above": 94}]}]}],
-        "actions": [{"action": "vacuum.start", "target": {"entity_id": "vacuum.robovac"}}],
+        # Step 1: revive a dead connection before trying to start. entry_id is the robovac config entry
+        # (homeassistant.reload_config_entry). Step 2: midday always starts; evening only when >=95% charged.
+        "actions": [
+            {"choose": [
+                {"conditions": "{{ states('vacuum.robovac') in ['error','unavailable','unknown'] }}",
+                 "sequence": [
+                     {"action": "homeassistant.reload_config_entry",
+                      "data": {"entry_id": "01M7R7XM82KGZTQV2E0FRYXSPZ"}},
+                     {"wait_template": "{{ states('vacuum.robovac') not in ['error','unavailable','unknown'] }}",
+                      "timeout": {"minutes": 2}, "continue_on_timeout": True}]}]},
+            {"choose": [
+                {"conditions": [{"condition": "trigger", "id": "midday"}],
+                 "sequence": [{"action": "vacuum.start", "target": {"entity_id": "vacuum.robovac"}}]},
+                {"conditions": [{"condition": "trigger", "id": "evening"},
+                                {"condition": "numeric_state", "entity_id": "sensor.robovac_battery", "above": 94}],
+                 "sequence": [{"action": "vacuum.start", "target": {"entity_id": "vacuum.robovac"}}]}]},
+        ],
+    },
+    {
+        "id": "1795515613694",
+        "alias": "RoboVac: auto-reload on lost connection",
+        "description": ("The Eufy integration drops its cloud connection and doesn't self-heal (it sat frozen "
+                        "in 'error' for ~2 days). When the vacuum has been error or unavailable for 30 min "
+                        "straight, reload its config entry to reconnect — so scheduled runs, battery and error "
+                        "alerts keep working. mode single + the 30-min hold stop it reload-looping."),
+        "mode": "single",
+        "triggers": [{"trigger": "state", "entity_id": "vacuum.robovac", "to": "error", "for": {"minutes": 30}},
+                     {"trigger": "state", "entity_id": "vacuum.robovac", "to": "unavailable", "for": {"minutes": 30}}],
+        "actions": [{"action": "homeassistant.reload_config_entry",
+                     "data": {"entry_id": "01M7R7XM82KGZTQV2E0FRYXSPZ"}}],
     },
     {
         "id": "1795368136888",
