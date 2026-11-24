@@ -407,21 +407,23 @@ automations = [
     {
         "id": "1795281091250",
         "alias": "Office weekend sunset lights",
-        "description": ("On weekends, when the sun gets low (the SE-facing office darkens well before "
-                        "true sunset), turn the office lights on warm IF I'm in there and they're off. "
-                        "Triggered on sun elevation rather than a lux sensor: the Hue motion sensor's "
-                        "illuminance reads ~0 all day (it isn't by the window), so it can't stand in for "
-                        "window light level. Drop the `below` elevation to fire later, raise it for earlier. "
-                        "A proper lux sensor on the SE windowsill would let this switch to true light-level "
-                        "triggering (see sensors-to-buy.md)."),
+        "description": ("On weekend afternoons, when the office actually gets dim (SE-window light level "
+                        "below 20 lux, sustained 3 min), turn the office lights on warm IF I'm in there and "
+                        "they're off. Now driven by the REAL light level: the Hue motion sensor was moved "
+                        "into the office, so its illuminance tracks the SE window (observed ~1000-1600 lux "
+                        "late-morning peak, falling below 20 around 14:45-15:40, just before sunset). Gated "
+                        "to after 12:00 so the morning brightening can't trip the 'below' trigger. Raise the "
+                        "lux number to fire earlier (more daylight left), lower it to fire closer to dark."),
         "mode": "single",
-        # elevation below 5 deg ~= 45-60 min before sunset in UK winter; tracks the seasons automatically.
-        "triggers": [{"trigger": "numeric_state", "entity_id": "sun.sun", "attribute": "elevation", "below": 5}],
-        # Weekend only; office occupied (motion now, or cleared within 20 min — I sit still at the desk);
-        # and only if the office lights are currently off, so it won't stomp a scene/relax mode I've set.
-        # The recency template has no native equivalent (native `for:` measures continuous time, the opposite).
+        # Real light-level trigger: fires on the afternoon decline through 20 lux, held 3 min to debounce.
+        "triggers": [{"trigger": "numeric_state", "entity_id": "sensor.hue_motion_sensor_illuminance",
+                      "below": 20, "for": {"minutes": 3}}],
+        # Weekend AFTERNOON only (after 12:00 blocks the dawn rise re-arming the trigger); office occupied
+        # (motion now, or cleared within 20 min — I sit still at the desk); and only if the office lights
+        # are off, so it won't stomp a scene/relax mode I've set. The recency template has no native
+        # equivalent (native `for:` measures continuous time, the opposite).
         "conditions": [
-            {"condition": "time", "weekday": ["sat", "sun"]},
+            {"condition": "time", "after": "12:00:00", "weekday": ["sat", "sun"]},
             {"condition": "template",
              "value_template": ("{{ is_state('binary_sensor.hue_motion_sensor_motion','on') or "
                                 "(states.binary_sensor.hue_motion_sensor_motion.last_changed is not none and "
