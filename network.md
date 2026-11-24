@@ -38,6 +38,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | cam-kitchen | reserved | `192.168.1.31` | 04:17:B6:6E:CD:14 | cam-kitchen.home.alexjenkinson.com | Eufy/Anker (04:17:B6) |
 | cam-bedroom | reserved | `192.168.1.32` | 04:17:B6:4A:9C:FE | cam-bedroom.home.alexjenkinson.com | Eufy/Anker |
 | cam-basement | reserved | `192.168.1.33` | 04:17:B6:44:C1:33 | cam-basement.home.alexjenkinson.com | Eufy/Anker |
+| robovac | reserved | `192.168.1.34` | 3C:61:05:FC:CC:58 | robovac.home.alexjenkinson.com | Eufy RoboVac 30C. Wi-Fi; the `robovac` integration connects to it **locally by IP**, so a drifting DHCP lease = "Connection to the vacuum failed". Reserving it fixes that. Reboot the vac (lift off/on the dock) after adding the reservation so it takes the new lease, then reload the integration. Not proxied |
 
 ## DNS rewrite groups (AdGuard)
 
@@ -45,7 +46,7 @@ Three groups — nothing resolves without all three. `configs/pi/adguard-rewrite
 
 1. **Front names → Nginx's IP** (`.20`): `plex.home.alexjenkinson.com`, `frigate.home.alexjenkinson.com`, `sonarr.home.alexjenkinson.com`, `radarr.home.alexjenkinson.com`, `bazarr.home.alexjenkinson.com`, `prowlarr.home.alexjenkinson.com`, `qbittorrent.home.alexjenkinson.com`, `amp.home.alexjenkinson.com`, `property.home.alexjenkinson.com`, `start.home.alexjenkinson.com` (static start page served by Nginx, not a proxy).
 2. **Backend names → the container's own IP**: `plex-lxc.home.alexjenkinson.com`, `frigate-lxc.home.alexjenkinson.com`, `media-pipeline.home.alexjenkinson.com`, `amp-lxc.home.alexjenkinson.com`, `property-lxc.home.alexjenkinson.com`.
-3. **Hosts & cameras → their own IP**: `cam-*.home.alexjenkinson.com`, `homeassistant.home.alexjenkinson.com`, `nuc1`, `nuc2`, `pbs`, `pi.home.alexjenkinson.com`.
+3. **Hosts & cameras → their own IP**: `cam-*.home.alexjenkinson.com`, `robovac.home.alexjenkinson.com`, `homeassistant.home.alexjenkinson.com`, `nuc1`, `nuc2`, `pbs`, `pi.home.alexjenkinson.com`.
 
 ## Resolver policy
 
