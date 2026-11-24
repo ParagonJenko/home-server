@@ -38,7 +38,7 @@ MACs are generated at `pct create`, so collect them off the real device after St
 | cam-kitchen | reserved | `192.168.1.31` | 04:17:B6:6E:CD:14 | cam-kitchen.home.alexjenkinson.com | Eufy/Anker (04:17:B6) |
 | cam-bedroom | reserved | `192.168.1.32` | 04:17:B6:4A:9C:FE | cam-bedroom.home.alexjenkinson.com | Eufy/Anker |
 | cam-basement | reserved | `192.168.1.33` | 04:17:B6:44:C1:33 | cam-basement.home.alexjenkinson.com | Eufy/Anker |
-| robovac | reserved | `192.168.1.34` | 3C:61:05:FC:CC:58 | robovac.home.alexjenkinson.com | Eufy RoboVac 30C. Wi-Fi; the `robovac` integration connects to it **locally by IP**, so a drifting DHCP lease = "Connection to the vacuum failed". Reserving it fixes that. Reboot the vac (lift off/on the dock) after adding the reservation so it takes the new lease, then reload the integration. Not proxied |
+| robovac | reserved | `192.168.1.34` | 3C:61:05:FC:CC:58 | robovac.home.alexjenkinson.com | Eufy RoboVac 30C (T2118). Wi-Fi. Integrated via **Eufy Clean** (`robovac_mqtt`, HACS `jeppesens/eufy-clean`) — **cloud/MQTT**, so it does NOT depend on the LAN IP. The reservation is now just tidy housekeeping (the old local `damacus/robovac` integration needed it; that's been removed). Not proxied |
 
 ## DNS rewrite groups (AdGuard)
 

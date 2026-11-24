@@ -46,7 +46,7 @@
                 },
                 {
                   "type": "entity",
-                  "entity": "vacuum.robovac",
+                  "entity": "vacuum.basement_robovac",
                   "icon": "mdi:robot-vacuum",
                   "icon_color": "teal"
                 },
@@ -429,7 +429,7 @@
             },
             {
               "type": "tile",
-              "entity": "vacuum.robovac",
+              "entity": "vacuum.basement_robovac",
               "name": "RoboVac",
               "icon": "mdi:robot-vacuum",
               "features": [
@@ -448,7 +448,7 @@
             },
             {
               "type": "tile",
-              "entity": "sensor.robovac_error",
+              "entity": "sensor.basement_robovac_error_message",
               "name": "Vac error",
               "icon": "mdi:robot-vacuum-alert",
               "color": "red",
@@ -458,7 +458,7 @@
             },
             {
               "type": "tile",
-              "entity": "sensor.robovac_battery",
+              "entity": "sensor.basement_robovac_battery",
               "name": "Vac battery",
               "icon": "mdi:battery-charging",
               "grid_options": {
